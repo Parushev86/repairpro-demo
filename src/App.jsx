@@ -492,13 +492,23 @@ export default function App() {
                 const s = await upsertPartsSale(clean);
                 if(!r.id) {
                   setPartsSales(p=>[s,...p]);
-                  // Update inventory if item was from stock
-                  if(r.inventory_id) {
-                    const inv=inventory.find(i=>i.id===r.inventory_id);
+                  // Update inventory for multi-item sale
+                  const itemsToDeduct = r.items && r.items.length > 0
+                    ? r.items  // multiple items from cart
+                    : r.inventory_id ? [{inv_id: r.inventory_id, qty: Number(r.quantity||1)}] : [];
+                  for(const item of itemsToDeduct) {
+                    const invId = item.inv_id || item.inventory_id;
+                    if(!invId) continue;
+                    const inv = inventory.find(i=>i.id===invId);
                     if(inv){
-                      const nq=Number(inv.quantity)-Number(r.quantity||1);
-                      if(nq<=0){await dbDeleteInv(inv.id);setInventory(p=>p.filter(i=>i.id!==inv.id));}
-                      else{const upd=await upsertInventory({...inv,quantity:nq});setInventory(p=>p.map(i=>i.id===upd.id?upd:i));}
+                      const nq = Number(inv.quantity) - Number(item.qty||item.quantity||1);
+                      if(nq<=0){
+                        await dbDeleteInv(inv.id);
+                        setInventory(p=>p.filter(i=>i.id!==inv.id));
+                      } else {
+                        const upd=await upsertInventory({...inv,quantity:nq});
+                        setInventory(p=>p.map(i=>i.id===upd.id?upd:i));
+                      }
                     }
                   }
                 } else {
