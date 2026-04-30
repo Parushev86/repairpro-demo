@@ -4,8 +4,12 @@ let _supabase = null;
 
 export function getSupabase() {
   if (_supabase) return _supabase;
-  const url  = localStorage.getItem("sb_url");
-  const key  = localStorage.getItem("sb_key");
+  // Try localStorage first (from Settings modal)
+  let url = localStorage.getItem("sb_url");
+  let key = localStorage.getItem("sb_key");
+  // Fallback to Vite env variables (set in Vercel dashboard)
+  if (!url) url = import.meta.env.VITE_SUPABASE_URL;
+  if (!key) key = import.meta.env.VITE_SUPABASE_KEY;
   if (!url || !key) return null;
   _supabase = createClient(url, key);
   return _supabase;
