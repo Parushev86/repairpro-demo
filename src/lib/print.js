@@ -106,7 +106,7 @@ ${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-  <button onclick="window.opener && window.opener.__downloadTXT ? window.opener.__downloadTXT() : alert('Затвори и изтегли от основния прозорец')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
+
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -167,7 +167,7 @@ export async function printLabel(order) {
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-  <button onclick="window.opener && window.opener.__downloadTXT ? window.opener.__downloadTXT() : alert('Затвори и изтегли от основния прозорец')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
+
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
