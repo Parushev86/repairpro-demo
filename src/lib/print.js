@@ -66,17 +66,25 @@ ${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:
 <div class="footer">RepairPro — Сервизна система | Протокол генериран на ${new Date().toLocaleString("bg-BG")}</div>
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
-  <button onclick="downloadPDF()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли PDF</button>
+  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли JPEG</button>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-function downloadPDF() {
-  const style = document.createElement('style');
-  style.textContent = '.no-print{display:none!important}';
-  document.head.appendChild(style);
-  window.print();
-  setTimeout(()=>document.head.removeChild(style), 1000);
+function downloadJPEG() {
+  const btn = document.querySelector('.no-print');
+  btn.style.display = 'none';
+  html2canvas(document.body, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+  }).then(canvas => {
+    btn.style.display = 'flex';
+    const link = document.createElement('a');
+    link.download = 'protokol_' + Date.now() + '.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  });
 }
-// No auto-print
 </script>
 </body></html>`;
 
@@ -117,17 +125,25 @@ export async function printLabel(order) {
 </div>
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
-  <button onclick="downloadPDF()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли PDF</button>
+  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли JPEG</button>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-function downloadPDF() {
-  const style = document.createElement('style');
-  style.textContent = '.no-print{display:none!important}';
-  document.head.appendChild(style);
-  window.print();
-  setTimeout(()=>document.head.removeChild(style), 1000);
+function downloadJPEG() {
+  const btn = document.querySelector('.no-print');
+  btn.style.display = 'none';
+  html2canvas(document.body, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+  }).then(canvas => {
+    btn.style.display = 'flex';
+    const link = document.createElement('a');
+    link.download = 'protokol_' + Date.now() + '.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  });
 }
-// No auto-print
 </script>
 </body></html>`;
   const w = window.open("", "_blank", "width=450,height=350");
