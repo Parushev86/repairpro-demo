@@ -556,7 +556,7 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
       </div>
 
       {/* Nav */}
-      <nav style={{flex:1, padding:"6px 0"}}>
+      <nav style={{flex:1, padding:"6px 0", overflowY:"auto"}}>
         {[
           // Admin-only tabs
           ...(!isAdmin ? [] : [
