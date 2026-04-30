@@ -59,6 +59,7 @@ const Notif = ({notif}) => notif ? (
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
   const [loggedIn,    setLoggedIn]    = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders,      setOrders]      = useState([]);
   const [inventory,   setInventory]   = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -418,13 +419,20 @@ export default function App() {
       <Notif notif={notif}/>
 
       {/* ── SIDEBAR ── */}
-      <Sidebar tab={tab} setTab={setTab} readyOrders={readyOrders} lowStock={lowStock}
+      <Sidebar tab={tab} setTab={(t)=>{setTab(t);setSidebarOpen(false);}} readyOrders={readyOrders} lowStock={lowStock}
         activeOrders={activeOrders} orders={orders} connected={connected} realtimeOn={realtimeOn}
         syncing={syncing} onSettings={()=>setSettingsOpen(true)} onRefresh={()=>loadData(false)}
-        onNewOrder={()=>setOrderModal("new")} trash={trash} isAdmin={isAdmin}/>
+        onNewOrder={()=>setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}/>
 
       {/* ── MAIN ── */}
-      <main style={{flex:1, overflow:"auto", padding:24}}>
+      <main style={{flex:1, overflow:"auto", display:"flex", flexDirection:"column"}}>
+        {/* Mobile top bar */}
+        <div className="mobile-topbar" style={{display:"none", background:"#0a1628", padding:"10px 16px", borderBottom:"1px solid #1e293b", alignItems:"center", gap:12, flexShrink:0}}>
+          <button onClick={()=>setSidebarOpen(p=>!p)} style={{background:"#1e293b",border:"none",color:"#94a3b8",borderRadius:8,width:36,height:36,cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center"}}>☰</button>
+          <span style={{fontSize:16,fontWeight:800,color:"#38bdf8"}}>🔧 RepairPro</span>
+        </div>
+        {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:98}}/>}
+        <div style={{flex:1, overflow:"auto", padding:24}}>
         {tab==="dashboard"    && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
         {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
         {tab==="inventory"    && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={()=>setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={()=>exportInventory(inventory)} onImport={()=>setImportModal("inventory")}/>}
@@ -508,10 +516,17 @@ export default function App() {
 }
 
 // ═══════════════════════════════ SIDEBAR ══════════════════════════════════════
-function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,realtimeOn,syncing,onSettings,onRefresh,onNewOrder,trash=[],isAdmin=false}) {
+function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,realtimeOn,syncing,onSettings,onRefresh,onNewOrder,trash=[],isAdmin=false,sidebarOpen=false,setSidebarOpen=()=>{}}) {
   const totalRev = orders.filter(o=>o.status==="Издаден").reduce((s,o)=>s+Number(o.price||0),0);
   return (
-    <aside style={{width:220, background:"#0a1628", borderRight:"1px solid #1e293b", display:"flex", flexDirection:"column", height:"100vh", flexShrink:0}}>
+    <>
+    {/* Mobile overlay */}
+    {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:99,display:"none"}} className="mobile-overlay"/>}
+    <aside className={sidebarOpen?"open":""} style={{
+      width:220, background:"#0a1628", borderRight:"1px solid #1e293b",
+      display:"flex", flexDirection:"column", height:"100vh", flexShrink:0,
+      position:"sticky", top:0,
+    }}>
       {/* Logo */}
       <div style={{padding:"20px 18px 14px", borderBottom:"1px solid #1e293b"}}>
         <div style={{fontSize:22, fontWeight:900, color:"#38bdf8", letterSpacing:-0.5}}>🔧 RepairPro</div>
@@ -596,6 +611,7 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
         </button>
       </div>
     </aside>
+    </>
   );
 }
 
