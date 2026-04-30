@@ -470,7 +470,43 @@ export default function App() {
           />}
           {tab==="partssales"   && <PartsSalesTab
             sales={partsSales} inventory={inventory}
-            onSave={async r=>{const s=await upsertPartsSale(r);if(!r.id){setPartsSales(p=>[s,...p]);if(r.inventory_id){const inv=inventory.find(i=>i.id===r.inventory_id);if(inv){const nq=Number(inv.quantity)-Number(r.quantity||1);if(nq<=0){await dbDeleteInv(inv.id);setInventory(p=>p.filter(i=>i.id!==inv.id));}else{const upd=await upsertInventory({...inv,quantity:nq});setInventory(p=>p.map(i=>i.id===upd.id?upd:i));}}}}else setPartsSales(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Продажбата е записана");}}
+            onSave={async r=>{
+              try {
+                // Clean null/empty fields before save
+                const {items: _items, ...rest} = r;
+                const clean = {
+                  ...rest,
+                  date_arrived:    r.date_arrived    || null,
+                  tracking_number: r.tracking_number || null,
+                  buyer_name:      r.buyer_name      || null,
+                  buyer_phone:     r.buyer_phone     || null,
+                  buyer_city:      r.buyer_city      || null,
+                  buyer_address:   r.buyer_address   || null,
+                  delivery_type:   r.delivery_type   || null,
+                  notes:           r.notes           || null,
+                  inventory_id:    r.inventory_id    || null,
+                  cost_price:      Number(r.cost_price||0),
+                  sale_price:      Number(r.sale_price||0),
+                  quantity:        Number(r.quantity||1),
+                };
+                const s = await upsertPartsSale(clean);
+                if(!r.id) {
+                  setPartsSales(p=>[s,...p]);
+                  // Update inventory if item was from stock
+                  if(r.inventory_id) {
+                    const inv=inventory.find(i=>i.id===r.inventory_id);
+                    if(inv){
+                      const nq=Number(inv.quantity)-Number(r.quantity||1);
+                      if(nq<=0){await dbDeleteInv(inv.id);setInventory(p=>p.filter(i=>i.id!==inv.id));}
+                      else{const upd=await upsertInventory({...inv,quantity:nq});setInventory(p=>p.map(i=>i.id===upd.id?upd:i));}
+                    }
+                  }
+                } else {
+                  setPartsSales(p=>p.map(x=>x.id===s.id?s:x));
+                }
+                notify("✅ Продажбата е записана");
+              } catch(e) { notify("❌ Грешка: "+e.message,"error"); }
+            }}
             onDelete={async id=>{await deletePartsSale(id);setPartsSales(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
             onUpdateInventory={setInventory}
           />}
@@ -965,6 +1001,30 @@ const OrderModal = memo(function OrderModal({order,technicians,inventory,setInve
                     ? <div style={{fontSize:11,color:"#38bdf8",marginTop:5,padding:"4px 8px",background:"#0f172a",borderRadius:6}}>✓ {form.problem}</div>
                     : <div style={{fontSize:11,color:"#475569",marginTop:4}}>Избери един или повече проблема</div>
                   }
+                  <div style={{marginTop:8}}>
+                    <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:4}}>✏️ Или въведи ръчно (добавя към избраните):</label>
+                    <div style={{display:"flex",gap:6}}>
+                      <input
+                        placeholder="Опиши проблема ръчно..."
+                        style={{flex:1,fontSize:12}}
+                        onKeyDown={e=>{
+                          if(e.key==="Enter"&&e.target.value.trim()){
+                            const cur=(form.problem||"").split(", ").filter(Boolean);
+                            set("problem",[...cur,e.target.value.trim()].join(", "));
+                            e.target.value="";
+                          }
+                        }}
+                      />
+                      <button type="button" onClick={e=>{
+                        const inp=e.currentTarget.previousSibling;
+                        if(inp.value.trim()){
+                          const cur=(form.problem||"").split(", ").filter(Boolean);
+                          set("problem",[...cur,inp.value.trim()].join(", "));
+                          inp.value="";
+                        }
+                      }} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontSize:12}}>+ Добави</button>
+                    </div>
+                  </div>
                 </Field>
                 <Field label="Техник">
                   <select value={form.technician||""} onChange={e=>{set("technician",e.target.value);const t=technicians.find(x=>x.name===e.target.value);set("technician_id",t?.id||null);}}>

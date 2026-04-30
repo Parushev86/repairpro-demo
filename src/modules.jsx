@@ -502,7 +502,25 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
 
         {/* LEFT: inventory picker */}
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:.4,marginBottom:8}}>Избери части от склада</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:.4}}>{manualMode?"Ръчно въвеждане":"Избери от склада"}</div>
+            <button onClick={()=>{setManualMode(p=>!p);sv("inventory_id",null);}} style={{fontSize:11,background:"#334155",color:"#94a3b8",border:"none",borderRadius:6,padding:"3px 10px",cursor:"pointer"}}>
+              {manualMode?"📦 От склада":"✏️ Ръчно"}
+            </button>
+          </div>
+          {manualMode ? (
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <MField label="Наименование на частта *">
+                <input value={f.part_name} onChange={e=>sv("part_name",e.target.value)} placeholder="Въведи ръчно..."/>
+              </MField>
+              <MField label="Категория">
+                <select value={f.category||""} onChange={e=>sv("category",e.target.value)}>
+                  <option value="">— Избери —</option>
+                  {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                </select>
+              </MField>
+            </div>
+          ) : (
           <input placeholder="🔍  Търси по наименование, категория..." value={invSearch} onChange={e=>setInvSearch(e.target.value)} style={{marginBottom:8}}/>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
             {cats.map(c=>(
@@ -533,8 +551,9 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
             {filteredInv.length===0&&<p style={{color:"#475569",fontSize:12,padding:"8px 0"}}>Няма намерени артикули</p>}
           </div>
 
+          )}
           {/* Cart */}
-          {items.length>0&&(
+          {!manualMode && items.length>0&&(
             <div style={{marginTop:12,background:"#0f172a",borderRadius:10,padding:10}}>
               <div style={{fontSize:11,color:"#64748b",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Избрани части</div>
               {/* Header */}
