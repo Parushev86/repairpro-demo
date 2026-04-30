@@ -602,12 +602,12 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
       {/* Bottom stats + actions */}
       <div style={{padding:"12px 14px", borderTop:"1px solid #1e293b"}}>
         <div style={{background:"#0f172a", borderRadius:8, padding:"10px 12px", marginBottom:10, fontSize:11}}>
-          <div style={{display:"flex", justifyContent:"space-between", marginBottom:4}}>
+          <div style={{display:"flex", justifyContent:"space-between", marginBottom:isAdmin?4:0}}>
             <span style={{color:"#64748b"}}>Активни</span><span style={{color:"#f59e0b", fontWeight:700}}>{activeOrders.length}</span>
           </div>
-          <div style={{display:"flex", justifyContent:"space-between"}}>
+          {isAdmin && <div style={{display:"flex", justifyContent:"space-between"}}>
             <span style={{color:"#64748b"}}>Общ оборот</span><span style={{color:"#10b981", fontWeight:700, fontSize:12}}>{fmtMoney(totalRev)}</span>
-          </div>
+          </div>}
         </div>
         <div style={{display:"flex", gap:6}}>
           <button onClick={onRefresh} title="Обнови данните" style={{flex:1, background:"#1e293b", color:"#64748b", border:"none", borderRadius:7, padding:"7px", fontSize:12, cursor:"pointer"}}>🔄 Обнови</button>
