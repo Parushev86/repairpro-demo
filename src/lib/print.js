@@ -66,7 +66,8 @@ ${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:
 <div class="footer">RepairPro — Сервизна система | Протокол генериран на ${new Date().toLocaleString("bg-BG")}</div>
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
-  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли JPEG</button>
+  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
+  <button onclick="downloadWord()" style="background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Word</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -84,6 +85,30 @@ function downloadJPEG() {
     link.href = canvas.toDataURL('image/jpeg', 0.95);
     link.click();
   });
+}
+function downloadWord() {
+  // Get all table rows data
+  const rows = document.querySelectorAll('table tr');
+  let tableHTML = '<table border="1" style="border-collapse:collapse;width:100%">';
+  rows.forEach(row => {
+    tableHTML += '<tr>';
+    row.querySelectorAll('th,td').forEach(cell => {
+      const tag = cell.tagName.toLowerCase();
+      tableHTML += '<' + tag + ' style="padding:6px;border:1px solid #ccc">' + cell.innerHTML + '</' + tag + '>';
+    });
+    tableHTML += '</tr>';
+  });
+  tableHTML += '</table>';
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' +
+    '<h2 style="color:#1a56db">🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ</h2>' +
+    tableHTML + '</body></html>';
+
+  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'protokol_' + Date.now() + '.doc';
+  link.click();
 }
 </script>
 </body></html>`;
@@ -125,7 +150,8 @@ export async function printLabel(order) {
 </div>
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
-  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли JPEG</button>
+  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
+  <button onclick="downloadWord()" style="background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Word</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -143,6 +169,30 @@ function downloadJPEG() {
     link.href = canvas.toDataURL('image/jpeg', 0.95);
     link.click();
   });
+}
+function downloadWord() {
+  // Get all table rows data
+  const rows = document.querySelectorAll('table tr');
+  let tableHTML = '<table border="1" style="border-collapse:collapse;width:100%">';
+  rows.forEach(row => {
+    tableHTML += '<tr>';
+    row.querySelectorAll('th,td').forEach(cell => {
+      const tag = cell.tagName.toLowerCase();
+      tableHTML += '<' + tag + ' style="padding:6px;border:1px solid #ccc">' + cell.innerHTML + '</' + tag + '>';
+    });
+    tableHTML += '</tr>';
+  });
+  tableHTML += '</table>';
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' +
+    '<h2 style="color:#1a56db">🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ</h2>' +
+    tableHTML + '</body></html>';
+
+  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'protokol_' + Date.now() + '.doc';
+  link.click();
 }
 </script>
 </body></html>`;
