@@ -7,7 +7,7 @@ const fmtDate= (d) => d ? new Date(d).toLocaleDateString("bg-BG") : "—";
 const fmtM   = (n) => "€ " + Number(n||0).toFixed(2);
 
 const PAYMENT_METHODS  = ["В брой","С карта","Банка","Еконт","Спиди","Не е платена"];
-const EXPENSE_CATS     = ["Части","Услуга","Сметки","Наем","Заплати","Теглене от каса","Друго"];
+const EXPENSE_CATS     = ["Части","Услуга","Сметки","Наем","Заплати","Изкупуване на телефон","Теглене от каса","Друго"];
 const BUYBACK_STATUSES = ["Чака потвърждение","Приет","Изкупен","Отказан"];
 const DELIVERY_METHODS = ["На място","Еконт","Спиди"];
 const SO_STATUSES      = ["Чака","Поръчана","Пристигнала","Отказана"];
