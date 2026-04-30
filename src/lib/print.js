@@ -89,30 +89,33 @@ function downloadJPEG() {
 function downloadTXT() {
   const rows = document.querySelectorAll('table tr');
   let text = 'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ\n';
-  text += '='.repeat(40) + '\n\n';
+  text += '========================================\n\n';
   rows.forEach(row => {
     const cells = row.querySelectorAll('th,td');
     if(cells.length === 4) {
-      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\t\t';
-      text += cells[2].innerText.trim() + ': ' + cells[3].innerText.trim() + '\n';
+      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '   ';
+      text += (cells[2].innerText||'').trim() + ': ' + (cells[3].innerText||'').trim() + '\n';
     } else if(cells.length === 2) {
-      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\n';
+      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '\n';
     }
   });
-  text += '\n' + '='.repeat(40) + '\n';
+  text += '\n========================================\n';
   text += 'Генериран: ' + new Date().toLocaleString('bg-BG') + '\n';
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  // Use data URI instead of blob URL
+  const encoded = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'protokol_' + Date.now() + '.txt';
+  link.setAttribute('href', encoded);
+  link.setAttribute('download', 'protokol.txt');
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
 }
 </script>
 </body></html>`;
 
-  const w = window.open("", "_blank", "width=800,height=700");
-  w.document.write(html);
-  w.document.close();
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "width=800,height=700");
 }
 
 export async function printLabel(order) {
@@ -170,27 +173,30 @@ function downloadJPEG() {
 function downloadTXT() {
   const rows = document.querySelectorAll('table tr');
   let text = 'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ\n';
-  text += '='.repeat(40) + '\n\n';
+  text += '========================================\n\n';
   rows.forEach(row => {
     const cells = row.querySelectorAll('th,td');
     if(cells.length === 4) {
-      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\t\t';
-      text += cells[2].innerText.trim() + ': ' + cells[3].innerText.trim() + '\n';
+      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '   ';
+      text += (cells[2].innerText||'').trim() + ': ' + (cells[3].innerText||'').trim() + '\n';
     } else if(cells.length === 2) {
-      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\n';
+      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '\n';
     }
   });
-  text += '\n' + '='.repeat(40) + '\n';
+  text += '\n========================================\n';
   text += 'Генериран: ' + new Date().toLocaleString('bg-BG') + '\n';
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  // Use data URI instead of blob URL
+  const encoded = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'protokol_' + Date.now() + '.txt';
+  link.setAttribute('href', encoded);
+  link.setAttribute('download', 'protokol.txt');
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
 }
 </script>
 </body></html>`;
-  const w = window.open("", "_blank", "width=450,height=350");
-  w.document.write(html);
-  w.document.close();
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "width=450,height=350");
 }
