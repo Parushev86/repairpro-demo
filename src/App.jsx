@@ -382,6 +382,11 @@ export default function App() {
   // ── Current user & role ──────────────────────────────────────────────────────
   const currentUser = (() => { try { return JSON.parse(sessionStorage.getItem("rp_user")||"{}"); } catch { return {}; }})();
   const isAdmin = currentUser.role === "Администратор" || currentUser.role === "admin";
+  const ADMIN_TABS = ["dashboard","reports","technicians","daily","users","trash"];
+  // Redirect technik away from admin tabs
+  useEffect(() => {
+    if (!isAdmin && ADMIN_TABS.includes(tab)) setTab("orders");
+  }, [isAdmin, tab]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const lowStock     = inventory.filter(i => Number(i.quantity) <= Number(i.min_qty));
@@ -433,12 +438,13 @@ export default function App() {
         </div>
         {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:98}}/>}
         <div style={{flex:1, overflow:"auto", padding:24}}>
-        {tab==="dashboard"    && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
+        {tab==="dashboard"    && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
+        {tab==="dashboard"    && !isAdmin && <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🔒</div><div style={{fontSize:18,color:"#64748b"}}>Нямаш достъп до тази страница</div></div>}
         {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
         {tab==="inventory"    && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={()=>setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={()=>exportInventory(inventory)} onImport={()=>setImportModal("inventory")}/>}
-        {tab==="reports"      && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} onExport={(t)=>{ if(t==="tech") exportTechReport(technicians,orders); else exportFullReport(orders,inventory,technicians); }}/>}
-        {tab==="technicians"  && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={()=>exportTechReport(technicians,orders)}/>}
-          {tab==="daily"        && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg}/>}
+        {tab==="reports"      && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} onExport={(t)=>{ if(t==="tech") exportTechReport(technicians,orders); else exportFullReport(orders,inventory,technicians); }}/>}
+        {tab==="technicians"  && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={()=>exportTechReport(technicians,orders)}/>}
+          {tab==="daily"        && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg}/>}
           {tab==="calculator"   && <Calculator/>}
           {tab==="pricing"      && <PricingTab/>}
           {tab==="expenses"     && <ExpensesTab
