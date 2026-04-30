@@ -67,7 +67,7 @@ ${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-  <button onclick="downloadWord()" style="background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Word</button>
+  <button onclick="downloadTXT()" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -86,28 +86,25 @@ function downloadJPEG() {
     link.click();
   });
 }
-function downloadWord() {
-  // Get all table rows data
+function downloadTXT() {
   const rows = document.querySelectorAll('table tr');
-  let tableHTML = '<table border="1" style="border-collapse:collapse;width:100%">';
+  let text = 'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ\n';
+  text += '='.repeat(40) + '\n\n';
   rows.forEach(row => {
-    tableHTML += '<tr>';
-    row.querySelectorAll('th,td').forEach(cell => {
-      const tag = cell.tagName.toLowerCase();
-      tableHTML += '<' + tag + ' style="padding:6px;border:1px solid #ccc">' + cell.innerHTML + '</' + tag + '>';
-    });
-    tableHTML += '</tr>';
+    const cells = row.querySelectorAll('th,td');
+    if(cells.length === 4) {
+      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\t\t';
+      text += cells[2].innerText.trim() + ': ' + cells[3].innerText.trim() + '\n';
+    } else if(cells.length === 2) {
+      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\n';
+    }
   });
-  tableHTML += '</table>';
-
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' +
-    '<h2 style="color:#1a56db">🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ</h2>' +
-    tableHTML + '</body></html>';
-
-  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
+  text += '\n' + '='.repeat(40) + '\n';
+  text += 'Генериран: ' + new Date().toLocaleString('bg-BG') + '\n';
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'protokol_' + Date.now() + '.doc';
+  link.download = 'protokol_' + Date.now() + '.txt';
   link.click();
 }
 </script>
@@ -151,7 +148,7 @@ export async function printLabel(order) {
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-  <button onclick="downloadWord()" style="background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Word</button>
+  <button onclick="downloadTXT()" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -170,28 +167,25 @@ function downloadJPEG() {
     link.click();
   });
 }
-function downloadWord() {
-  // Get all table rows data
+function downloadTXT() {
   const rows = document.querySelectorAll('table tr');
-  let tableHTML = '<table border="1" style="border-collapse:collapse;width:100%">';
+  let text = 'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ\n';
+  text += '='.repeat(40) + '\n\n';
   rows.forEach(row => {
-    tableHTML += '<tr>';
-    row.querySelectorAll('th,td').forEach(cell => {
-      const tag = cell.tagName.toLowerCase();
-      tableHTML += '<' + tag + ' style="padding:6px;border:1px solid #ccc">' + cell.innerHTML + '</' + tag + '>';
-    });
-    tableHTML += '</tr>';
+    const cells = row.querySelectorAll('th,td');
+    if(cells.length === 4) {
+      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\t\t';
+      text += cells[2].innerText.trim() + ': ' + cells[3].innerText.trim() + '\n';
+    } else if(cells.length === 2) {
+      text += cells[0].innerText.trim() + ': ' + cells[1].innerText.trim() + '\n';
+    }
   });
-  tableHTML += '</table>';
-
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' +
-    '<h2 style="color:#1a56db">🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ</h2>' +
-    tableHTML + '</body></html>';
-
-  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
+  text += '\n' + '='.repeat(40) + '\n';
+  text += 'Генериран: ' + new Date().toLocaleString('bg-BG') + '\n';
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'protokol_' + Date.now() + '.doc';
+  link.download = 'protokol_' + Date.now() + '.txt';
   link.click();
 }
 </script>
