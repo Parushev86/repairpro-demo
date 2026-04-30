@@ -447,8 +447,9 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
   const emptyForm = {date:today(),part_name:"",inventory_id:null,category:"",quantity:1,cost_price:"",sale_price:"",payment_method:"В брой",payment_status:"Платена",delivery_method:"На място",delivery_type:"",buyer_name:"",buyer_phone:"",buyer_city:"",buyer_address:"",tracking_number:"",notes:""};
   const [f,sf]  = useState({...emptyForm,...sale});
   const [items, setItems] = useState(sale?.items || []);
-  const [invSearch, setInvSearch] = useState("");
-  const [invCat,    setInvCat]    = useState("Всички");
+  const [invSearch,  setInvSearch]  = useState("");
+  const [invCat,     setInvCat]     = useState("Всички");
+  const [manualMode, setManualMode] = useState(false);
   const sv=(k,v)=>sf(x=>({...x,[k]:v}));
 
   const avail = inventory.filter(i=>Number(i.quantity)>0);
