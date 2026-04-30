@@ -517,7 +517,6 @@ export default function App() {
       {invModal   !== null && <InvModal   item={invModal} allInventory={inventory}                          onSave={saveInv}   onClose={()=>setInvModal(null)}   syncing={syncing}/>}
       {importModal          && <ImportModal type={importModal} onImport={handleImport} onClose={()=>setImportModal(false)} syncing={syncing}/>}
       {settingsOpen         && <SettingsModal settings={settings} onSave={saveSettings} onClose={()=>setSettingsOpen(false)} connected={connected}/>}
-        </div>
       </main>
   );
 }
