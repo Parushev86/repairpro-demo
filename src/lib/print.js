@@ -193,3 +193,97 @@ function downloadJPEG() {
   const url = URL.createObjectURL(blob);
   window.open(url, "_blank", "width=450,height=350");
 }
+
+export function printWarranty(order) {
+  const parts = (order.parts||[]).map(p=>p.name).join(', ') || 'Ремонт';
+  const issueDate = order.date_out || new Date().toISOString().split('T')[0];
+  const warrantyDays = order.warranty_days || 30;
+  const expiryDate = new Date(new Date(issueDate).getTime() + warrantyDays*24*60*60*1000).toLocaleDateString('bg-BG');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Гаранционна карта</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:0;margin:0;background:#fff;}
+    .card{border:2px solid #1a56db;border-radius:12px;padding:28px 32px;max-width:560px;margin:20px auto;position:relative;}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a56db;padding-bottom:12px;margin-bottom:16px;}
+    .logo{font-size:22px;font-weight:900;color:#1a56db;}
+    .logo span{font-size:13px;display:block;color:#64748b;font-weight:400;}
+    .warranty-badge{background:#1a56db;color:#fff;padding:8px 18px;border-radius:8px;font-weight:700;font-size:15px;}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+    .info-item label{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px;}
+    .info-item span{font-size:13px;font-weight:600;color:#111;}
+    .device{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:16px;text-align:center;}
+    .device .name{font-size:16px;font-weight:800;color:#0369a1;}
+    .device .problem{font-size:12px;color:#64748b;margin-top:4px;}
+    .warranty-period{background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:14px;text-align:center;margin-bottom:16px;}
+    .warranty-period .days{font-size:32px;font-weight:900;color:#16a34a;}
+    .warranty-period .label{font-size:12px;color:#64748b;}
+    .warranty-period .dates{font-size:13px;color:#16a34a;margin-top:4px;font-weight:600;}
+    .conditions{font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;padding-top:12px;line-height:1.6;}
+    .sig-row{display:flex;justify-content:space-between;margin-top:20px;gap:30px;}
+    .sig-box{flex:1;text-align:center;}
+    .sig-box hr{border:1px solid #94a3b8;margin-bottom:4px;}
+    .sig-box p{font-size:11px;color:#64748b;margin:2px 0;}
+    .watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:80px;font-weight:900;color:rgba(26,86,219,.04);pointer-events:none;white-space:nowrap;}
+    .no-print{display:flex;gap:8px;justify-content:center;margin:16px 0;}
+    @media print{.no-print{display:none!important} body{padding:0} .card{margin:0;border-radius:0;border:2px solid #1a56db;}}
+  </style></head><body>
+  <div class="card">
+    <div class="watermark">ГАРАНЦИЯ</div>
+    <div class="header">
+      <div class="logo">🔧 RepairPro<span>Сервизна CRM система</span></div>
+      <div class="warranty-badge">✅ ГАРАНЦИОННА КАРТА</div>
+    </div>
+    <div class="device">
+      <div class="name">${[order.device_type,order.brand,order.model].filter(Boolean).join(' ')}</div>
+      <div class="problem">Извършен ремонт: ${order.problem||'—'}</div>
+      ${order.serial_number?`<div style="font-size:11px;color:#94a3b8;margin-top:4px">Сериен №: ${order.serial_number}</div>`:''}
+    </div>
+    <div class="warranty-period">
+      <div class="days">${warrantyDays}</div>
+      <div class="label">дни гаранция</div>
+      <div class="dates">от ${new Date(issueDate).toLocaleDateString('bg-BG')} до ${expiryDate}</div>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><label>Клиент</label><span>${order.client_name||'—'}</span></div>
+      <div class="info-item"><label>Телефон</label><span>${order.phone||'—'}</span></div>
+      <div class="info-item"><label>Поръчка №</label><span>${order.id}</span></div>
+      <div class="info-item"><label>Техник</label><span>${order.technician||'—'}</span></div>
+      <div class="info-item"><label>Дата на ремонт</label><span>${new Date(issueDate).toLocaleDateString('bg-BG')}</span></div>
+      <div class="info-item"><label>Валидна до</label><span style="color:#16a34a;font-weight:800">${expiryDate}</span></div>
+    </div>
+    <div class="conditions">
+      <b>Условия на гаранцията:</b><br>
+      • Гаранцията е валидна само при наличие на тази карта и касова бележка.<br>
+      • Гаранцията не важи при механични повреди, вода/влага и самостоятелен ремонт.<br>
+      • При повреда в гаранционния срок ремонтът е безплатен за гарантирания компонент.<br>
+      • Гаранцията се отнася само за извършения ремонт, не за цялото устройство.
+    </div>
+    <div class="sig-row">
+      <div class="sig-box"><hr><p>Сервизен техник: <b>${order.technician||'........................'}</b></p><p>Подпис: ........................</p></div>
+      <div class="sig-box"><hr><p>Клиент: <b>${order.client_name||'........................'}</b></p><p>Подпис: ........................</p></div>
+    </div>
+    <div class="no-print">
+      <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
+      <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+  function downloadJPEG() {
+    const btn = document.querySelector('.no-print');
+    btn.style.display = 'none';
+    html2canvas(document.querySelector('.card'), {scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas => {
+      btn.style.display = 'flex';
+      const link = document.createElement('a');
+      link.download = 'garantsia_${order.id}.jpg';
+      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    });
+  }
+  </script>
+  </body></html>`;
+
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "width=640,height=800");
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { getSupabase, resetSupabase, fetchOrders, fetchInventory, fetchTechnicians, upsertOrder, deleteOrder as dbDeleteOrder, upsertInventory, deleteInventory as dbDeleteInv, upsertTechnician, deleteTechnician as dbDeleteTech, subscribeOrders, subscribeInventory } from "./lib/supabase.js";
 import { genId, today, STATUSES, STATUS_COLOR, STATUS_BG, DEVICE_TYPES, PROBLEMS, PROBLEMS_BY_DEVICE, CATEGORIES, MONTHS_BG, fmtDate, fmtMoney, fmtDatetime } from "./lib/constants.js";
-import { printProtocol, printLabel, downloadProtocolTXT } from "./lib/print.js";
+import { printProtocol, printLabel, downloadProtocolTXT, printWarranty } from "./lib/print.js";
 import { sendReadyEmail } from "./lib/email.js";
 import { exportOrders, exportInventory, exportTechReport, exportFullReport, exportDailyReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash } from "./lib/db2.js";
@@ -440,7 +440,7 @@ export default function App() {
         <div style={{flex:1, overflow:"auto", padding:24}}>
         {tab==="dashboard"    && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
         {tab==="dashboard"    && !isAdmin && <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🔒</div><div style={{fontSize:18,color:"#64748b"}}>Нямаш достъп до тази страница</div></div>}
-        {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
+        {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
         {tab==="inventory"    && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={()=>setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={()=>exportInventory(inventory)} onImport={()=>setImportModal("inventory")}/>}
         {tab==="reports"      && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} onExport={(t)=>{ if(t==="tech") exportTechReport(technicians,orders); else exportFullReport(orders,inventory,technicians); }}/>}
         {tab==="technicians"  && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={()=>exportTechReport(technicians,orders)}/>}
@@ -791,7 +791,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
 }
 
 // ═══════════════════════════════ ORDERS TAB ════════════════════════════════════
-function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStatus,filterDevice,setFilterDevice,onNew,onEdit,onDelete,onPrint,onLabel,onDownloadTXT,onExport,onImport,inventory,setInventory,upsertOrder}) {
+function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStatus,filterDevice,setFilterDevice,onNew,onEdit,onDelete,onPrint,onLabel,onDownloadTXT,onWarranty,onExport,onImport,inventory,setInventory,upsertOrder}) {
   return (
     <div className="animate-fade">
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
