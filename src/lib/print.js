@@ -30,7 +30,7 @@ export async function printProtocol(order) {
   .sig-box p { font-size: 12px; color: #555; margin: 0; }
   .warranty { margin-top: 16px; padding: 10px 14px; background: #fefce8; border: 1px solid #fde047; border-radius: 6px; font-size: 12px; color: #713f12; }
   .footer { margin-top: 20px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
-  @media print { body { padding: 16px; } }
+  @media print { body { padding: 16px; } .no-print { display: none !important; } }
 </style></head><body>
 <div class="header">
   <div>
@@ -64,7 +64,20 @@ ${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:
   <div class="sig-box"><hr><p>Приел: <strong>${order.technician || "Техник"}</strong></p></div>
 </div>
 <div class="footer">RepairPro — Сервизна система | Протокол генериран на ${new Date().toLocaleString("bg-BG")}</div>
-<script>window.onload = () => { window.print(); }</script>
+<div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
+  <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
+  <button onclick="downloadPDF()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли PDF</button>
+</div>
+<script>
+function downloadPDF() {
+  const style = document.createElement('style');
+  style.textContent = '.no-print{display:none!important}';
+  document.head.appendChild(style);
+  window.print();
+  setTimeout(()=>document.head.removeChild(style), 1000);
+}
+window.onload = () => {};
+</script>
 </body></html>`;
 
   const w = window.open("", "_blank", "width=800,height=700");
@@ -83,7 +96,7 @@ export async function printLabel(order) {
   .info { font-size: 11px; color: #333; margin: 2px 0; }
   .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
   .barcode { font-family: monospace; font-size: 22px; letter-spacing: 3px; color: #000; }
-  @media print { @page { margin: 0; size: 80mm 50mm; } }
+  @media print { @page { margin: 0; size: 80mm 50mm; } .no-print { display: none !important; } }
 </style></head><body>
 <div class="label">
   <div class="row">
@@ -102,7 +115,20 @@ export async function printLabel(order) {
     <div style="font-size:10px;color:#666">${order.id}</div>
   </div>
 </div>
-<script>window.onload = () => { window.print(); }</script>
+<div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
+  <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
+  <button onclick="downloadPDF()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Изтегли PDF</button>
+</div>
+<script>
+function downloadPDF() {
+  const style = document.createElement('style');
+  style.textContent = '.no-print{display:none!important}';
+  document.head.appendChild(style);
+  window.print();
+  setTimeout(()=>document.head.removeChild(style), 1000);
+}
+window.onload = () => {};
+</script>
 </body></html>`;
   const w = window.open("", "_blank", "width=450,height=350");
   w.document.write(html);
