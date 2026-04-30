@@ -510,14 +510,14 @@ export default function App() {
             onSave={async r=>{const s=await upsertPhoneSale(r);if(!r.id)setPhoneSales(p=>[s,...p]);else setPhoneSales(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Продажбата е записана");}}
             onDelete={async id=>{await deletePhoneSale(id);setPhoneSales(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
           />}
-      </main>
+        </div>
 
       {/* ── Modals ── */}
       {orderModal !== null && <OrderModal order={orderModal==="new"?null:orderModal} technicians={technicians} inventory={inventory} setInventory={setInventory} onSave={saveOrder} onClose={()=>setOrderModal(null)} syncing={syncing}/>}
       {invModal   !== null && <InvModal   item={invModal} allInventory={inventory}                          onSave={saveInv}   onClose={()=>setInvModal(null)}   syncing={syncing}/>}
       {importModal          && <ImportModal type={importModal} onImport={handleImport} onClose={()=>setImportModal(false)} syncing={syncing}/>}
       {settingsOpen         && <SettingsModal settings={settings} onSave={saveSettings} onClose={()=>setSettingsOpen(false)} connected={connected}/>}
-    </div>
+      </main>
   );
 }
 
