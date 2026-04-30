@@ -247,13 +247,12 @@ export function printWarranty(order) {
       <div class="info-item"><label>Клиент</label><span>${order.client_name||'—'}</span></div>
       <div class="info-item"><label>Телефон</label><span>${order.phone||'—'}</span></div>
       <div class="info-item"><label>Поръчка №</label><span>${order.id}</span></div>
-      <div class="info-item"><label>Техник</label><span>${order.technician||'—'}</span></div>
       <div class="info-item"><label>Дата на ремонт</label><span>${new Date(issueDate).toLocaleDateString('bg-BG')}</span></div>
       <div class="info-item"><label>Валидна до</label><span style="color:#16a34a;font-weight:800">${expiryDate}</span></div>
     </div>
     <div class="conditions">
       <b>Условия на гаранцията:</b><br>
-      • Гаранцията е валидна само при наличие на тази карта и касова бележка.<br>
+      
       • Гаранцията не важи при механични повреди, вода/влага и самостоятелен ремонт.<br>
       • При повреда в гаранционния срок ремонтът е безплатен за гарантирания компонент.<br>
       • Гаранцията се отнася само за извършения ремонт, не за цялото устройство.
