@@ -858,10 +858,12 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
                 </td>
                 <td style={{padding:"9px 13px",fontSize:11,color:"var(--text3)",whiteSpace:"nowrap"}}>{fmtDate(o.date_in)}</td>
                 <td style={{padding:"9px 13px"}}>
-                  <div style={{display:"flex",gap:3}}>
+                  <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
                     <Btn color="#3b82f6" onClick={()=>onEdit(o)} title="Редактирай">✏️</Btn>
                     <Btn color="#8b5cf6" onClick={()=>onPrint(o)} title="PDF Протокол">📄</Btn>
                     <Btn color="#0ea5e9" onClick={()=>onLabel(o)} title="Стикер/QR">🏷️</Btn>
+                    <Btn color="#6ee7b7" onClick={()=>onDownloadTXT(o)} title="Изтегли TXT">⬇️</Btn>
+                    <Btn color="#fbbf24" onClick={()=>onWarranty(o)} title="Гаранционна карта">🛡️</Btn>
                     <Btn color="#ef4444" onClick={()=>{if(confirm(`Изтрий поръчка ${o.id}?`))onDelete(o.id);}} title="Изтрий">🗑️</Btn>
                   </div>
                 </td>
