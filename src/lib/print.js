@@ -5,6 +5,45 @@ export async function generateQR(text) {
   return QRCode.toDataURL(text, { width: 120, margin: 1, color: { dark: "#000", light: "#fff" } });
 }
 
+export function downloadProtocolTXT(order) {
+  const parts = (order.parts||[]).map(p=>p.name+'('+p.price+' €)').join(', ') || '—';
+  const lines = [
+    'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ',
+    '='.repeat(44),
+    '',
+    'Номер: ' + order.id,
+    'Дата приемане: ' + (order.date_in||'—'),
+    'Дата издаване: ' + (order.date_out||'—'),
+    'Клиент: ' + (order.client_name||'—'),
+    'Телефон: ' + (order.phone||'—'),
+    'Имейл: ' + (order.email||'—'),
+    'Техник: ' + (order.technician||'—'),
+    'Устройство: ' + [order.device_type,order.brand,order.model].filter(Boolean).join(' '),
+    'Сериен №: ' + (order.serial_number||'—'),
+    'Парола/PIN: ' + (order.device_password||'—'),
+    'Проблем: ' + (order.problem||'—'),
+    'Статус: ' + (order.status||'—'),
+    'Вложени части: ' + parts,
+    'Цена труд: € ' + (order.labor_price||'0.00'),
+    'Крайна цена: € ' + (order.total_price||order.price||'0.00'),
+    'Аванс: € ' + (order.deposit||'0.00'),
+    'Плащане: ' + (order.payment_method||'—'),
+    '',
+    '='.repeat(44),
+    'Генериран: ' + new Date().toLocaleString('bg-BG'),
+  ];
+  const text = lines.join('\n');
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'protokol_' + order.id + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
 export async function printProtocol(order) {
   const qr = await generateQR(order.id);
   const partsHtml = (order.parts || []).length
@@ -67,7 +106,7 @@ ${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-  <button onclick="downloadTXT()" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
+  <button onclick="window.opener && window.opener.__downloadTXT ? window.opener.__downloadTXT() : alert('Затвори и изтегли от основния прозорец')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -86,30 +125,7 @@ function downloadJPEG() {
     link.click();
   });
 }
-function downloadTXT() {
-  const rows = document.querySelectorAll('table tr');
-  let text = 'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ\n';
-  text += '========================================\n\n';
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('th,td');
-    if(cells.length === 4) {
-      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '   ';
-      text += (cells[2].innerText||'').trim() + ': ' + (cells[3].innerText||'').trim() + '\n';
-    } else if(cells.length === 2) {
-      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '\n';
-    }
-  });
-  text += '\n========================================\n';
-  text += 'Генериран: ' + new Date().toLocaleString('bg-BG') + '\n';
-  // Use data URI instead of blob URL
-  const encoded = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-  const link = document.createElement('a');
-  link.setAttribute('href', encoded);
-  link.setAttribute('download', 'protokol.txt');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+// downloadTXT handled via data URL in button
 </script>
 </body></html>`;
 
@@ -151,7 +167,7 @@ export async function printLabel(order) {
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-  <button onclick="downloadTXT()" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
+  <button onclick="window.opener && window.opener.__downloadTXT ? window.opener.__downloadTXT() : alert('Затвори и изтегли от основния прозорец')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ TXT</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -170,30 +186,7 @@ function downloadJPEG() {
     link.click();
   });
 }
-function downloadTXT() {
-  const rows = document.querySelectorAll('table tr');
-  let text = 'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ\n';
-  text += '========================================\n\n';
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('th,td');
-    if(cells.length === 4) {
-      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '   ';
-      text += (cells[2].innerText||'').trim() + ': ' + (cells[3].innerText||'').trim() + '\n';
-    } else if(cells.length === 2) {
-      text += (cells[0].innerText||'').trim() + ': ' + (cells[1].innerText||'').trim() + '\n';
-    }
-  });
-  text += '\n========================================\n';
-  text += 'Генериран: ' + new Date().toLocaleString('bg-BG') + '\n';
-  // Use data URI instead of blob URL
-  const encoded = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-  const link = document.createElement('a');
-  link.setAttribute('href', encoded);
-  link.setAttribute('download', 'protokol.txt');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+// downloadTXT handled via data URL in button
 </script>
 </body></html>`;
   const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
