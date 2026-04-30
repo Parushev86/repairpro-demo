@@ -1288,7 +1288,7 @@ function InvModal({item,onSave,onClose,syncing,allInventory=[]}) {
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {["Платена от каса","С карта","Банка","Еконт","Спиди"].map(m=>(
                     <button key={m} type="button" onClick={()=>set("payment_method",m)} style={{
-                      padding:"6px 12px",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer",border:"none",
+                      padding:"6px 12px",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer",
                       background:form.payment_method===m?"#10b981":"#0f172a",
                       color:form.payment_method===m?"#fff":"#64748b",
                       border:form.payment_method===m?"none":"1px solid #334155",

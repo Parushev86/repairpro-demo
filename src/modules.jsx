@@ -520,7 +520,7 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
                 </select>
               </MField>
             </div>
-          ) : (
+          ) : (<>
           <input placeholder="🔍  Търси по наименование, категория..." value={invSearch} onChange={e=>setInvSearch(e.target.value)} style={{marginBottom:8}}/>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
             {cats.map(c=>(
@@ -552,6 +552,7 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
           </div>
 
           )}
+          </>)}
           {/* Cart */}
           {!manualMode && items.length>0&&(
             <div style={{marginTop:12,background:"#0f172a",borderRadius:10,padding:10}}>
