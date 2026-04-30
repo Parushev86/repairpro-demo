@@ -518,6 +518,7 @@ export default function App() {
       {importModal          && <ImportModal type={importModal} onImport={handleImport} onClose={()=>setImportModal(false)} syncing={syncing}/>}
       {settingsOpen         && <SettingsModal settings={settings} onSave={saveSettings} onClose={()=>setSettingsOpen(false)} connected={connected}/>}
       </main>
+    </div>
   );
 }
 
