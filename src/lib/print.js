@@ -76,7 +76,7 @@ function downloadPDF() {
   window.print();
   setTimeout(()=>document.head.removeChild(style), 1000);
 }
-window.onload = () => {};
+// No auto-print
 </script>
 </body></html>`;
 
@@ -127,7 +127,7 @@ function downloadPDF() {
   window.print();
   setTimeout(()=>document.head.removeChild(style), 1000);
 }
-window.onload = () => {};
+// No auto-print
 </script>
 </body></html>`;
   const w = window.open("", "_blank", "width=450,height=350");
