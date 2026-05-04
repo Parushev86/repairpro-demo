@@ -164,7 +164,9 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
                 <td style={{padding:"9px 14px",fontWeight:800,color:"#10b981"}}>{fmtM(Number(r.sale_price)*Number(r.quantity||1))}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={r.payment_method}/></td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#94a3b8"}}>{r.buyer_name||"—"}</td>
-                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
+                  <MBtn color="#fbbf24" title="Гаранционна карта" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба",technician:"",warranty_days:r.warranty_days||30,date_out:r.date})}>🛡️</MBtn>
+                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
@@ -629,7 +631,7 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
 }
 
 // ══ PHONE SALES ════════════════════════════════════════════════════════════════
-export function PhoneSalesTab({sales,onSave,onDelete}) {
+export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
   const [modal,setModal]=useState(null);
   const [search,setSearch]=useState("");
   const [date,setDate]=useState("");
@@ -664,7 +666,9 @@ export function PhoneSalesTab({sales,onSave,onDelete}) {
                 <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtM(r.cost_price)}</td>
                 <td style={{padding:"9px 14px",fontWeight:700,color:"#10b981"}}>{fmtM(r.sale_price)}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={r.payment_method}/></td>
-                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
+                  <MBtn color="#fbbf24" title="Гаранционна карта" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба",technician:"",warranty_days:r.warranty_days||30,date_out:r.date})}>🛡️</MBtn>
+                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
