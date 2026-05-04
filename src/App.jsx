@@ -450,21 +450,21 @@ export default function App() {
           {tab==="expenses"     && <ExpensesTab
             expenses={expenses} cashRegister={cashReg}
             onSaveExpense={async r=>{const s=await upsertExpense(r);if(!r.id)setExpenses(p=>[s,...p]);else setExpenses(p=>p.map(e=>e.id===s.id?s:e));notify("✅ Разходът е запазен");}}
-            onDeleteExpense={async id=>{await deleteExpense(id);setExpenses(p=>p.filter(e=>e.id!==id));notify("Изтрито","error");}}
+            onDeleteExpense={async id=>{const r=expenses.find(e=>e.id===id);if(r)await moveToTrash("expenses",r);await deleteExpense(id);setExpenses(p=>p.filter(e=>e.id!==id));setTrash(p=>[{table_name:"expenses",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onSaveCash={async r=>{const s=await upsertCashRegister(r);if(!r.id)setCashReg(p=>[s,...p]);else setCashReg(p=>p.map(c=>c.date===s.date?s:c));}}
             notify={notify}
           />}
           {tab==="accsales"     && <AccessorySalesTab
             sales={accSales} inventory={inventory}
             onSave={async (r,orig)=>{const s=await upsertAccessorySale(r);if(!orig?.id)setAccSales(p=>[s,...p]);else setAccSales(p=>p.map(x=>x.id===s.id?s:x));if(!orig?.id&&r.inventory_id){const inv=inventory.find(i=>i.id===r.inventory_id);if(inv){const nq=Number(inv.quantity)-Number(r.quantity||1);if(nq<=0){await dbDeleteInv(inv.id);setInventory(p=>p.filter(i=>i.id!==inv.id));}else{const upd=await upsertInventory({...inv,quantity:nq});setInventory(p=>p.map(i=>i.id===upd.id?upd:i));}}}notify("✅ Продажбата е записана");}}
-            onDelete={async id=>{await deleteAccessorySale(id);setAccSales(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
+            onDelete={async id=>{const r=accSales.find(x=>x.id===id);if(r)await moveToTrash("accessory_sales",r);await deleteAccessorySale(id);setAccSales(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"accessory_sales",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onUpdateInventory={setInventory}
             notify={notify}
           />}
           {tab==="buybacks"     && <BuybacksTab
             buybacks={buybacks} inventory={inventory}
             onSave={async r=>{const s=await upsertBuyback(r);if(!r.id)setBuybacks(p=>[s,...p]);else setBuybacks(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Записът е запазен");}}
-            onDelete={async id=>{await deleteBuyback(id);setBuybacks(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
+            onDelete={async id=>{const r=buybacks.find(x=>x.id===id);if(r)await moveToTrash("buybacks",r);await deleteBuyback(id);setBuybacks(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"buybacks",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onAddToInventory={async b=>{const item={name:`${b.brand} ${b.model}`,category:"Дънни платки",quantity:1,min_qty:0,price:0,cost:Number(b.price||0),supplier:"Изкупуване",notes:`IMEI: ${b.imei||"—"}`};const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);await upsertBuyback({...b,added_to_stock:true,inventory_id:saved.id});setBuybacks(p=>p.map(x=>x.id===b.id?{...x,added_to_stock:true}:x));notify("📦 Заприходен в склада ✓");}}
             notify={notify}
           />}
@@ -517,13 +517,13 @@ export default function App() {
                 notify("✅ Продажбата е записана");
               } catch(e) { notify("❌ Грешка: "+e.message,"error"); }
             }}
-            onDelete={async id=>{await deletePartsSale(id);setPartsSales(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
+            onDelete={async id=>{const r=partsSales.find(x=>x.id===id);if(r)await moveToTrash("parts_sales",r);await deletePartsSale(id);setPartsSales(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"parts_sales",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onUpdateInventory={setInventory}
           />}
           {tab==="stockorders"  && <StockOrdersTab
             orders={stockOrders}
             onSave={async r=>{const s=await upsertStockOrder(r);if(!r.id)setStockOrders(p=>[s,...p]);else setStockOrders(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Поръчката е запазена");}}
-            onDelete={async id=>{await deleteStockOrder(id);setStockOrders(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
+            onDelete={async id=>{const r=stockOrders.find(x=>x.id===id);if(r)await moveToTrash("stock_orders",r);await deleteStockOrder(id);setStockOrders(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"stock_orders",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             notify={notify}
           />}
           {tab==="users"        && <UsersTab/>}
@@ -548,13 +548,13 @@ export default function App() {
           {tab==="debts"        && <SupplierDebtsTab
             debts={supplierDebts}
             onSave={async r=>{const s=await upsertSupplierDebt(r);if(!r.id)setSupplierDebts(p=>[s,...p]);else setSupplierDebts(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Записът е запазен");}}
-            onDelete={async id=>{await deleteSupplierDebt(id);setSupplierDebts(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
+            onDelete={async id=>{const r=supplierDebts.find(x=>x.id===id);if(r)await moveToTrash("supplier_debts",r);await deleteSupplierDebt(id);setSupplierDebts(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"supplier_debts",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             notify={notify}
           />}
           {tab==="phonesales"   && <PhoneSalesTab
             sales={phoneSales} inventory={inventory}
             onSave={async r=>{const s=await upsertPhoneSale(r);if(!r.id)setPhoneSales(p=>[s,...p]);else setPhoneSales(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Продажбата е записана");}}
-            onDelete={async id=>{await deletePhoneSale(id);setPhoneSales(p=>p.filter(x=>x.id!==id));notify("Изтрито","error");}}
+            onDelete={async id=>{const r=phoneSales.find(x=>x.id===id);if(r)await moveToTrash("phone_sales",r);await deletePhoneSale(id);setPhoneSales(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"phone_sales",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
           />}
         </div>
 
@@ -794,12 +794,12 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
 function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStatus,filterDevice,setFilterDevice,onNew,onEdit,onDelete,onPrint,onLabel,onDownloadTXT,onWarranty,onExport,onImport,inventory,setInventory,upsertOrder}) {
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>Сервиз <span style={{fontSize:13,color:"var(--text3)",fontWeight:400}}>({allOrders.length} общо)</span></h1>
-        <div style={{display:"flex",gap:8}}>
-          <Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn>
-          <Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn>
-          <PrimaryBtn onClick={onNew}>+ Нов сервиз</PrimaryBtn>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>Сервиз <span style={{fontSize:12,color:"var(--text3)",fontWeight:400}}>({allOrders.length} общо)</span></h1>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <span className="hide-mobile" style={{display:"contents"}}><Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn></span>
+          <span className="hide-mobile" style={{display:"contents"}}><Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn></span>
+          <PrimaryBtn onClick={onNew} style={{fontSize:12,padding:"7px 12px"}}>+ Нов сервиз</PrimaryBtn>>+ Нов сервиз</PrimaryBtn>
         </div>
       </div>
       <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
