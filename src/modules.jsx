@@ -164,9 +164,7 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
                 <td style={{padding:"9px 14px",fontWeight:800,color:"#10b981"}}>{fmtM(Number(r.sale_price)*Number(r.quantity||1))}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={r.payment_method}/></td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#94a3b8"}}>{r.buyer_name||"—"}</td>
-                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
-                  <MBtn color="#fbbf24" title="Гаранционна карта" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба",technician:"",warranty_days:r.warranty_days||30,date_out:r.date})}>🛡️</MBtn>
-                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
@@ -631,7 +629,7 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
 }
 
 // ══ PHONE SALES ════════════════════════════════════════════════════════════════
-export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
+export function PhoneSalesTab({sales,onSave,onDelete}) {
   const [modal,setModal]=useState(null);
   const [search,setSearch]=useState("");
   const [date,setDate]=useState("");
@@ -666,9 +664,7 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
                 <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtM(r.cost_price)}</td>
                 <td style={{padding:"9px 14px",fontWeight:700,color:"#10b981"}}>{fmtM(r.sale_price)}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={r.payment_method}/></td>
-                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
-                  <MBtn color="#fbbf24" title="Гаранционна карта" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба",technician:"",warranty_days:r.warranty_days||30,date_out:r.date})}>🛡️</MBtn>
-                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
@@ -680,7 +676,7 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
 }
 
 function PhoneSaleModal({sale,onSave,onClose}) {
-  const [f,sf]=useState({date:today(),brand:"",model:"",color:"",imei:"",serial_number:"",storage:"",warranty_days:30,cost_price:"",sale_price:"",payment_method:"В брой",buyer_name:"",buyer_phone:"",notes:"",...sale});
+  const [f,sf]=useState({date:today(),brand:"",model:"",color:"",imei:"",serial_number:"",storage:"",warranty_days:30,warranty_amount:1,warranty_unit:"месеца",cost_price:"",sale_price:"",payment_method:"В брой",buyer_name:"",buyer_phone:"",notes:"",...sale, warranty_amount:sale?.warranty_amount||(sale?.warranty_days===30?1:sale?.warranty_days), warranty_unit:sale?.warranty_unit||"месеца"});
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   return (
     <MModal title={sale?.id?"Редактирай":"Нова продажба телефон"} onClose={onClose} maxWidth={700} footer={<><CancelBtn onClick={onClose}/><MPrimaryBtn onClick={()=>{if(!f.brand||!f.model){alert("Въведи марка и модел!");return;}onSave(f);}}>💾 Запази</MPrimaryBtn></>}>
@@ -693,7 +689,33 @@ function PhoneSaleModal({sale,onSave,onClose}) {
         <MField label="Памет"><input value={f.storage||""} onChange={e=>s("storage",e.target.value)} placeholder="128GB..."/></MField>
         <MField label="IMEI"><input value={f.imei||""} onChange={e=>s("imei",e.target.value)} placeholder="358XXXXXXXXXXXX"/></MField>
         <MField label="Сериен №"><input value={f.serial_number||""} onChange={e=>s("serial_number",e.target.value)} placeholder="C02XXXXXXX"/></MField>
-        <MField label="Гаранция (дни)"><input type="number" min="0" value={f.warranty_days||30} onChange={e=>s("warranty_days",Number(e.target.value))}/></MField>
+        <MField label="Гаранция">
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <input type="number" min="0" value={f.warranty_amount||1}
+              onChange={e=>{
+                const amt = Number(e.target.value)||1;
+                s("warranty_amount", amt);
+                const unit = f.warranty_unit||"месеца";
+                s("warranty_days", unit==="дни"?amt : unit==="месеца"?amt*30 : amt*365);
+              }}
+              style={{width:80}}/>
+            <select value={f.warranty_unit||"месеца"} onChange={e=>{
+              s("warranty_unit",e.target.value);
+              const amt = Number(f.warranty_amount||1);
+              const unit = e.target.value;
+              s("warranty_days", unit==="дни"?amt : unit==="месеца"?amt*30 : amt*365);
+            }}>
+              <option value="дни">Дни</option>
+              <option value="месеца">Месеца</option>
+              <option value="години">Години</option>
+            </select>
+            <span style={{fontSize:11,color:"#64748b"}}>= {
+              (f.warranty_unit||"месеца")==="дни" ? (f.warranty_amount||1)+" дни" :
+              (f.warranty_unit)==="месеца" ? (f.warranty_amount||1)*30+" дни" :
+              (f.warranty_amount||1)*365+" дни"
+            }</span>
+          </div>
+        </MField>
         <MField label=""></MField>
         <MField label="Доставна (€)"><input type="number" min="0" step="0.01" value={f.cost_price||""} onChange={e=>s("cost_price",e.target.value)} placeholder="0.00"/></MField>
         <MField label="Продажна (€)"><input type="number" min="0" step="0.01" value={f.sale_price||""} onChange={e=>s("sale_price",e.target.value)} placeholder="0.00"/></MField>

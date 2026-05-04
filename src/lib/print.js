@@ -198,6 +198,9 @@ export function printWarranty(order) {
   const parts = (order.parts||[]).map(p=>p.name).join(', ') || 'Ремонт';
   const issueDate = order.date_out || new Date().toISOString().split('T')[0];
   const warrantyDays = order.warranty_days || 30;
+  const warrantyAmount = order.warranty_amount || 1;
+  const warrantyUnit = order.warranty_unit || "месеца";
+  const warrantyLabel = warrantyAmount + " " + warrantyUnit;
   const expiryDate = new Date(new Date(issueDate).getTime() + warrantyDays*24*60*60*1000).toLocaleDateString('bg-BG');
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Гаранционна карта</title>
@@ -239,8 +242,8 @@ export function printWarranty(order) {
       ${order.serial_number?`<div style="font-size:11px;color:#94a3b8;margin-top:4px">Сериен №: ${order.serial_number}</div>`:''}
     </div>
     <div class="warranty-period">
-      <div class="days">${warrantyDays}</div>
-      <div class="label">дни гаранция</div>
+      <div class="days">${warrantyLabel}</div>
+      <div class="label">гаранция (${warrantyDays} дни)</div>
       <div class="dates">от ${new Date(issueDate).toLocaleDateString('bg-BG')} до ${expiryDate}</div>
     </div>
     <div class="info-grid">
