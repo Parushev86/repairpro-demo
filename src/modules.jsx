@@ -63,6 +63,8 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
   const [cashInput,setCashInput]=useState("");
   const filtered=expenses.filter(e=>(e.date||"").slice(0,10)===date);
   const totalExp=filtered.reduce((s,e)=>s+Number(e.amount||0),0);
+  const totalFromCash=filtered.filter(e=>e.from_cash!==false).reduce((s,e)=>s+Number(e.amount||0),0);
+  const totalNotCash=filtered.filter(e=>e.from_cash===false).reduce((s,e)=>s+Number(e.amount||0),0);
   const cashEntry=cashRegister.find(c=>c.date===date);
   const openingCash=Number(cashEntry?.opening_cash||0);
   const exportDay=()=>{
@@ -84,7 +86,7 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
         <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:170}}/></MField>
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Начало на деня</div><div style={{fontSize:20,fontWeight:800,color:"#10b981"}}>{fmtM(openingCash)}</div></MCard>
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #ef4444"}}><div style={{fontSize:11,color:"#64748b"}}>Разходи</div><div style={{fontSize:20,fontWeight:800,color:"#ef4444"}}>{fmtM(totalExp)}</div></MCard>
-        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #38bdf8"}}><div style={{fontSize:11,color:"#64748b"}}>Баланс</div><div style={{fontSize:20,fontWeight:800,color:"#38bdf8"}}>{fmtM(openingCash-totalExp)}</div></MCard>
+        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #38bdf8"}}><div style={{fontSize:11,color:"#64748b"}}>Баланс (каса)</div><div style={{fontSize:20,fontWeight:800,color:"#38bdf8"}}>{fmtM(openingCash-totalFromCash)}</div><div style={{fontSize:10,color:"#64748b",marginTop:2}}>Не от каса: {fmtM(totalNotCash)}</div></MCard>
       </div>
       <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
@@ -95,7 +97,7 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
               <tr key={e.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={ev=>ev.currentTarget.style.background="#243044"} onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtDate(e.date)}</td>
                 <td style={{padding:"9px 14px",fontSize:13,fontWeight:600}}>{e.description}</td>
-                <td style={{padding:"9px 14px"}}><SBadge text={e.category}/></td>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4,flexWrap:"wrap"}}><SBadge text={e.category}/>{e.from_cash===false&&<span style={{background:"#1e293b",color:"#64748b",padding:"3px 8px",borderRadius:20,fontSize:10,fontWeight:600}}>🏦 не от каса</span>}</div></td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#94a3b8"}}>{e.paid_to||"—"}</td>
                 <td style={{padding:"9px 14px",fontSize:14,fontWeight:800,color:"#ef4444"}}>{fmtM(e.amount)}</td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{e.notes||"—"}</td>
@@ -115,7 +117,7 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
 }
 
 function ExpenseModal({expense,onSave,onClose}) {
-  const [f,sf]=useState({date:today(),description:"",amount:"",category:"Друго",paid_to:"",notes:"",...expense});
+  const [f,sf]=useState({date:today(),description:"",amount:"",category:"Друго",paid_to:"",notes:"",from_cash:true,...expense});
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   return (
     <MModal title={expense?.id?"Редактирай разход":"Нов разход"} onClose={onClose} footer={<><CancelBtn onClick={onClose}/><MPrimaryBtn onClick={()=>{if(!f.description||!f.amount){alert("Попълни описание и сума!");return;}onSave(f);}} color="linear-gradient(135deg,#ef4444,#dc2626)">💾 Запази</MPrimaryBtn></>}>
@@ -126,6 +128,21 @@ function ExpenseModal({expense,onSave,onClose}) {
         <MField label="Платено на"><input value={f.paid_to||""} onChange={e=>s("paid_to",e.target.value)} placeholder="Доставчик, лице..."/></MField>
         <MField label="Сума (€) *"><input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>s("amount",e.target.value)} placeholder="0.00"/></MField>
         <MField label="Бележки" style={{gridColumn:"1/-1"}}><textarea value={f.notes||""} onChange={e=>s("notes",e.target.value)} rows={2} style={{resize:"vertical"}}/></MField>
+        <div style={{gridColumn:"1/-1",paddingTop:8,borderTop:"1px solid #334155"}}>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+            <div style={{position:"relative",width:44,height:24,background:f.from_cash!==false?"#10b981":"#334155",borderRadius:12,transition:"background .2s",flexShrink:0}} onClick={()=>s("from_cash",f.from_cash===false?true:false)}>
+              <div style={{position:"absolute",top:2,left:f.from_cash!==false?22:2,width:20,height:20,background:"#fff",borderRadius:"50%",transition:"left .2s"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:f.from_cash!==false?"#10b981":"#94a3b8"}}>
+                {f.from_cash!==false?"💰 Платено от каса":"🏦 Не е платено от каса"}
+              </div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                {f.from_cash!==false?"Сумата ще намали наличността в касата":"Касата няма да се промени"}
+              </div>
+            </div>
+          </label>
+        </div>
       </div>
     </MModal>
   );

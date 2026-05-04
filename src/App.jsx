@@ -449,7 +449,12 @@ export default function App() {
           {tab==="pricing"      && <PricingTab/>}
           {tab==="expenses"     && <ExpensesTab
             expenses={expenses} cashRegister={cashReg}
-            onSaveExpense={async r=>{const s=await upsertExpense(r);if(!r.id)setExpenses(p=>[s,...p]);else setExpenses(p=>p.map(e=>e.id===s.id?s:e));notify("✅ Разходът е запазен");}}
+            onSaveExpense={async r=>{
+              const s=await upsertExpense(r);
+              if(!r.id) setExpenses(p=>[s,...p]);
+              else setExpenses(p=>p.map(e=>e.id===s.id?s:e));
+              notify("✅ Разходът е запазен");
+            }}
             onDeleteExpense={async id=>{const r=expenses.find(e=>e.id===id);if(r)await moveToTrash("expenses",r);await deleteExpense(id);setExpenses(p=>p.filter(e=>e.id!==id));setTrash(p=>[{table_name:"expenses",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onSaveCash={async r=>{const s=await upsertCashRegister(r);if(!r.id)setCashReg(p=>[s,...p]);else setCashReg(p=>p.map(c=>c.date===s.date?s:c));}}
             notify={notify}
