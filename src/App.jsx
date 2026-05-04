@@ -799,7 +799,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           <span className="hide-mobile" style={{display:"contents"}}><Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn></span>
           <span className="hide-mobile" style={{display:"contents"}}><Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn></span>
-          <PrimaryBtn onClick={onNew} style={{fontSize:12,padding:"7px 12px"}}>+ Нов сервиз</PrimaryBtn>>+ Нов сервиз</PrimaryBtn>
+          <PrimaryBtn onClick={onNew} style={{fontSize:12,padding:"7px 12px"}}>+ Нов сервиз</PrimaryBtn>
         </div>
       </div>
       <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
