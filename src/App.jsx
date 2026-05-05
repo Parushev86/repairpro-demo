@@ -1936,7 +1936,9 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
   // Приходи от продажба телефони
   const phoneRevToday = phoneSales.filter(s=>toDate(s.date)===date).reduce((s,r)=>s+Number(r.sale_price||0),0);
   // Разходи за деня
-  const expensesToday = expenses.filter(e=>toDate(e.date)===date).reduce((s,e)=>s+Number(e.amount||0),0);
+  const allExpensesToday = expenses.filter(e=>toDate(e.date)===date);
+  const expensesToday = allExpensesToday.filter(e=>e.from_cash!==false).reduce((s,e)=>s+Number(e.amount||0),0);
+  const expensesNotCash = allExpensesToday.filter(e=>e.from_cash===false).reduce((s,e)=>s+Number(e.amount||0),0);
   // Начало на касата
   const cashEntry = cashReg.find(c=>c.date===date);
   const openingCash = Number(cashEntry?.opening_cash||0);
@@ -2076,7 +2078,8 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>💸 ОБЩО РАЗХОДИ</div>
           <div style={{fontSize:24,fontWeight:800,color:"#ef4444"}}>€ {(expensesToday+extServiceCost+partsCost).toFixed(2)}</div>
           <div style={{fontSize:10,color:"var(--text3)",marginTop:4,lineHeight:1.8}}>
-            Разходи: € {expensesToday.toFixed(2)}<br/>
+            От каса: € {expensesToday.toFixed(2)}<br/>
+            Не от каса: € {expensesNotCash.toFixed(2)}<br/>
             Вън. услуги: € {extServiceCost.toFixed(2)}<br/>
             Части: € {partsCost.toFixed(2)}
           </div>
@@ -2091,32 +2094,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
         <Card style={{borderLeft:"4px solid #f59e0b",padding:"14px 16px"}}>
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>🏦 НАЛИЧНО В КАСА</div>
           <div style={{fontSize:24,fontWeight:800,color:"#f59e0b"}}>€ {cashNow.toFixed(2)}</div>
-          <div style={{fontSize:10,color:"var(--text3)",marginTop:2}}>Начало: € {openingCash.toFixed(2)}</div>
-          <div style={{marginTop:10,borderTop:"1px solid #334155",paddingTop:8,display:"flex",flexDirection:"column",gap:7}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:10,color:"#64748b",minWidth:65}}>🏛️ Банка:</span>
-              <input type="number" min="0" step="0.01"
-                value={bankAmount||""}
-                onChange={e=>{setBankAmount(e.target.value);localStorage.setItem("rp_bank_"+date,e.target.value);}}
-                onClick={e=>e.stopPropagation()}
-                style={{width:90,padding:"3px 6px",fontSize:11,background:"#0f172a",border:"1px solid #334155",borderRadius:5,color:"#e2e8f0"}}
-                placeholder="0.00"/>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:10,color:"#64748b",minWidth:65}}>💼 Вън. каса:</span>
-              <input type="number" min="0" step="0.01"
-                value={externalCash||""}
-                onChange={e=>{setExternalCash(e.target.value);localStorage.setItem("rp_ext_"+date,e.target.value);}}
-                onClick={e=>e.stopPropagation()}
-                style={{width:90,padding:"3px 6px",fontSize:11,background:"#0f172a",border:"1px solid #334155",borderRadius:5,color:"#e2e8f0"}}
-                placeholder="0.00"/>
-            </div>
-            <div style={{marginTop:4,paddingTop:6,borderTop:"1px solid #334155"}}>
-              <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:.4}}>💰 Всичко налично:</div>
-              <div style={{fontSize:20,fontWeight:900,color:"#10b981",marginTop:2}}>€ {totalAllCash.toFixed(2)}</div>
-              <div style={{fontSize:9,color:"#475569"}}>Каса + Банка + Вън. каса</div>
-            </div>
-          </div>
+          <div style={{fontSize:10,color:"var(--text3)",marginTop:4}}>Начало: € {openingCash.toFixed(2)}</div>
         </Card>
       </div>
 
