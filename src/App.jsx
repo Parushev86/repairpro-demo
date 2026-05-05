@@ -1235,9 +1235,9 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
       <div style={{marginBottom:10}}>
         <input placeholder="🔍  Търси артикул или доставчик..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/>
       </div>
-      {/* Category filters */}
-      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14}}>
-        {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"4px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap"}}>{c}</button>)}
+      {/* Category filters - horizontal scroll */}
+      <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
+        {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap",flexShrink:0}}>{c}</button>)}
       </div>
       <Card style={{padding:0,overflow:"hidden"}}>
         <table>
@@ -1273,6 +1273,27 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
           </tbody>
         </table>
       </Card>
+      {/* Mobile cards */}
+      {filtered.map(i=>{
+        const low=Number(i.quantity)<=Number(i.min_qty);
+        return(
+          <div key={i.id+"m"} className="mobile-inv-card" style={{display:"none",background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:`3px solid ${Number(i.quantity)===0?"#ef4444":low?"#f59e0b":"#10b981"}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:6}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",flex:1,lineHeight:1.3}}>{i.name}</div>
+              <div style={{display:"flex",gap:4,flexShrink:0}}>
+                <Btn color="#3b82f6" onClick={()=>onEdit(i)}>✏️</Btn>
+                <Btn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(i.id);}}>🗑️</Btn>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,color:"#64748b",background:"#0f172a",padding:"2px 8px",borderRadius:10}}>{i.category}</span>
+              <span style={{fontSize:12,fontWeight:800,color:Number(i.quantity)===0?"#ef4444":low?"#f59e0b":"#10b981"}}>{i.quantity} бр.{low?" ⚠️":""}</span>
+              <span style={{fontSize:12,fontWeight:700,color:"#10b981"}}>{fmtMoney(i.price)}</span>
+              {i.supplier&&<span style={{fontSize:11,color:"#64748b"}}>{i.supplier}</span>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

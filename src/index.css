@@ -152,4 +152,12 @@ table { border-collapse: collapse; width: 100%; }
   /* Page titles */
   h1 { font-size: 18px !important; }
 }
+/* Добави това в края на src/index.css */
+@media (max-width: 768px) {
+  .mobile-inv-card { display: block !important; }
+  .mobile-inv-card + table,
+  table { display: none !important; }
+  /* Но показвай таблиците в модали */
+  div[style*="zIndex:1000"] table { display: table !important; }
+}
 
