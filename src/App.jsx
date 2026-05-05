@@ -629,27 +629,29 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
       {/* Nav */}
       <nav style={{flex:1, padding:"6px 0", overflowY:"auto"}}>
         {[
+          // Admin-only tabs
+          ...(!isAdmin ? [] : [
+            ["dashboard",   "📊", "Дашборд",             null],
+            ["reports",     "📈", "Справки",              null],
+            ["technicians", "👨‍🔧", "Техници",            null],
+            ["daily",       "🧾", "Дневен отчет",         null],
+          ]),
           // All users
           ["orders",       "🔧", "Сервиз",               readyOrders.length || null],
           ["inventory",    "📦", "Склад",                 lowStock.length || null],
           ["calculator",   "🧮", "Калкулатор",            null],
           ["pricing",      "💲", "Готови цени",           null],
           ["expenses",     "💸", "Разходи",               null],
+          ["accsales",     "🎧", "Аксесоари",             null],
           ["buybacks",     "📱", "Изкупуване",            null],
-          ["accsales",     "🎧", "Продажба аксесоари",    null],
           ["partssales",   "🔩", "Продажба части",        null],
           ["phonesales",   "📲", "Продажба телефони",     null],
           ["stockorders",  "📋", "Поръчки части",         null],
           ["debts",        "💳", "Задължения",            null],
-          // Admin-only
+          // Admin-only bottom
           ...(!isAdmin ? [] : [
-            ["dashboard",   "📊", "Дашборд",              null],
-            ["reports",     "📈", "Справки",               null],
-            ["technicians", "👨‍🔧", "Техници",             null],
-            ["daily",       "🧾", "Дневен отчет",          null],
-            ["monthly",     "📅", "Месечен отчет",         null],
-            ["users",       "👥", "Потребители",           null],
-            ["trash",       "🗑️", "Кошче",                trash.filter(t=>new Date(t.expires_at)>new Date()).length||null],
+            ["users",      "👥", "Потребители",           null],
+            ["trash",      "🗑️", "Кошче",                trash.filter(t=>new Date(t.expires_at)>new Date()).length||null],
           ]),
         ].map(([key,icon,label,badge]) => (
           <button key={key} onClick={()=>setTab(key)} style={{
@@ -1956,7 +1958,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
     return s + parts.reduce((ps, p) => ps + Number(p.price||0), 0);
   }, 0);
   
-  const profit = revenue - partsCost - extServiceCost - expensesToday;
+  const profit = totalRevenue - partsCost - extServiceCost - expensesToday;
 
   // По техник за деня
   const techDay = [...new Set(dayOrders.map(o=>o.technician).filter(Boolean))].map(t => ({
