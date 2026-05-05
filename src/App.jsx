@@ -1899,6 +1899,8 @@ function PartsSelector({inventory, addPart, removePart, parts, price}) {
 // ═══════════════════════════════ DAILY REPORT ══════════════════════════════════
 function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[], phoneSales=[], cashReg=[]}) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [bankAmount,   setBankAmount]   = useState(() => { try { return Number(localStorage.getItem("rp_bank_"+new Date().toISOString().split("T")[0])||0); } catch { return 0; }});
+  const [externalCash, setExternalCash] = useState(() => { try { return Number(localStorage.getItem("rp_ext_"+new Date().toISOString().split("T")[0])||0); } catch { return 0; }});
   
   // Помощна функция — взема само датата от timestamp
   const toDate = (val) => {
