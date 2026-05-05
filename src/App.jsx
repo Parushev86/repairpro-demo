@@ -542,16 +542,6 @@ export default function App() {
             cashReg={cashReg}
           />}
           {tab==="users"        && <UsersTab/>}
-          {tab==="monthly"      && isAdmin && <MonthlyReport
-            getSupabase={getSupabase}
-            orders={orders}
-            expenses={expenses}
-            accSales={accSales}
-            partsSales={partsSales}
-            phoneSales={phoneSales}
-            cashReg={cashReg}
-          />}
-          {tab==="users"        && <UsersTab/>}
           {tab==="trash"        && <TrashTab
             trash={trash}
             onRestore={async item=>{
@@ -650,6 +640,7 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
           ["debts",        "💳", "Задължения",            null],
           // Admin-only bottom
           ...(!isAdmin ? [] : [
+            ["monthly",    "📅", "Месечен отчет",          null],
             ["users",      "👥", "Потребители",           null],
             ["trash",      "🗑️", "Кошче",                trash.filter(t=>new Date(t.expires_at)>new Date()).length||null],
           ]),
