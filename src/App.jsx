@@ -2090,27 +2090,6 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>🏦 НАЛИЧНО В КАСА</div>
           <div style={{fontSize:24,fontWeight:800,color:"#f59e0b"}}>€ {cashNow.toFixed(2)}</div>
           <div style={{fontSize:10,color:"var(--text3)",marginTop:4}}>Начало: € {openingCash.toFixed(2)}</div>
-          <div style={{marginTop:10,borderTop:"1px solid #334155",paddingTop:8,display:"flex",flexDirection:"column",gap:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:10,color:"#64748b",minWidth:60}}>🏛️ Банка:</span>
-              <input type="number" min="0" step="0.01" value={bankAmount||""}
-                onChange={e=>{setBankAmount(e.target.value);localStorage.setItem("rp_bank_"+date,e.target.value);}}
-                style={{width:80,padding:"3px 6px",fontSize:11,background:"#0f172a",border:"1px solid #334155",borderRadius:5,color:"#e2e8f0"}}
-                placeholder="0.00"/>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:10,color:"#64748b",minWidth:60}}>💼 Вън. каса:</span>
-              <input type="number" min="0" step="0.01" value={externalCash||""}
-                onChange={e=>{setExternalCash(e.target.value);localStorage.setItem("rp_ext_"+date,e.target.value);}}
-                style={{width:80,padding:"3px 6px",fontSize:11,background:"#0f172a",border:"1px solid #334155",borderRadius:5,color:"#e2e8f0"}}
-                placeholder="0.00"/>
-            </div>
-            <div style={{marginTop:4,paddingTop:6,borderTop:"1px solid #334155"}}>
-              <div style={{fontSize:10,color:"#64748b"}}>💰 ВСИЧКО НАЛИЧНО:</div>
-              <div style={{fontSize:18,fontWeight:900,color:"#10b981"}}>€ {totalAllCash.toFixed(2)}</div>
-              <div style={{fontSize:9,color:"#475569"}}>Каса + Банка + Вън. каса</div>
-            </div>
-          </div>
         </Card>
       </div>
 
