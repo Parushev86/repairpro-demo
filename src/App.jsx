@@ -1231,11 +1231,13 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
         </div>
       </div>
       {lowStock.length>0&&<div style={{background:"#450a0a",border:"1px solid #7f1d1d",borderRadius:10,padding:12,marginBottom:14,fontSize:12,color:"#fca5a5"}}>⚠️ <b>{lowStock.length} артикула</b> са под минималната наличност!</div>}
-      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center"}}>
-        <input placeholder="🔍  Търси артикул или доставчик..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
-        <div style={{display:"flex",gap:5}}>
-          {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b"}}>{c}</button>)}
-        </div>
+      {/* Search */}
+      <div style={{marginBottom:10}}>
+        <input placeholder="🔍  Търси артикул или доставчик..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/>
+      </div>
+      {/* Category filters */}
+      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14}}>
+        {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"4px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap"}}>{c}</button>)}
       </div>
       <Card style={{padding:0,overflow:"hidden"}}>
         <table>
