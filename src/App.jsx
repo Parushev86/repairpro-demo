@@ -4,7 +4,8 @@ import { genId, today, STATUSES, STATUS_COLOR, STATUS_BG, DEVICE_TYPES, PROBLEMS
 import { printProtocol, printLabel, downloadProtocolTXT, printWarranty } from "./lib/print.js";
 import MonthlyReport from "./MonthlyReport.jsx";
 import { sendReadyEmail } from "./lib/email.js";
-import { exportOrders, exportInventory, exportTechReport, exportFullReport, exportDailyReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
+import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
+import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab } from "./modules.jsx";
 
@@ -2016,7 +2017,19 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
   };
 
   const exportDayExcel = () => {
-    exportDailyReport(date, receivedToday, issuedToday, revenue, partsCost, profit);
+    exportDailyReport({
+      date,
+      receivedToday, issuedToday,
+      revenue, accRevToday, partsRevToday, phoneRevToday,
+      totalRevenue, expensesToday, extServiceCost, partsCost, profit,
+      openingCash, cashNow,
+      paymentBreakdown,
+      techDay,
+      expenses: expenses.filter(e=>toDate(e.date)===date),
+      accSalesDay: accSales.filter(s=>toDate(s.date)===date),
+      partsSalesDay: partsSales.filter(s=>toDate(s.date)===date),
+      phoneSalesDay: phoneSales.filter(s=>toDate(s.date)===date),
+    });
   };
 
   return (
