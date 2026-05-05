@@ -543,16 +543,6 @@ export default function App() {
             cashReg={cashReg}
           />}
           {tab==="users"        && <UsersTab/>}
-          {tab==="monthly"      && isAdmin && <MonthlyReport
-            getSupabase={getSupabase}
-            orders={orders}
-            expenses={expenses}
-            accSales={accSales}
-            partsSales={partsSales}
-            phoneSales={phoneSales}
-            cashReg={cashReg}
-          />}
-          {tab==="users"        && <UsersTab/>}
           {tab==="trash"        && <TrashTab
             trash={trash}
             onRestore={async item=>{
