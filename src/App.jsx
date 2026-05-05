@@ -295,7 +295,7 @@ export default function App() {
       const saved = await upsertInventory(item);
       // Realtime ще обнови автоматично; ако не е активен — ръчно
       if (!realtimeOn) {
-        if (!item.id) setInventory(p => [...p, saved]);
+        if (!item.id) setInventory(p => [saved, ...p]);
         else setInventory(p => p.map(i => i.id === saved.id ? saved : i));
       }
       // Ако не е платен — добави в Задължения
