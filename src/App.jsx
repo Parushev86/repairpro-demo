@@ -578,7 +578,29 @@ export default function App() {
           />}
           {tab==="phonesales"   && <PhoneSalesTab
             sales={phoneSales} inventory={inventory}
-            onSave={async r=>{const s=await upsertPhoneSale(r);if(!r.id)setPhoneSales(p=>[s,...p]);else setPhoneSales(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Продажбата е записана");}}
+            onSave={async r=>{
+              try {
+                const clean = {
+                  ...r,
+                  warranty_amount: r.warranty_amount || null,
+                  warranty_unit:   r.warranty_unit   || null,
+                  buyer_name:      r.buyer_name      || null,
+                  buyer_phone:     r.buyer_phone     || null,
+                  notes:           r.notes           || null,
+                  serial_number:   r.serial_number   || null,
+                  imei:            r.imei            || null,
+                  color:           r.color           || null,
+                  storage:         r.storage         || null,
+                  cost_price:      Number(r.cost_price||0),
+                  sale_price:      Number(r.sale_price||0),
+                  warranty_days:   Number(r.warranty_days||30),
+                };
+                const s = await upsertPhoneSale(clean);
+                if(!r.id) setPhoneSales(p=>[s,...p]);
+                else setPhoneSales(p=>p.map(x=>x.id===s.id?s:x));
+                notify("✅ Продажбата е записана");
+              } catch(e) { notify("❌ Грешка: "+e.message,"error"); }
+            }}
             onDelete={async id=>{const r=phoneSales.find(x=>x.id===id);if(r)await moveToTrash("phone_sales",r);await deletePhoneSale(id);setPhoneSales(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"phone_sales",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onWarranty={printWarranty}
           />}
