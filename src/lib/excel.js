@@ -255,7 +255,7 @@ export function mapRowsToInventory(rows) {
     }
     if (!mapped.name) return null;
     if (!mapped.quantity) mapped.quantity = 0;
-    if (!mapped.min_qty) mapped.min_qty = 2;
+    if (!mapped.min_qty) mapped.min_qty = 0;
     if (!mapped.price) mapped.price = 0;
     return mapped;
   }).filter(Boolean);
