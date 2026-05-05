@@ -47,9 +47,22 @@ export async function deleteOrder(id) {
 export async function fetchInventory() {
   const sb = getSupabase();
   if (!sb) return [];
-  const { data, error } = await sb.from("inventory").select("*").order("name");
-  if (error) throw error;
-  return data || [];
+  // Зареждаме всички записи с пагинация (Supabase лимит е 1000)
+  let all = [];
+  let page = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data, error } = await sb.from("inventory")
+      .select("*")
+      .order("name")
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = [...all, ...data];
+    if (data.length < pageSize) break;
+    page++;
+  }
+  return all;
 }
 
 export async function upsertInventory(item) {
