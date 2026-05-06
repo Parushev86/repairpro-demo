@@ -839,8 +839,8 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
         </div>
       </div>
       <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-        <input placeholder="🔍  Търси по клиент, телефон, № поръчка, устройство, проблем..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:200}}/>
-        <div style={{display:"flex",gap:5,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
+        <input placeholder="🔍  Търси по клиент, телефон, № поръчка, устройство, проблем..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:280}}/>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
           {["Всички",...STATUSES].map(s=>(
             <button key={s} onClick={()=>setFilterStatus(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",transition:"all .15s",background:filterStatus===s?(STATUS_COLOR[s]||"#38bdf8"):"#1e293b",color:filterStatus===s?"#fff":"#64748b"}}>
               {s}
@@ -849,7 +849,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
         </div>
       </div>
       {/* Device type filter */}
-      <div style={{display:"flex",gap:5,marginBottom:14,alignItems:"center",overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
+      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
         <span style={{fontSize:11,color:"#64748b",fontWeight:600,marginRight:4}}>📱 Тип:</span>
         {["Всички",...DEVICE_TYPES].map(d=>(
           <button key={d} onClick={()=>setFilterDevice(d)} style={{
@@ -860,8 +860,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
         ))}
       </div>
       <div style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
-        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-        <table style={{minWidth:700}}>
+        <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["№ Поръчка","Клиент","Телефон","Устройство","Проблем","Техник","Крайна цена","Статус","Плащане","Дата",""].map(h=>(
               <th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>
@@ -909,6 +908,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
           </tbody>
         </table>
       </div>
+        </div>
     </div>
   );
 }
@@ -1230,9 +1230,8 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
         {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap",flexShrink:0}}>{c}</button>)}
       </div>
-      <div className="inv-desktop-table"><Card style={{padding:0,overflow:"hidden"}}>
-        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-        <table style={{minWidth:700}}>
+      <Card style={{padding:0,overflow:"hidden"}}>
+        <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Наименование","Категория","Наличност","Мин.","Продажна цена","Себестойност","Стойност","Доставчик",""].map(h=><th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr>
           </thead>
@@ -1264,8 +1263,7 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
             {filtered.length===0&&<tr><td colSpan={9} style={{textAlign:"center",padding:30,color:"var(--text3)"}}>Няма намерени артикули</td></tr>}
           </tbody>
         </table>
-        </div>
-      </Card></div>
+      </Card>
       {/* Mobile cards */}
       {filtered.map(i=>{
         const low=Number(i.quantity)<=Number(i.min_qty);
