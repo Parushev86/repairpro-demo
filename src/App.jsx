@@ -439,7 +439,7 @@ export default function App() {
           <span style={{fontSize:16,fontWeight:800,color:"#38bdf8"}}>🔧 RepairPro</span>
         </div>
         {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:98}}/>}
-        <div style={{flex:1, overflow:"auto", padding:24}} className="main-content">
+        <div style={{flex:1, overflow:"auto", padding:24}}>
         {tab==="dashboard"    && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
         {tab==="dashboard"    && !isAdmin && <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🔒</div><div style={{fontSize:18,color:"#64748b"}}>Нямаш достъп до тази страница</div></div>}
         {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
@@ -859,8 +859,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
           }}>{d}</button>
         ))}
       </div>
-      {/* Desktop table */}
-      <div className="orders-desktop-table" style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
+      <div style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["№ Поръчка","Клиент","Телефон","Устройство","Проблем","Техник","Крайна цена","Статус","Плащане","Дата",""].map(h=>(
@@ -908,33 +907,6 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
             ))}
           </tbody>
         </table>
-      </div>
-      {/* Mobile cards */}
-      <div className="orders-mobile-cards">
-        {orders.length===0 && <div style={{textAlign:"center",padding:32,color:"var(--text3)",background:"var(--bg2)",borderRadius:12}}>Няма намерени поръчки</div>}
-        {orders.map(o=>(
-          <div key={o.id+"m"} style={{background:"var(--bg2)",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:`3px solid ${STATUS_COLOR[o.status]||"#334155"}`}}
-               onClick={()=>onEdit(o)}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{o.client_name}</div>
-                <div style={{fontSize:11,color:"#38bdf8",fontFamily:"monospace"}}>{o.id}</div>
-              </div>
-              <Badge status={o.status}/>
-            </div>
-            <div style={{fontSize:12,color:"var(--text2)",marginBottom:4}}>{o.device_type} {o.brand} {o.model}</div>
-            {o.problem && <div style={{fontSize:11,color:"var(--text3)",marginBottom:6}}>{o.problem}</div>}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{fontSize:14,fontWeight:800,color:"#10b981"}}>€ {Number(o.total_price||o.price||0).toFixed(2)}</div>
-              <div style={{display:"flex",gap:4}}>
-                <Btn color="#3b82f6" onClick={e=>{e.stopPropagation();onEdit(o);}} style={{padding:"4px 8px",fontSize:11}}>✏️</Btn>
-                <Btn color="#8b5cf6" onClick={e=>{e.stopPropagation();onPrint(o);}} style={{padding:"4px 8px",fontSize:11}}>📄</Btn>
-                <Btn color="#ef4444" onClick={e=>{e.stopPropagation();if(confirm(`Изтрий поръчка ${o.id}?`))onDelete(o.id);}} style={{padding:"4px 8px",fontSize:11}}>🗑️</Btn>
-              </div>
-            </div>
-            <div style={{fontSize:11,color:"var(--text3)",marginTop:4}}>{o.phone} • {fmtDate(o.date_in)}{o.technician?" • "+o.technician:""}</div>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -2714,8 +2686,8 @@ function PricingTab() {
         {Object.entries(prices).map(([key,svc])=>(
           <button key={key} onClick={()=>setActiveService(key)} style={{
             padding:"8px 18px",borderRadius:9,fontSize:13,fontWeight:600,cursor:"pointer",border:"none",
-            background:activeService===key?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
-            color:activeService===key?"#fff":"#64748b",
+            background:(activeService===key||validService===key)?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
+            color:(activeService===key||validService===key)?"#fff":"#64748b",
           }}>{svc.label}</button>
         ))}
       </div>
