@@ -693,7 +693,7 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
         </div>
         <div style={{display:"flex", gap:6}}>
           <button onClick={onRefresh} title="Обнови данните" style={{flex:1, background:"#1e293b", color:"#64748b", border:"none", borderRadius:7, padding:"7px", fontSize:12, cursor:"pointer"}}>🔄 Обнови</button>
-          <button onClick={onSettings} title="Настройки" style={{flex:1, background:"#1e293b", color:"#64748b", border:"none", borderRadius:7, padding:"7px", fontSize:12, cursor:"pointer"}}>⚙️ Настройки</button>
+          {isAdmin && <button onClick={onSettings} title="Настройки" style={{flex:1, background:"#1e293b", color:"#64748b", border:"none", borderRadius:7, padding:"7px", fontSize:12, cursor:"pointer"}}>⚙️ Настройки</button>}
         </div>
         <button onClick={()=>{if(confirm("Изход от системата?")){sessionStorage.removeItem("rp_auth");sessionStorage.removeItem("rp_user");window.location.reload();}}} style={{width:"100%",background:"#450a0a",color:"#fca5a5",border:"none",borderRadius:7,padding:"7px",fontSize:12,cursor:"pointer",marginTop:6}}>
           🚪 Изход
