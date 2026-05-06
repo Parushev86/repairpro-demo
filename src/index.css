@@ -58,13 +58,49 @@ table { border-collapse: collapse; width: 100%; }
 
 .animate-fade { animation: fadeIn 0.25s ease; }
 .spinner { animation: spin 0.8s linear infinite; display: inline-block; }
+
 /* ── Mobile responsive ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  .mobile-topbar {
+    display: flex !important;
+  }
+
+  aside {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    z-index: 99;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    height: 100vh !important;
+  }
+
+  aside.open {
+    transform: translateX(0) !important;
+  }
+
+  main > div:last-child {
+    padding: 12px !important;
+  }
+
+  /* Make tables scrollable on mobile */
+  table {
+    font-size: 12px;
+  }
+
+  /* Stack grid columns on mobile */
+  .mobile-stack {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* ── Paste this at the END of src/index.css ── */
+
+@media (max-width: 768px) {
+  /* Hide import/export on mobile */
+  .hide-mobile { display: none !important; }
 
   /* Sidebar */
   .mobile-topbar { display: flex !important; }
-  .hide-mobile { display: none !important; }
-
   aside {
     position: fixed !important;
     left: 0; top: 0;
@@ -76,24 +112,25 @@ table { border-collapse: collapse; width: 100%; }
   }
   aside.open { transform: translateX(0) !important; }
 
-  /* Padding */
+  /* Main padding */
   main > div { padding: 10px !important; }
 
-  /* Tables - scrollable horizontally, NOT hidden */
-  .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; }
-  table { font-size: 11px; }
-  th, td { padding: 6px 8px !important; white-space: nowrap; }
+  /* Tables - horizontal scroll */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { font-size: 11px; min-width: 600px; }
+  th, td { padding: 6px 8px !important; }
 
-  /* Hide less important order columns */
-  .orders-table th:nth-child(5), .orders-table td:nth-child(5),
-  .orders-table th:nth-child(6), .orders-table td:nth-child(6),
-  .orders-table th:nth-child(9), .orders-table td:nth-child(9) { display: none; }
+  /* Orders table - hide less important columns on mobile */
+  th:nth-child(5), td:nth-child(5),   /* Проблем */
+  th:nth-child(6), td:nth-child(6),   /* Техник */
+  th:nth-child(9), td:nth-child(9)    /* Плащане */
+  { display: none; }
 
-  /* Inventory mobile cards */
-  .mobile-inv-card { display: block !important; }
-  .inv-desktop-table { display: none !important; }
+  /* Buttons row */
+  .btn-row { flex-wrap: wrap; gap: 4px; }
+  button { font-size: 11px !important; }
 
-  /* Modals full screen */
+  /* Modal - full screen */
   div[style*="maxWidth:620"],
   div[style*="maxWidth:700"],
   div[style*="maxWidth:780"],
@@ -104,10 +141,23 @@ table { border-collapse: collapse; width: 100%; }
     margin: 0 !important;
   }
 
-  /* KPI grids */
-  div[style*="repeat(4,1fr)"] { grid-template-columns: 1fr 1fr !important; }
-  div[style*="repeat(3,1fr)"] { grid-template-columns: 1fr 1fr !important; }
+  /* KPI cards - 2 columns */
+  div[style*="gridTemplateColumns:\"repeat(4,1fr)\""] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  div[style*="gridTemplateColumns:\"repeat(3,1fr)\""] {
+    grid-template-columns: 1fr 1fr !important;
+  }
 
+  /* Page titles */
   h1 { font-size: 18px !important; }
-  button { font-size: 11px !important; }
 }
+/* Добави това в края на src/index.css */
+@media (max-width: 768px) {
+  .mobile-inv-card { display: block !important; }
+  .mobile-inv-card + table,
+  table { display: none !important; }
+  /* Но показвай таблиците в модали */
+  div[style*="zIndex:1000"] table { display: table !important; }
+}
+

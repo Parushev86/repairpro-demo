@@ -88,7 +88,7 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #ef4444"}}><div style={{fontSize:11,color:"#64748b"}}>Разходи</div><div style={{fontSize:20,fontWeight:800,color:"#ef4444"}}>{fmtM(totalExp)}</div></MCard>
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #38bdf8"}}><div style={{fontSize:11,color:"#64748b"}}>Баланс (каса)</div><div style={{fontSize:20,fontWeight:800,color:"#38bdf8"}}>{fmtM(openingCash-totalFromCash)}</div><div style={{fontSize:10,color:"#64748b",marginTop:2}}>Не от каса: {fmtM(totalNotCash)}</div></MCard>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Описание","Категория","Платено на","Сума","Бележки",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -105,7 +105,7 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
       {modal!==null&&<ExpenseModal expense={modal} onSave={r=>{onSaveExpense(r);setModal(null);}} onClose={()=>setModal(null)}/>}
       {showCash&&<MModal title="💰 Начало на деня — Каса" onClose={()=>setShowCash(false)} footer={<><CancelBtn onClick={()=>setShowCash(false)}/><MPrimaryBtn onClick={()=>{onSaveCash({id:cashEntry?.id,date,opening_cash:Number(cashInput)||0});setShowCash(false);notify("💰 Касата е записана ✓");}} color="linear-gradient(135deg,#10b981,#059669)">💾 Запази</MPrimaryBtn></>}>
@@ -167,7 +167,7 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #10b981",flex:1}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:20,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #f59e0b",flex:1}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:20,fontWeight:800,color:"#f59e0b"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Общо","Плащане","Купувач",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -187,7 +187,7 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
       {modal!==null&&<AccSaleModal sale={modal} inventory={inventory} onSave={r=>{onSave(r,modal);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
@@ -312,7 +312,7 @@ export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory
           <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?({Изкупен:"#10b981",Отказан:"#ef4444","Чака потвърждение":"#f59e0b"}[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
         ))}</div>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Продавач","Телефон","Цена","Статус","Склад",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -335,7 +335,7 @@ export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
       {modal!==null&&<BuybackModal buyback={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
@@ -384,7 +384,7 @@ export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
         <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
         <MCard style={{padding:"10px 16px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:18,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Плащане","Статус","Доставка","Купувач","Товарит.",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -408,7 +408,7 @@ export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
       {modal!==null&&<PartsSaleModal sale={modal} inventory={inventory} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
@@ -669,7 +669,7 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
         <MCard style={{padding:"10px 14px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{padding:"10px 14px",borderLeft:"4px solid #8b5cf6"}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:16,fontWeight:800,color:"#8b5cf6"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Купувач","Доставна","Продажна","Плащане",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -689,7 +689,7 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
       {modal!==null&&<PhoneSaleModal sale={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
@@ -762,7 +762,7 @@ export function StockOrdersTab({orders,onSave,onDelete,notify}) {
           <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?(SO_COLORS[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
         ))}</div>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Кат.","Бр.","Клиент","Телефон","Цена клиент","Доставчик","Статус","Бележки",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -783,7 +783,7 @@ export function StockOrdersTab({orders,onSave,onDelete,notify}) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
       {modal!==null&&<StockOrderModal order={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
@@ -859,7 +859,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
         <input placeholder="🔍  Търси по доставчик, артикул, модел..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
         <button onClick={()=>setShowPaid(p=>!p)} style={{background:showPaid?"#334155":"#1e293b",color:showPaid?"#94a3b8":"#64748b",border:"1px solid #334155",borderRadius:7,padding:"7px 14px",cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>{showPaid?"Скрий платените":"Покажи всички"}</button>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      <div className="MTable"><MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>
@@ -893,7 +893,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </MCard>
 
       {modal!==null&&<DebtModal debt={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
