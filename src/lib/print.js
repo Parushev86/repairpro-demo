@@ -237,9 +237,8 @@ export function printWarranty(order) {
       <div class="warranty-badge">✅ ГАРАНЦИОННА КАРТА</div>
     </div>
     <div class="device">
-      <div class="name">${[order.device_type,order.brand,order.model].filter(Boolean).join(' ')}</div>
-      <div class="problem">Извършен ремонт: ${order.problem||'—'}</div>
-      ${order.serial_number?`<div style="font-size:11px;color:#94a3b8;margin-top:4px">Сериен №: ${order.serial_number}</div>`:''}
+      <div class="name">${[order.brand,order.model].filter(Boolean).join(' ')||order.device_type||'—'}</div>
+      ${order.serial_number?`<div style="font-size:14px;color:#0369a1;margin-top:8px;font-weight:800">IMEI: ${order.serial_number}</div>`:''}
     </div>
     <div class="warranty-period">
       <div class="days">${warrantyLabel}</div>
@@ -256,12 +255,13 @@ export function printWarranty(order) {
     <div class="conditions">
       <b>Условия на гаранцията:</b><br>
       
-      • Гаранцията не важи при механични повреди, вода/влага и самостоятелен ремонт.<br>
-      • При повреда в гаранционния срок ремонтът е безплатен за гарантирания компонент.<br>
-      • Гаранцията се отнася само за извършения ремонт, не за цялото устройство.
+      • Гаранцията покрива фабрични дефекти и хардуерни неизправности.<br>
+      <b>Гаранцията не важи при:</b><br>
+      • Механични повреди, влага/вода, самостоятелен ремонт.<br>
+      • Софтуерни проблеми вследствие на неправилна употреба.
     </div>
     <div class="sig-row">
-      <div class="sig-box"><hr><p>Сервизен техник: <b>${order.technician||'........................'}</b></p><p>Подпис: ........................</p></div>
+      <div class="sig-box"><hr><p>Издадена от: <b>${order.technician||'........................'}</b></p><p>Подпис: ........................</p></div>
       <div class="sig-box"><hr><p>Клиент: <b>${order.client_name||'........................'}</b></p><p>Подпис: ........................</p></div>
     </div>
     <div class="no-print">
