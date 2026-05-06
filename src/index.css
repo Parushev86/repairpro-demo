@@ -59,14 +59,17 @@ table { border-collapse: collapse; width: 100%; }
 .animate-fade { animation: fadeIn 0.25s ease; }
 .spinner { animation: spin 0.8s linear infinite; display: inline-block; }
 
-/* ── Mobile responsive ─────────────────────────────────────────────────── */
+/* Mobile cards — hidden by default */
 .mobile-topbar { display: none; }
-.mobile-overlay { display: none; }
+.orders-mobile-cards { display: none; }
+.mobile-inv-card { display: none; }
 
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+
+  /* Top bar */
   .mobile-topbar { display: flex !important; }
   .hide-mobile { display: none !important; }
-  .mobile-overlay { display: block !important; }
 
   /* Sidebar */
   aside {
@@ -81,27 +84,28 @@ table { border-collapse: collapse; width: 100%; }
   }
   aside.open { transform: translateX(0) !important; }
 
-  /* Padding */
-  main > div:last-child { padding: 10px !important; }
+  /* Main padding */
+  .main-content { padding: 10px !important; }
 
-  /* Titles */
-  h1 { font-size: 17px !important; }
+  /* Orders — show cards, hide table */
+  .orders-desktop-table { display: none !important; }
+  .orders-mobile-cards { display: block !important; }
 
-  /* Tables */
-  table { font-size: 11px !important; }
-  th, td { padding: 6px 8px !important; white-space: nowrap; }
+  /* Inventory — show cards, hide table */
+  .mobile-inv-card { display: block !important; }
+  .inv-desktop-table { display: none !important; }
 
   /* KPI grids */
   div[style*="repeat(4,1fr)"] { grid-template-columns: 1fr 1fr !important; }
   div[style*="repeat(3,1fr)"] { grid-template-columns: 1fr 1fr !important; }
 
   /* Dashboard chart grids */
-  div[style*="1.6fr 1fr"] { grid-template-columns: 1fr !important; }
-  div[style*="1fr 1.4fr"] { grid-template-columns: 1fr !important; }
+  div[style*="1.6fr 1fr"],
+  div[style*="1fr 1.4fr"],
+  div[style*="1fr 1fr"] { grid-template-columns: 1fr !important; }
 
-  /* Inventory */
-  .inv-desktop-table { display: none !important; }
-  .mobile-inv-card { display: block !important; }
+  /* Technicians cards */
+  div[style*="repeat(3,1fr)"] { grid-template-columns: 1fr !important; }
 
   /* Modals */
   div[style*="maxWidth:820"],
@@ -115,7 +119,7 @@ table { border-collapse: collapse; width: 100%; }
     margin: 0 !important;
   }
 
-  /* Order modal info grid */
+  /* Order modal grid */
   div[style*="gridTemplateColumns:\"1fr 1fr\""] {
     grid-template-columns: 1fr !important;
   }
@@ -125,28 +129,22 @@ table { border-collapse: collapse; width: 100%; }
     grid-template-columns: 1fr 1fr !important;
   }
 
-  /* Calculator */
-  div[style*="gridTemplateColumns:\"1fr 1fr\",gap:20"] {
+  /* Calculator grid */
+  div[style*="gap:20,alignItems:\"start\""] {
     grid-template-columns: 1fr !important;
   }
 
-  /* Monthly report */
-  div[style*="gridTemplateColumns:\"1fr 1fr\",gap:16"] {
-    grid-template-columns: 1fr !important;
+  /* Tables that remain (reports, daily etc) - horizontal scroll */
+  .animate-fade table { font-size: 11px; }
+  .animate-fade td, .animate-fade th { padding: 5px 7px !important; white-space: nowrap; }
+
+  /* Pricing tabs scroll */
+  div[style*="gap:8,marginBottom:18"] { 
+    overflow-x: auto !important; 
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Reports */
-  div[style*="gridTemplateColumns:\"1fr 1fr\",gap:14"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Technicians cards */
-  div[style*="gridTemplateColumns:\"repeat(3,1fr)\""] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Buttons smaller */
-  button { font-size: 11px !important; }
-
-  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  h1 { font-size: 17px !important; }
+  ::-webkit-scrollbar { width: 2px; height: 2px; }
 }
