@@ -907,8 +907,8 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
             ))}
           </tbody>
         </table>
-      </div>
         </div>
+      </div>
     </div>
   );
 }
