@@ -225,7 +225,7 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
         {/* Daily profit */}
         <div>
           <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:10}}>Чиста печалба по дни</div>
-          <div style={{background:"#1e293b",borderRadius:12,overflow:"hidden",maxHeight:460,overflow:"auto"}}>
+          <div style={{background:"#1e293b",borderRadius:12,maxHeight:460,overflow:"auto"}}>
             {dailyData.length===0
               ? <div style={{textAlign:"center",padding:32,color:"#475569"}}>Няма данни за {MONTHS_BG[month]}</div>
               : <table style={{width:"100%",borderCollapse:"collapse"}}>
