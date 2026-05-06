@@ -860,7 +860,8 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
         ))}
       </div>
       <div style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
-        <table>
+        <div style={{overflowX:"auto"}}>
+        <table style={{minWidth:700}}>
           <thead style={{background:"#0a1628"}}>
             <tr>{["№ Поръчка","Клиент","Телефон","Устройство","Проблем","Техник","Крайна цена","Статус","Плащане","Дата",""].map(h=>(
               <th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>
@@ -907,7 +908,6 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
             ))}
           </tbody>
         </table>
-        </div>
       </div>
     </div>
   );
