@@ -1599,12 +1599,62 @@ function SettingsModal({settings,onSave,onClose,connected}) {
             <div style={{fontSize:11,color:"var(--text3)",marginTop:8}}>💡 За Gmail: използвай App Password от Google Account → Security → 2FA → App passwords</div>
           </div>
         </div>
+        {/* Backup */}
+        <div style={{padding:"0 22px 18px"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#38bdf8",marginBottom:8}}>🗄️ Резервно копие</div>
+          <BackupButton/>
+        </div>
         <div style={{padding:"14px 22px",borderTop:"1px solid #334155",display:"flex",justifyContent:"flex-end",gap:10}}>
           <button onClick={onClose} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:8,padding:"9px 18px",cursor:"pointer",fontWeight:600}}>Затвори</button>
           <PrimaryBtn onClick={()=>onSave(form)}>💾 Запази настройките</PrimaryBtn>
         </div>
       </div>
     </div>
+  );
+}
+
+function BackupButton() {
+  const [loading, setLoading] = useState(false);
+  const doBackup = async () => {
+    const sb = getSupabase();
+    if (!sb) { alert("Няма връзка с базата данни!"); return; }
+    setLoading(true);
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      const tables = [
+        ["Сервиз","orders"],["Склад","inventory"],["Разходи","expenses"],
+        ["Каса","cash_register"],["Аксесоари","accessory_sales"],
+        ["Изкупуване","buybacks"],["Продажба части","parts_sales"],
+        ["Продажба телефони","phone_sales"],["Поръчки части","stock_orders"],
+        ["Задължения","supplier_debts"],["Техници","technicians"],
+        ["Кошче","trash"],["Месечни разходи","monthly_expenses"],
+      ];
+      for (const [name, table] of tables) {
+        try {
+          let all=[], page=0;
+          while(true) {
+            const {data,error} = await sb.from(table).select("*").range(page*1000,(page+1)*1000-1);
+            if(error||!data||data.length===0) break;
+            all=[...all,...data];
+            if(data.length<1000) break;
+            page++;
+          }
+          if(all.length>0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(all), name);
+        } catch(e) { console.warn("Skip",table,e.message); }
+      }
+      XLSX.writeFile(wb, `RepairPro_Backup_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch(e) { alert("Грешка: "+e.message); }
+    setLoading(false);
+  };
+  return (
+    <button onClick={doBackup} disabled={loading} style={{
+      background:"linear-gradient(135deg,#7c3aed,#6d28d9)",color:"#fff",
+      border:"none",borderRadius:8,padding:"10px 20px",fontWeight:700,
+      fontSize:13,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,
+    }}>
+      {loading?"⏳ Изтегляне...":"📥 Изтегли пълен backup (Excel)"}
+    </button>
   );
 }
 
