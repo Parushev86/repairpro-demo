@@ -2583,7 +2583,7 @@ function PricingTab() {
   });
   const [editMode,     setEditMode]     = useState(false);
   const [editData,     setEditData]     = useState(null);
-  const [activeService,setActiveService]= useState("iphone_display");
+  const [activeService,setActiveService]= useState("iphone_battery");
   const [newModelName, setNewModelName] = useState("");
   const [newSvcKey,    setNewSvcKey]    = useState("");
   const [newSvcLabel,  setNewSvcLabel]  = useState("");
@@ -2640,7 +2640,7 @@ function PricingTab() {
     setActiveService(Object.keys(nd)[0] || "");
   };
 
-  const service = prices[activeService];
+  const service = prices[activeService] || prices[Object.keys(prices)[0]] || {label:"",models:[],client:{},colleague:{}};
 
   const printPriceList = () => {
     const w = window.open("","_blank");
@@ -2686,8 +2686,8 @@ function PricingTab() {
         {Object.entries(prices).map(([key,svc])=>(
           <button key={key} onClick={()=>setActiveService(key)} style={{
             padding:"8px 18px",borderRadius:9,fontSize:13,fontWeight:600,cursor:"pointer",border:"none",
-            background:(activeService===key||validService===key)?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
-            color:(activeService===key||validService===key)?"#fff":"#64748b",
+            background:(prices[activeService]?activeService:Object.keys(prices)[0])===key?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
+            color:(prices[activeService]?activeService:Object.keys(prices)[0])===key?"#fff":"#64748b",
           }}>{svc.label}</button>
         ))}
       </div>
