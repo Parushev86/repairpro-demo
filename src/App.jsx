@@ -860,8 +860,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
         ))}
       </div>
       <div style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
-        <div style={{overflowX:"auto"}}>
-        <table style={{minWidth:700}}>
+        <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["№ Поръчка","Клиент","Телефон","Устройство","Проблем","Техник","Крайна цена","Статус","Плащане","Дата",""].map(h=>(
               <th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>
@@ -908,7 +907,6 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
             ))}
           </tbody>
         </table>
-        </div>
       </div>
     </div>
   );
@@ -2585,7 +2583,13 @@ function PricingTab() {
   });
   const [editMode,     setEditMode]     = useState(false);
   const [editData,     setEditData]     = useState(null);
-  const [activeService,setActiveService]= useState("iphone_display");
+  const [activeService,setActiveService]= useState(() => {
+    try { 
+      const saved = JSON.parse(localStorage.getItem("rp_prices"));
+      if (saved && Object.keys(saved).length > 0) return Object.keys(saved)[0];
+    } catch {}
+    return "iphone_display";
+  });
   const [newModelName, setNewModelName] = useState("");
   const [newSvcKey,    setNewSvcKey]    = useState("");
   const [newSvcLabel,  setNewSvcLabel]  = useState("");
@@ -2642,7 +2646,7 @@ function PricingTab() {
     setActiveService(Object.keys(nd)[0] || "");
   };
 
-  const service = prices[activeService];
+  const service = prices[activeService] || prices[Object.keys(prices)[0]] || {label:"",models:[],client:{},colleague:{}};
 
   const printPriceList = () => {
     const w = window.open("","_blank");
