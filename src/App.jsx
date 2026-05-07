@@ -439,7 +439,7 @@ export default function App() {
           <span style={{fontSize:16,fontWeight:800,color:"#38bdf8"}}>🔧 RepairPro</span>
         </div>
         {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:98}}/>}
-        <div style={{flex:1, overflow:"auto", padding:24}} className="main-content">
+        <div className="main-content" style={{flex:1, overflow:"auto", padding:24}}>
         {tab==="dashboard"    && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
         {tab==="dashboard"    && !isAdmin && <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🔒</div><div style={{fontSize:18,color:"#64748b"}}>Нямаш достъп до тази страница</div></div>}
         {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
@@ -1038,7 +1038,7 @@ const OrderModal = memo(function OrderModal({order,technicians,inventory,setInve
         {/* Body */}
         <div style={{flex:1,overflow:"auto",padding:22}}>
           {activeTab==="info"&&(
-            <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Клиент</div>
                 <Field label="Три имена *"><input value={form.client_name} onChange={e=>set("client_name",e.target.value)} placeholder="Иван Иванов"/></Field>
@@ -1255,7 +1255,7 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
         {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap",flexShrink:0}}>{c}</button>)}
       </div>
-      <Card className="inv-desktop-table mobile-scroll-table" style={{padding:0,overflow:"hidden"}}>
+      <Card className="inv-desktop-table t-scroll" style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Наименование","Категория","Наличност","Мин.","Продажна цена","Себестойност","Стойност","Доставчик",""].map(h=><th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr>
@@ -1334,7 +1334,7 @@ function InvModal({item,onSave,onClose,syncing,allInventory=[]}) {
         </div>
         <div style={{padding:22,display:"flex",flexDirection:"column",gap:12}}>
           <Field label="Наименование *"><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Дисплей Samsung Galaxy S22"/></Field>
-          <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             <Field label="Категория"><select value={form.category||"Дисплеи"} onChange={e=>set("category",e.target.value)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></Field>
             <Field label="SKU / Код"><input value={form.sku||""} onChange={e=>set("sku",e.target.value)} placeholder="SAM-S22-LCD"/></Field>
             <Field label="Наличност (бр.)"><input type="number" min="0" value={form.quantity} onChange={e=>set("quantity",Number(e.target.value))}/></Field>
@@ -1491,7 +1491,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
         </Card>
       </div>
       {/* Filtered orders list */}
-      {filtered.length>0&&<Card style={{padding:0,overflow:"hidden"}} className="mobile-scroll-table">
+      {filtered.length>0&&<Card style={{padding:0,overflow:"hidden"}} className="t-scroll">
         <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:600,color:"var(--text3)"}}>Поръчки в периода ({filtered.length})</div>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Устройство","Техник","Статус","Цена","Дата"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
@@ -1615,7 +1615,7 @@ function SettingsModal({settings,onSave,onClose,connected}) {
           {/* Email */}
           <div>
             <div style={{fontSize:13,fontWeight:700,color:"#38bdf8",marginBottom:10}}>📧 Имейл (изпращане при готово устройство)</div>
-            <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Field label="SMTP сървър"><input value={form.smtpHost||""} onChange={e=>set("smtpHost",e.target.value)} placeholder="smtp.gmail.com"/></Field>
               <Field label="SMTP порт"><input value={form.smtpPort||"587"} onChange={e=>set("smtpPort",e.target.value)} placeholder="587"/></Field>
               <Field label="Имейл адрес"><input value={form.smtpUser||""} onChange={e=>set("smtpUser",e.target.value)} placeholder="serviz@gmail.com"/></Field>
@@ -2319,7 +2319,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
 
       {/* Received today */}
       {receivedToday.length > 0 && (
-        <Card style={{padding:0,overflow:"hidden"}} className="mobile-scroll-table">
+        <Card style={{padding:0,overflow:"hidden"}} className="t-scroll">
           <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:700,color:"#3b82f6"}}>📥 Приети устройства ({receivedToday.length})</div>
           <table>
             <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Телефон","Устройство","Проблем","Техник"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
@@ -2445,7 +2445,7 @@ function Calculator() {
     <div className="animate-fade">
       <h1 style={{margin:"0 0 22px",fontSize:22,fontWeight:800}}>🧮 Калкулатор за ремонт</h1>
 
-      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
 
         {/* ── Main calculator ── */}
         <Card>
@@ -2908,7 +2908,7 @@ function TrashTab({trash, onRestore, onDelete}) {
           <div style={{color:"#475569",fontSize:12,marginTop:6}}>Изтритите записи ще се появят тук</div>
         </Card>
       ) : (
-        <Card style={{padding:0,overflow:"hidden"}} className="mobile-scroll-table">
+        <Card style={{padding:0,overflow:"hidden"}} className="t-scroll">
           <table>
             <thead style={{background:"#0a1628"}}>
               <tr>{["Тип","Запис","Изтрит на","Остават дни",""].map(h=>(
