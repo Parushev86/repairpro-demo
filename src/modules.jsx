@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import { CATEGORIES } from "./lib/constants.js";
 
@@ -962,18 +962,18 @@ function DebtModal({debt,onSave,onClose}) {
 
 // ══ DISMANTLE TAB ═════════════════════════════════════════════════════════════
 const DEFAULT_PHONE_PARTS = [
-  {key:"display",       label:"Дисплей"},
-  {key:"back_cover",    label:"Заден капак"},
-  {key:"rear_camera",   label:"Задна камера"},
-  {key:"power_block",   label:"Блок захранване"},
-  {key:"frame",         label:"Рамка / Среда"},
-  {key:"battery",       label:"Батерия"},
-  {key:"front_camera",  label:"Предна камера"},
-  {key:"mainboard",     label:"Дънна платка"},
-  {key:"speaker",       label:"Слушалка"},
-  {key:"sim_holder",    label:"Сим държач"},
-  {key:"main_flex",     label:"Главен лентов кабел"},
-  {key:"button_flex",   label:"Лентов кабел бутони"},
+  {key:"display",     label:"Дисплей"},
+  {key:"back_cover",  label:"Заден капак"},
+  {key:"rear_camera", label:"Задна камера"},
+  {key:"power_block", label:"Блок захранване"},
+  {key:"frame",       label:"Рамка / Среда"},
+  {key:"battery",     label:"Батерия"},
+  {key:"front_camera",label:"Предна камера"},
+  {key:"mainboard",   label:"Дънна платка"},
+  {key:"speaker",     label:"Слушалка"},
+  {key:"sim_holder",  label:"Сим държач"},
+  {key:"main_flex",   label:"Главен лентов кабел"},
+  {key:"button_flex", label:"Лентов кабел бутони"},
 ];
 const PART_STATUS = ["Работи","Не работи","Не е тестван","Липсва"];
 const PSC = {"Работи":"#10b981","Не работи":"#ef4444","Не е тестван":"#f59e0b","Липсва":"#64748b"};
@@ -1023,9 +1023,9 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
           {filtered.map(r=>{
             const parts=r.parts_status||{};
-            const rAllParts=[...DEFAULT_PHONE_PARTS,...(r.custom_parts||[]).map(n=>({key:"custom_"+n,label:n}))];
-            const working=rAllParts.filter(p=>parts[p.key]==="Работи").length;
-            const broken=rAllParts.filter(p=>parts[p.key]==="Не работи").length;
+            const rAll=[...DEFAULT_PHONE_PARTS,...(r.custom_parts||[]).map(n=>({key:"custom_"+n,label:n}))];
+            const working=rAll.filter(p=>parts[p.key]==="Работи").length;
+            const broken=rAll.filter(p=>parts[p.key]==="Не работи").length;
             const sc=DSC[r.status]||"#64748b";
             return (
               <MCard key={r.id} style={{borderTop:"3px solid "+sc,padding:14}}>
@@ -1048,10 +1048,10 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
                 <div style={{display:"flex",gap:8,marginBottom:8,padding:"8px 10px",background:"#0f172a",borderRadius:8}}>
                   <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{working}</div><div style={{fontSize:10,color:"#64748b"}}>Работят</div></div>
                   <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#ef4444"}}>{broken}</div><div style={{fontSize:10,color:"#64748b"}}>Не работят</div></div>
-                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#64748b"}}>{rAllParts.length-working-broken}</div><div style={{fontSize:10,color:"#64748b"}}>Нетествани</div></div>
+                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#64748b"}}>{rAll.length-working-broken}</div><div style={{fontSize:10,color:"#64748b"}}>Нетествани</div></div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginBottom:8}}>
-                  {rAllParts.map(p=>{
+                  {rAll.map(p=>{
                     const st=parts[p.key]||"Не е тестван";
                     const c=PSC[st]||"#64748b";
                     return (
@@ -1093,8 +1093,6 @@ function DismantleModal({record,onSave,onClose}) {
   const fileRef=useRef();
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   const setPart=(key,val)=>sf(x=>({...x,parts_status:{...x.parts_status,[key]:val}}));
-
-  // All parts = default + custom
   const allParts=[
     ...DEFAULT_PHONE_PARTS,
     ...(f.custom_parts||[]).map(name=>({key:"custom_"+name,label:name})),
@@ -1113,7 +1111,6 @@ function DismantleModal({record,onSave,onClose}) {
       return {...x,custom_parts:(x.custom_parts||[]).filter(n=>n!==name),parts_status:np};
     });
   };
-
   const handlePhotos=(e)=>{
     Array.from(e.target.files).forEach(file=>{
       const rd=new FileReader();
@@ -1121,7 +1118,6 @@ function DismantleModal({record,onSave,onClose}) {
       rd.readAsDataURL(file);
     });
   };
-
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:8}}>
       <div style={{background:"#1e293b",borderRadius:16,width:"100%",maxWidth:680,maxHeight:"94vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
@@ -1173,17 +1169,10 @@ function DismantleModal({record,onSave,onClose}) {
                   );
                 })}
               </div>
-              {/* Add custom part */}
               <div style={{background:"#0f172a",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
                 <div style={{fontSize:11,color:"#64748b",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:.4}}>+ Добави нова част</div>
                 <div style={{display:"flex",gap:6}}>
-                  <input
-                    value={newPartName}
-                    onChange={e=>setNewPartName(e.target.value)}
-                    onKeyDown={e=>e.key==="Enter"&&addCustomPart()}
-                    placeholder="Напр. Fingerprint, Proximity..."
-                    style={{flex:1,fontSize:12,padding:"6px 10px"}}
-                  />
+                  <input value={newPartName} onChange={e=>setNewPartName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCustomPart()} placeholder="Напр. Fingerprint, Proximity..." style={{flex:1,fontSize:12,padding:"6px 10px"}}/>
                   <button onClick={addCustomPart} style={{background:"#10b981",color:"#fff",border:"none",borderRadius:7,padding:"6px 14px",cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0}}>+ Добави</button>
                 </div>
               </div>
