@@ -912,7 +912,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
 }
 
 function DebtModal({debt,onSave,onClose}) {
-  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",is_paid:false,paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
+  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   const handleCost=(val)=>{s("cost_price",val);if(!f.total_amount||f.total_amount===String(Number(f.cost_price)*Number(f.quantity)))s("total_amount",(Number(val)*Number(f.quantity)).toFixed(2));};
   const handleQty=(val)=>{s("quantity",Number(val));s("total_amount",(Number(f.cost_price||0)*Number(val)).toFixed(2));};
@@ -986,11 +986,15 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
   const [filter,setFilter]=useState("Всички");
   const filtered=(records||[]).filter(r=>{
     const q=search.toLowerCase();
-    return(!q||[r.brand,r.model,r.imei,r.notes].some(f=>(f||"").toLowerCase().includes(q)))&&(filter==="Всички"||r.status===filter);
+    return(!q||[r.brand,r.model,r.imei,r.notes].some(f=>(f||"").toLowerCase().includes(q)))
+      &&(filter==="Всички"||r.status===filter);
   });
   const exportAll=()=>{
     const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({"Дата":r.date,"Марка":r.brand,"Модел":r.model,"IMEI":r.imei||"","Цена €":Number(r.purchase_price||0),"Статус":r.status,"Бележки":r.notes||""}))), "За разглобяване");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({
+      "Дата":r.date,"Марка":r.brand,"Модел":r.model,"IMEI":r.imei||"",
+      "Цена €":Number(r.purchase_price||0),"Статус":r.status,"Бележки":r.notes||"",
+    }))),"За разглобяване");
     XLSX.writeFile(wb,"Разглобяване_"+today()+".xlsx");
   };
   return (
@@ -1009,7 +1013,10 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
         <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:0}}/>
         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
           {["Всички",...DISMANTLE_STATUSES].map(s=>(
-            <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?(DSC[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
+            <button key={s} onClick={()=>setFilter(s)} style={{
+              padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",
+              background:filter===s?(DSC[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b",
+            }}>{s}</button>
           ))}
         </div>
       </div>
@@ -1020,6 +1027,7 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
           <div style={{color:"#475569",fontSize:12,marginTop:6}}>Натисни "+ Нов запис"</div>
         </MCard>
       ):(
+        /* Grid — на мобилен 1 колона, на десктоп auto-fill */
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
           {filtered.map(r=>{
             const parts=r.parts_status||{};
@@ -1105,11 +1113,7 @@ function DismantleModal({record,onSave,onClose}) {
     setNewPartName("");
   };
   const removeCustomPart=(name)=>{
-    sf(x=>{
-      const np={...x.parts_status};
-      delete np["custom_"+name];
-      return {...x,custom_parts:(x.custom_parts||[]).filter(n=>n!==name),parts_status:np};
-    });
+    sf(x=>{const np={...x.parts_status};delete np["custom_"+name];return {...x,custom_parts:(x.custom_parts||[]).filter(n=>n!==name),parts_status:np};});
   };
   const handlePhotos=(e)=>{
     Array.from(e.target.files).forEach(file=>{
@@ -1157,7 +1161,7 @@ function DismantleModal({record,onSave,onClose}) {
                     <div key={p.key} style={{background:"#0f172a",borderRadius:8,padding:"8px 10px"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
                         <div style={{fontSize:11,fontWeight:700,color:"#e2e8f0"}}>{p.label}</div>
-                        {isCustom&&<button onClick={()=>removeCustomPart(p.label)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:14,padding:0,lineHeight:1}} title="Премахни">×</button>}
+                        {isCustom&&<button onClick={()=>removeCustomPart(p.label)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:14,padding:0,lineHeight:1}}>×</button>}
                       </div>
                       <div style={{display:"flex",gap:2,flexWrap:"wrap"}}>
                         {PART_STATUS.map(st=>{
