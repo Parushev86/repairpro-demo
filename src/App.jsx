@@ -493,10 +493,12 @@ export default function App() {
               notify("🗑️ Изтрит","warn");
             }}
             onAddPartToInventory={async r=>{
-              const PARTS_MAP={display:"Дисплей",battery:"Батерия",back_cover:"Заден капак",front_camera:"Предна камера",rear_camera:"Задна камера",mainboard:"Дънна платка",charging_port:"Зарядно гнездо",speaker:"Слушалка",microphone:"Микрофон",sim_reader:"SIM четец",wifi_module:"Wi-Fi модул",fingerprint:"Пръстов отпечатък",frame:"Рамка / Шаси",buttons:"Бутони",vibrator:"Вибратор"};
+              const PARTS_MAP={display:"Дисплей",back_cover:"Заден капак",rear_camera:"Задна камера",power_block:"Блок захранване",frame:"Рамка / Среда",battery:"Батерия",front_camera:"Предна камера",mainboard:"Дънна платка",speaker:"Слушалка",sim_holder:"Сим държач",main_flex:"Главен лентов кабел",button_flex:"Лентов кабел бутони"};
+              const customMap=Object.fromEntries((r.custom_parts||[]).map(n=>["custom_"+n,n]));
+              const allMap={...PARTS_MAP,...customMap};
               const parts=r.parts_status||{};
               let added=0;
-              for(const [key,label] of Object.entries(PARTS_MAP)){
+              for(const [key,label] of Object.entries(allMap)){
                 if(parts[key]==="Работи"){
                   const item={name:label+" "+r.brand+" "+r.model,category:"За разглобяване",quantity:1,min_qty:0,price:0,cost:0,supplier:"Разглобяване",notes:"IMEI: "+(r.imei||"—"),payment_status:"Платен",payment_method:"В брой"};
                   try{const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);added++;}catch(e){console.warn(e);}
@@ -2044,7 +2046,9 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
     toDate(o.updated_at) === date
   );
   
-  // Приходи от ремонти (крайна цена = труд + части + външна услуга)
+  // Приходи от ремонти — само В брой влиза в каса
+  const revenueCash   = issuedToday.filter(o=>o.payment_method==="В брой"||!o.payment_method).reduce((s,o)=>s+Number(o.total_price||o.price||0),0);
+  const revenueCard   = issuedToday.filter(o=>["С карта","Банка","Еконт","Спиди"].includes(o.payment_method)).reduce((s,o)=>s+Number(o.total_price||o.price||0),0);
   const revenue = issuedToday.reduce((s,o) => s + Number(o.total_price||o.price||0), 0);
   // Стойност на外ните услуги (разход) включен в цената
   const extServiceCost = issuedToday.reduce((s,o) => s + Number(o.external_service_price||0), 0);
@@ -2065,7 +2069,12 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
   // Общо приходи
   const totalRevenue = revenue + accRevToday + partsRevToday + phoneRevToday;
   // Налични в касата
-  const cashNow = openingCash + totalRevenue - expensesToday;
+  // cashNow = само В брой + В брой аксесоари/части/телефони - разходи
+  const accRevCash  = accSales.filter(s=>toDate(s.date)===date&&s.payment_method==="В брой").reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0);
+  const partsRevCash= partsSales.filter(s=>toDate(s.date)===date&&s.payment_status==="Платена"&&s.payment_method==="В брой").reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0);
+  const phoneRevCash= phoneSales.filter(s=>toDate(s.date)===date&&s.payment_method==="В брой").reduce((s,r)=>s+Number(r.sale_price||0),0);
+  const cashInflow  = revenueCash + accRevCash + partsRevCash + phoneRevCash;
+  const cashNow = openingCash + cashInflow - expensesToday;
   const totalAllCash = cashNow + Number(bankAmount||0) + Number(externalCash||0);
 
   // По начин на плащане
@@ -2215,6 +2224,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>🏦 НАЛИЧНО В КАСА</div>
           <div style={{fontSize:24,fontWeight:800,color:"#f59e0b"}}>€ {cashNow.toFixed(2)}</div>
           <div style={{fontSize:10,color:"var(--text3)",marginTop:2}}>Начало: € {openingCash.toFixed(2)}</div>
+          <div style={{fontSize:10,color:"#3b82f6",marginTop:1}}>💳 Карта/Банка/Доставка: € {revenueCard.toFixed(2)}</div>
           <div style={{marginTop:10,borderTop:"1px solid #334155",paddingTop:8,display:"flex",flexDirection:"column",gap:7}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:10,color:"#64748b",minWidth:70}}>🏛️ Банка:</span>
