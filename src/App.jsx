@@ -44,9 +44,13 @@ const Badge = ({status}) => (
   }}>{status}</span>
 );
 
-const Card = ({children, style={}}) => (
-  <div style={{background:"var(--bg2)", borderRadius:12, padding:20, ...style}}>{children}</div>
-);
+const Card = ({children, style={}, className=""}) => {
+  const isTScroll = className.includes("t-scroll");
+  const finalStyle = isTScroll
+    ? {background:"var(--bg2)", borderRadius:12, padding:20, ...style, overflow:"auto", WebkitOverflowScrolling:"touch", display:"block"}
+    : {background:"var(--bg2)", borderRadius:12, padding:20, ...style};
+  return <div className={className} style={finalStyle}>{children}</div>;
+};
 
 const Notif = ({notif}) => notif ? (
   <div style={{
@@ -439,7 +443,7 @@ export default function App() {
           <span style={{fontSize:16,fontWeight:800,color:"#38bdf8"}}>🔧 RepairPro</span>
         </div>
         {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:98}}/>}
-        <div className="main-content" style={{flex:1, overflow:"auto", padding:24}}>
+        <div style={{flex:1, overflow:"auto", padding:24}}>
         {tab==="dashboard"    && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
         {tab==="dashboard"    && !isAdmin && <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🔒</div><div style={{fontSize:18,color:"#64748b"}}>Нямаш достъп до тази страница</div></div>}
         {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
@@ -742,7 +746,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
       </div>
 
       {/* KPI */}
-      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
         {[
           {l:"Активни поръчки", v:activeOrders.length, icon:"🔧", c:"#3b82f6"},
           {l:"Готови за вземане",v:readyOrders.length, icon:"✅", c:"#10b981"},
@@ -757,7 +761,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
         ))}
       </div>
 
-      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
         {/* Revenue chart */}
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Оборот — последните 6 месеца</div>
@@ -784,7 +788,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
         </Card>
       </div>
 
-      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:14}}>
         {/* Tech stats */}
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Техници</div>
@@ -859,7 +863,7 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
           }}>{d}</button>
         ))}
       </div>
-      <div className="orders-desktop-table" style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
+      <div style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["№ Поръчка","Клиент","Телефон","Устройство","Проблем","Техник","Крайна цена","Статус","Плащане","Дата",""].map(h=>(
@@ -907,32 +911,6 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
             ))}
           </tbody>
         </table>
-      </div>
-      <div className="orders-mobile-cards">
-        {orders.length===0&&<div style={{textAlign:"center",padding:32,color:"var(--text3)",background:"var(--bg2)",borderRadius:12}}>Няма намерени поръчки</div>}
-        {orders.map(o=>(
-          <div key={o.id+"m"} style={{background:"var(--bg2)",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:`3px solid ${STATUS_COLOR[o.status]||"#334155"}`}}
-               onClick={()=>onEdit(o)}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{o.client_name}</div>
-                <div style={{fontSize:11,color:"#38bdf8",fontFamily:"monospace"}}>{o.id}</div>
-              </div>
-              <Badge status={o.status}/>
-            </div>
-            <div style={{fontSize:12,color:"var(--text2)",marginBottom:4}}>{o.device_type} {o.brand} {o.model}</div>
-            {o.problem&&<div style={{fontSize:11,color:"var(--text3)",marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.problem}</div>}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-              <div style={{fontSize:14,fontWeight:800,color:"#10b981"}}>€ {Number(o.total_price||o.price||0).toFixed(2)}</div>
-              <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
-                <Btn color="#3b82f6" onClick={()=>onEdit(o)} style={{padding:"4px 8px",fontSize:11}}>✏️</Btn>
-                <Btn color="#8b5cf6" onClick={()=>onPrint(o)} style={{padding:"4px 8px",fontSize:11}}>📄</Btn>
-                <Btn color="#ef4444" onClick={()=>{if(confirm(`Изтрий?`))onDelete(o.id);}} style={{padding:"4px 8px",fontSize:11}}>🗑️</Btn>
-              </div>
-            </div>
-            <div style={{fontSize:11,color:"var(--text3)"}}>{o.phone} • {fmtDate(o.date_in)}{o.technician?" • "+o.technician:""}</div>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -1255,7 +1233,7 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
         {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap",flexShrink:0}}>{c}</button>)}
       </div>
-      <Card className="inv-desktop-table t-scroll" style={{padding:0,overflow:"hidden"}}>
+      <Card className="inv-desktop-table t-scroll" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Наименование","Категория","Наличност","Мин.","Продажна цена","Себестойност","Стойност","Доставчик",""].map(h=><th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr>
@@ -1450,7 +1428,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
         <Field label="От дата"><input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={{width:160}}/></Field>
         <Field label="До дата"><input type="date" value={to} onChange={e=>setTo(e.target.value)} style={{width:160}}/></Field>
       </div>
-      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:16}}>
         {[
           {l:"Поръчки в периода",v:filtered.length,c:"#3b82f6"},
           {l:"Издадени",v:filtered.filter(o=>o.status==="Издаден").length,c:"#10b981"},
@@ -1463,7 +1441,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
           </Card>
         ))}
       </div>
-      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Справка по техници (всички)</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -1491,7 +1469,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
         </Card>
       </div>
       {/* Filtered orders list */}
-      {filtered.length>0&&<Card style={{padding:0,overflow:"hidden"}} className="t-scroll">
+      {filtered.length>0&&<Card style={{padding:0}} className="t-scroll">
         <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:600,color:"var(--text3)"}}>Поръчки в периода ({filtered.length})</div>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Устройство","Техник","Статус","Цена","Дата"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
@@ -1531,7 +1509,7 @@ function TechniciansTab({technicians,orders,onSave,onDelete,onExport}) {
       </div>
       <Card style={{marginBottom:18}}>
         <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:14}}>{editing?"Редактирай техник":"Добави нов техник"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
+        <div className="form-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
           <Field label="Три имена *"><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Иван Петров" onKeyDown={e=>e.key==="Enter"&&submit()}/></Field>
           <Field label="Телефон"><input value={form.phone||""} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="0888 123 456"/></Field>
           <Field label="Имейл"><input value={form.email||""} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="ivan@serviz.bg"/></Field>
@@ -1547,7 +1525,7 @@ function TechniciansTab({technicians,orders,onSave,onDelete,onExport}) {
           {editing&&<button onClick={()=>{setEditing(null);setForm({name:"",phone:"",email:"",color:"#38bdf8"});}} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:8,padding:"9px 16px",cursor:"pointer"}}>Отказ</button>}
         </div>
       </Card>
-      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
         {technicians.map((t,i)=>{
           const to=orders.filter(o=>o.technician===t.name);
           const rev=to.filter(o=>o.status==="Издаден").reduce((s,o)=>s+Number(o.price||0),0);
@@ -2173,7 +2151,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
       </Card>
 
       {/* KPI cards */}
-      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
         <Card style={{borderLeft:"4px solid #10b981",padding:"14px 16px"}}>
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>💰 ОБЩО ПРИХОДИ</div>
           <div style={{fontSize:24,fontWeight:800,color:"#10b981"}}>€ {totalRevenue.toFixed(2)}</div>
@@ -2234,7 +2212,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
         </Card>
       </div>
 
-      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:18}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:18}}>
         <Card style={{borderLeft:"4px solid #3b82f6",padding:"14px 18px"}}>
           <div style={{fontSize:22,fontWeight:800}}>{receivedToday.length}</div>
           <div style={{fontSize:11,color:"var(--text3)"}}>Приети устройства</div>
@@ -2275,7 +2253,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
 
       {/* By technician */}
       {techDay.length > 0 && (
-        <Card style={{marginBottom:18}}>
+        <Card style={{marginBottom:18}} className="t-scroll">
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>По техник за {new Date(date).toLocaleDateString("bg-BG")}</div>
           <table>
             <thead style={{background:"#0a1628"}}>
@@ -2297,7 +2275,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
 
       {/* Issued today */}
       {issuedToday.length > 0 && (
-        <Card style={{marginBottom:18,padding:0,overflow:"hidden"}}>
+        <Card style={{marginBottom:18,padding:0}} className="t-scroll">
           <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:700,color:"#10b981"}}>✅ Издадени устройства ({issuedToday.length})</div>
           <table>
             <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Телефон","Устройство","Техник","Цена"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
@@ -2319,7 +2297,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
 
       {/* Received today */}
       {receivedToday.length > 0 && (
-        <Card style={{padding:0,overflow:"hidden"}} className="t-scroll">
+        <Card style={{padding:0}} className="t-scroll">
           <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:700,color:"#3b82f6"}}>📥 Приети устройства ({receivedToday.length})</div>
           <table>
             <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Телефон","Устройство","Проблем","Техник"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
@@ -2445,7 +2423,7 @@ function Calculator() {
     <div className="animate-fade">
       <h1 style={{margin:"0 0 22px",fontSize:22,fontWeight:800}}>🧮 Калкулатор за ремонт</h1>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+      <div className="calc-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
 
         {/* ── Main calculator ── */}
         <Card>
@@ -2666,7 +2644,7 @@ function PricingTab() {
     setActiveService(Object.keys(nd)[0] || "");
   };
 
-  const service = prices[activeService];
+  const service = prices[activeService] || prices[Object.keys(prices)[0]] || {label:"",models:[],client:{},colleague:{}};
 
   const printPriceList = () => {
     const w = window.open("","_blank");
@@ -2708,10 +2686,10 @@ function PricingTab() {
       </div>
 
       {/* Service tabs */}
-      <div style={{display:"flex",gap:8,marginBottom:18}}>
+      <div className="pricing-tabs" style={{display:"flex",gap:8,marginBottom:18,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
         {Object.entries(prices).map(([key,svc])=>(
           <button key={key} onClick={()=>setActiveService(key)} style={{
-            padding:"8px 18px",borderRadius:9,fontSize:13,fontWeight:600,cursor:"pointer",border:"none",
+            padding:"8px 18px",borderRadius:9,fontSize:13,fontWeight:600,cursor:"pointer",border:"none",flexShrink:0,
             background:activeService===key?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
             color:activeService===key?"#fff":"#64748b",
           }}>{svc.label}</button>
@@ -2719,7 +2697,8 @@ function PricingTab() {
       </div>
 
       {/* Price table */}
-      <div style={{background:"#1e293b",borderRadius:14,overflow:"hidden"}}>
+      <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",borderRadius:14}}>
+      <div style={{background:"#1e293b",borderRadius:14,overflow:"hidden",minWidth:380}}>
         <div style={{padding:"12px 18px",background:"#0a1628",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{service.label}</span>
           <div style={{display:"flex",gap:20}}>
@@ -2753,6 +2732,7 @@ function PricingTab() {
         </table>
       </div>
 
+      </div>
       {/* Edit modal */}
       {editMode && editData && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -2908,7 +2888,7 @@ function TrashTab({trash, onRestore, onDelete}) {
           <div style={{color:"#475569",fontSize:12,marginTop:6}}>Изтритите записи ще се появят тук</div>
         </Card>
       ) : (
-        <Card style={{padding:0,overflow:"hidden"}} className="t-scroll">
+        <Card style={{padding:0}} className="t-scroll">
           <table>
             <thead style={{background:"#0a1628"}}>
               <tr>{["Тип","Запис","Изтрит на","Остават дни",""].map(h=>(
@@ -3156,7 +3136,7 @@ export function UsersTab() {
         <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,marginBottom:14,textTransform:"uppercase",letterSpacing:.5}}>
           {editing!==null ? "✏️ Редактирай потребител" : "➕ Нов потребител"}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
+        <div className="form-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
           <div>
             <label style={{fontSize:11,color:"var(--text3)",display:"block",marginBottom:4}}>Потребителско име</label>
             <input value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="ivan_technik"/>
@@ -3199,7 +3179,8 @@ export function UsersTab() {
       </div>
 
       {/* Users list */}
-      <div style={{background:"#1e293b",borderRadius:14,overflow:"hidden"}}>
+      <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",borderRadius:14}}>
+      <div style={{background:"#1e293b",borderRadius:14,overflow:"hidden",minWidth:480}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Потребител","Роля","Парола",""].map(h=>(
@@ -3242,6 +3223,7 @@ export function UsersTab() {
         </table>
       </div>
 
+      </div>
       <div style={{marginTop:16,padding:"12px 16px",background:"#0f172a",borderRadius:10,fontSize:12,color:"#64748b"}}>
         💡 Паролите се пазят локално в браузъра. За повече сигурност препоръчваме различни пароли за всеки потребител.
         <br/>За да излезеш от акаунта: затвори браузъра или изчисти сесията.
