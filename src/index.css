@@ -22,13 +22,19 @@ table{border-collapse:collapse;width:100%}
 .animate-fade{animation:fadeIn .25s ease}
 .spinner{animation:spin .8s linear infinite;display:inline-block}
 
+/* Hidden by default */
 .mobile-topbar{display:none}
 .orders-mobile-cards{display:none}
 .mobile-inv-card{display:none}
 
-/* t-scroll tables */
+/* App.jsx scroll tables */
+.t-scroll{overflow-x:auto !important;-webkit-overflow-scrolling:touch;display:block !important}
 .t-scroll table{min-width:480px;font-size:11px}
 .t-scroll td,.t-scroll th{padding:5px 8px !important;white-space:nowrap}
+
+/* modules.jsx scroll tables — handled via MCard wrapper div minWidth:520 */
+.scroll-x table{font-size:11px}
+.scroll-x td,.scroll-x th{white-space:nowrap}
 
 /* ════════ MOBILE ════════ */
 @media(max-width:768px){
@@ -44,59 +50,52 @@ table{border-collapse:collapse;width:100%}
 
   .main-content{padding:10px !important}
 
+  /* Сервиз */
   .orders-desktop-table{display:none !important}
   .orders-mobile-cards{display:block !important}
+
+  /* Склад */
   .inv-desktop-table{display:none !important}
   .mobile-inv-card{display:block !important}
 
+  /* KPI грид → 2 колони */
   .kpi-grid{grid-template-columns:1fr 1fr !important}
+
+  /* Dashboard/Reports → 1 колона */
   .dash-grid{grid-template-columns:1fr !important}
+
+  /* Calculator */
   .calc-grid{grid-template-columns:1fr !important}
+
+  /* Technicians/Users form */
   .form-grid{grid-template-columns:1fr 1fr !important}
+
+  /* Expenses top grid → 2 колони */
+  .m-exp-grid{grid-template-columns:1fr 1fr !important}
+
+  /* Modal 2-col grids → 1 колона */
+  .m-modal-2col{grid-template-columns:1fr !important}
+  .m-modal-grid{grid-template-columns:1fr !important}
 
   /* Modals full width */
   div[style*="maxWidth:820"],
-  div[style*="maxWidth:700"],
-  div[style*="maxWidth:620"],
-  div[style*="maxWidth:520"],
   div[style*="maxWidth:860"]{
     max-width:calc(100vw - 16px) !important;
     max-height:96vh !important;
     border-radius:12px !important;
   }
 
+  /* Pricing tabs scroll */
+  div[style*="gap:8,marginBottom:18"]{
+    overflow-x:auto !important;flex-wrap:nowrap !important;
+    -webkit-overflow-scrolling:touch;padding-bottom:4px;
+  }
+  div[style*="gap:8,marginBottom:18"] button{flex-shrink:0}
+
+  /* Pricing table */
+  div[style*="borderRadius:14"]{overflow-x:auto !important;-webkit-overflow-scrolling:touch}
+  div[style*="borderRadius:14"] table{min-width:380px;font-size:11px}
+
   h1{font-size:17px !important}
   ::-webkit-scrollbar{width:2px;height:2px}
-}
-
-/* ── modules.jsx mobile ── */
-.scroll-x {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-  display: block !important;
-}
-.scroll-x table {
-  min-width: 500px;
-  font-size: 11px;
-}
-.scroll-x td, .scroll-x th {
-  padding: 5px 8px !important;
-  white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-  /* Expenses top grid → 1 колона */
-  .m-exp-grid {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  /* PartsSaleModal 2-col → 1 колона */
-  .m-modal-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* ExpenseModal, BuybackModal и др. вградени гридове */
-  div[style*="gridTemplateColumns:\"1fr 1fr\",gap:12"] {
-    grid-template-columns: 1fr !important;
-  }
 }
