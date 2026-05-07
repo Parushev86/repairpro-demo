@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
 import { CATEGORIES } from "./lib/constants.js";
 
@@ -13,7 +13,6 @@ const DELIVERY_METHODS = ["На място","Еконт","Спиди"];
 const SO_STATUSES      = ["Чака","Поръчана","Пристигнала","Отказана"];
 const SO_COLORS        = {Чака:"#f59e0b",Поръчана:"#3b82f6",Пристигнала:"#10b981",Отказана:"#ef4444"};
 
-// ── Shared UI ─────────────────────────────────────────────────────────────────
 export function MField({label,children,style={}}) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:4,...style}}>
@@ -33,17 +32,17 @@ function MCard({children,style={}}) {
 }
 function MModal({title,subtitle,onClose,children,footer,maxWidth=620}) {
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:8}}>
-      <div style={{background:"#1e293b",borderRadius:16,width:"100%",maxWidth,maxHeight:"94vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
-        <div style={{padding:"14px 20px",borderBottom:"1px solid #334155",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"#1e293b",borderRadius:16,width:"100%",maxWidth,maxHeight:"92vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
+        <div style={{padding:"16px 22px",borderBottom:"1px solid #334155",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
           <div>
             <h2 style={{margin:0,fontSize:17,fontWeight:800}}>{title}</h2>
             {subtitle&&<div style={{fontSize:11,color:"#64748b",marginTop:2}}>{subtitle}</div>}
           </div>
           <button onClick={onClose} style={{background:"#334155",border:"none",color:"#94a3b8",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:16}}>×</button>
         </div>
-        <div style={{flex:1,overflow:"auto",padding:20}}>{children}</div>
-        {footer&&<div style={{padding:"12px 20px",borderTop:"1px solid #334155",display:"flex",justifyContent:"flex-end",gap:10,flexShrink:0}}>{footer}</div>}
+        <div style={{flex:1,overflow:"auto",padding:22}}>{children}</div>
+        {footer&&<div style={{padding:"14px 22px",borderTop:"1px solid #334155",display:"flex",justifyContent:"flex-end",gap:10,flexShrink:0}}>{footer}</div>}
       </div>
     </div>
   );
@@ -54,27 +53,6 @@ function SBadge({text}) {
 }
 function CancelBtn({onClick}) {
   return <button onClick={onClick} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:8,padding:"9px 18px",cursor:"pointer",fontWeight:600}}>Отказ</button>;
-}
-
-// Мобилна карта — обвивка
-function MobileCard({children,borderColor="#334155",onClick}) {
-  return (
-    <div onClick={onClick} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid "+borderColor,cursor:onClick?"pointer":"default"}}>
-      {children}
-    </div>
-  );
-}
-
-// Десктоп таблица + мобилни карти wrapper
-function TableWrapper({children,mobileCards}) {
-  return (
-    <>
-      <div className="m-desktop-only" style={{overflowX:"auto",WebkitOverflowScrolling:"touch",borderRadius:12,background:"#1e293b"}}>
-        <div style={{minWidth:520}}>{children}</div>
-      </div>
-      <div className="m-mobile-only">{mobileCards}</div>
-    </>
-  );
 }
 
 // ══ EXPENSES ══════════════════════════════════════════════════════════════════
@@ -91,77 +69,48 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
   const openingCash=Number(cashEntry?.opening_cash||0);
   const exportDay=()=>{
     const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(e=>({Дата:e.date,Описание:e.description,Категория:e.category,"Платено на":e.paid_to||"","Сума €":Number(e.amount||0),Бележки:e.notes||""}))), "Разходи");
-    XLSX.writeFile(wb,"Разходи_"+date+".xlsx");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(e=>({Дата:e.date,Описание:e.description,Категория:e.category,"Платено на":e.paid_to||"","Сума €":Number(e.amount||0),Бележки:e.notes||""}))),  "Разходи");
+    XLSX.writeFile(wb,`Разходи_${date}.xlsx`);
   };
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>💸 Разходи</h1>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>💸 Разходи</h1>
+        <div style={{display:"flex",gap:8}}>
           <MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn>
-          <MBtn color="#f59e0b" bg="#451a03" onClick={()=>{setCashInput(cashEntry?.opening_cash||"");setShowCash(true);}}>💰 Начало</MBtn>
-          <MPrimaryBtn onClick={()=>setModal({})} color="linear-gradient(135deg,#ef4444,#dc2626)">+ Разход</MPrimaryBtn>
+          <MBtn color="#f59e0b" bg="#451a03" onClick={()=>{setCashInput(cashEntry?.opening_cash||"");setShowCash(true);}}>💰 Начало на деня</MBtn>
+          <MPrimaryBtn onClick={()=>setModal({})} color="linear-gradient(135deg,#ef4444,#dc2626)">+ Нов разход</MPrimaryBtn>
         </div>
       </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"auto 1fr 1fr 1fr",gap:10,marginBottom:14,alignItems:"end"}}>
-        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:150}}/></MField>
-        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:10,color:"#64748b"}}>Начало</div><div style={{fontSize:18,fontWeight:800,color:"#10b981"}}>{fmtM(openingCash)}</div></MCard>
-        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #ef4444"}}><div style={{fontSize:10,color:"#64748b"}}>Разходи</div><div style={{fontSize:18,fontWeight:800,color:"#ef4444"}}>{fmtM(totalExp)}</div></MCard>
-        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #38bdf8"}}><div style={{fontSize:10,color:"#64748b"}}>Баланс</div><div style={{fontSize:18,fontWeight:800,color:"#38bdf8"}}>{fmtM(openingCash-totalFromCash)}</div></MCard>
+      <div style={{display:"grid",gridTemplateColumns:"auto 1fr 1fr 1fr",gap:14,marginBottom:18,alignItems:"end"}}>
+        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:170}}/></MField>
+        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Начало на деня</div><div style={{fontSize:20,fontWeight:800,color:"#10b981"}}>{fmtM(openingCash)}</div></MCard>
+        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #ef4444"}}><div style={{fontSize:11,color:"#64748b"}}>Разходи</div><div style={{fontSize:20,fontWeight:800,color:"#ef4444"}}>{fmtM(totalExp)}</div></MCard>
+        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #38bdf8"}}><div style={{fontSize:11,color:"#64748b"}}>Баланс (каса)</div><div style={{fontSize:20,fontWeight:800,color:"#38bdf8"}}>{fmtM(openingCash-totalFromCash)}</div><div style={{fontSize:10,color:"#64748b",marginTop:2}}>Не от каса: {fmtM(totalNotCash)}</div></MCard>
       </div>
-
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма разходи за {fmtDate(date)}</MCard>}
-            {filtered.map(e=>(
-              <MobileCard key={e.id} borderColor="#ef4444">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{e.description}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(e.date)}</div>
-                    {e.paid_to&&<div style={{fontSize:11,color:"#94a3b8"}}>→ {e.paid_to}</div>}
-                  </div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#ef4444",marginLeft:10}}>{fmtM(e.amount)}</div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                    <SBadge text={e.category}/>
-                    {e.from_cash===false&&<span style={{background:"#334155",color:"#94a3b8",padding:"2px 6px",borderRadius:10,fontSize:10}}>🏦 не от каса</span>}
-                  </div>
-                  <div style={{display:"flex",gap:4}}>
-                    <MBtn color="#3b82f6" onClick={()=>setModal(e)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                    <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDeleteExpense(e.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
-          <thead style={{background:"#0a1628"}}><tr>{["Дата","Описание","Категория","Платено на","Сума","Бележки",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead style={{background:"#0a1628"}}><tr>{["Дата","Описание","Категория","Платено на","Сума","Бележки",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.length===0&&<tr><td colSpan={7} style={{textAlign:"center",padding:32,color:"#475569"}}>Няма разходи за {fmtDate(date)}</td></tr>}
             {filtered.map(e=>(
               <tr key={e.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={ev=>ev.currentTarget.style.background="#243044"} onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}>
-                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(e.date)}</td>
+                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtDate(e.date)}</td>
                 <td style={{padding:"9px 14px",fontSize:13,fontWeight:600}}>{e.description}</td>
                 <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4,flexWrap:"wrap"}}><SBadge text={e.category}/>{e.from_cash===false&&<span style={{background:"#1e293b",color:"#64748b",padding:"3px 8px",borderRadius:20,fontSize:10,fontWeight:600}}>🏦 не от каса</span>}</div></td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#94a3b8"}}>{e.paid_to||"—"}</td>
-                <td style={{padding:"9px 14px",fontSize:14,fontWeight:800,color:"#ef4444",whiteSpace:"nowrap"}}>{fmtM(e.amount)}</td>
+                <td style={{padding:"9px 14px",fontSize:14,fontWeight:800,color:"#ef4444"}}>{fmtM(e.amount)}</td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{e.notes||"—"}</td>
                 <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(e)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDeleteExpense(e.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </TableWrapper>
-
+      </MCard>
       {modal!==null&&<ExpenseModal expense={modal} onSave={r=>{onSaveExpense(r);setModal(null);}} onClose={()=>setModal(null)}/>}
       {showCash&&<MModal title="💰 Начало на деня — Каса" onClose={()=>setShowCash(false)} footer={<><CancelBtn onClick={()=>setShowCash(false)}/><MPrimaryBtn onClick={()=>{onSaveCash({id:cashEntry?.id,date,opening_cash:Number(cashInput)||0});setShowCash(false);notify("💰 Касата е записана ✓");}} color="linear-gradient(135deg,#10b981,#059669)">💾 Запази</MPrimaryBtn></>}>
-        <MField label={"Начална сума за "+fmtDate(date)+" (€)"}><input type="number" min="0" step="0.01" value={cashInput} onChange={e=>setCashInput(e.target.value)} placeholder="0.00" style={{fontSize:22,fontWeight:800,textAlign:"center"}}/></MField>
+        <MField label={`Начална сума за ${fmtDate(date)} (€)`}><input type="number" min="0" step="0.01" value={cashInput} onChange={e=>setCashInput(e.target.value)} placeholder="0.00" style={{fontSize:22,fontWeight:800,textAlign:"center"}}/></MField>
+        <p style={{color:"#64748b",fontSize:12,marginTop:12}}>Въведи с колко пари в брой започва касата.</p>
       </MModal>}
     </div>
   );
@@ -172,7 +121,7 @@ function ExpenseModal({expense,onSave,onClose}) {
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   return (
     <MModal title={expense?.id?"Редактирай разход":"Нов разход"} onClose={onClose} footer={<><CancelBtn onClick={onClose}/><MPrimaryBtn onClick={()=>{if(!f.description||!f.amount){alert("Попълни описание и сума!");return;}onSave(f);}} color="linear-gradient(135deg,#ef4444,#dc2626)">💾 Запази</MPrimaryBtn></>}>
-      <div className="m-modal-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <MField label="Дата"><input type="date" value={f.date} onChange={e=>s("date",e.target.value)}/></MField>
         <MField label="Категория"><select value={f.category} onChange={e=>s("category",e.target.value)}>{EXPENSE_CATS.map(c=><option key={c}>{c}</option>)}</select></MField>
         <MField label="Описание *" style={{gridColumn:"1/-1"}}><input value={f.description} onChange={e=>s("description",e.target.value)} placeholder="За какво е разходът..."/></MField>
@@ -185,8 +134,12 @@ function ExpenseModal({expense,onSave,onClose}) {
               <div style={{position:"absolute",top:2,left:f.from_cash!==false?22:2,width:20,height:20,background:"#fff",borderRadius:"50%",transition:"left .2s"}}/>
             </div>
             <div>
-              <div style={{fontSize:13,fontWeight:700,color:f.from_cash!==false?"#10b981":"#94a3b8"}}>{f.from_cash!==false?"💰 Платено от каса":"🏦 Не е платено от каса"}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{f.from_cash!==false?"Сумата ще намали касата":"Касата няма да се промени"}</div>
+              <div style={{fontSize:13,fontWeight:700,color:f.from_cash!==false?"#10b981":"#94a3b8"}}>
+                {f.from_cash!==false?"💰 Платено от каса":"🏦 Не е платено от каса"}
+              </div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                {f.from_cash!==false?"Сумата ще намали наличността в касата":"Касата няма да се промени"}
+              </div>
             </div>
           </label>
         </div>
@@ -202,61 +155,40 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
   const filtered=sales.filter(s=>(s.date||"").slice(0,10)===date);
   const totalRev=filtered.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0);
   const totalCost=filtered.reduce((s,r)=>s+Number(r.cost_price||0)*Number(r.quantity||1),0);
-  const exportDay=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Артикул:r.item_name,"Бр.":r.quantity,"Доставна €":r.cost_price,"Продажна €":r.sale_price,"Общо €":Number(r.sale_price||0)*Number(r.quantity||1),Плащане:r.payment_method,Купувач:r.buyer_name||""}))), "Аксесоари");XLSX.writeFile(wb,"Аксесоари_"+date+".xlsx");};
+  const exportDay=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Артикул:r.item_name,"Бр.":r.quantity,"Доставна €":r.cost_price,"Продажна €":r.sale_price,"Общо €":Number(r.sale_price||0)*Number(r.quantity||1),Плащане:r.payment_method,Купувач:r.buyer_name||""}))), "Аксесоари");XLSX.writeFile(wb,`Аксесоари_${date}.xlsx`);};
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>🎧 Аксесоари</h1>
-        <div style={{display:"flex",gap:6}}><MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова</MPrimaryBtn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>🎧 Продажби аксесоари</h1>
+        <div style={{display:"flex",gap:8}}><MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
-      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"flex-end",flexWrap:"wrap"}}>
-        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:150}}/></MField>
-        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #10b981",flex:1,minWidth:100}}><div style={{fontSize:10,color:"#64748b"}}>Приход</div><div style={{fontSize:18,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
-        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #f59e0b",flex:1,minWidth:100}}><div style={{fontSize:10,color:"#64748b"}}>Печалба</div><div style={{fontSize:18,fontWeight:800,color:"#f59e0b"}}>{fmtM(totalRev-totalCost)}</div></MCard>
+      <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-end"}}>
+        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:170}}/></MField>
+        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #10b981",flex:1}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:20,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
+        <MCard style={{padding:"12px 16px",borderLeft:"4px solid #f59e0b",flex:1}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:20,fontWeight:800,color:"#f59e0b"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма продажби за {fmtDate(date)}</MCard>}
-            {filtered.map(r=>(
-              <MobileCard key={r.id} borderColor="#10b981">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{r.item_name}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(r.date)} · {r.quantity} бр.{r.buyer_name?" · "+r.buyer_name:""}</div>
-                  </div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#10b981",marginLeft:10}}>{fmtM(Number(r.sale_price)*Number(r.quantity||1))}</div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <SBadge text={r.payment_method}/>
-                  <div style={{display:"flex",gap:4}}>
-                    <MBtn color="#3b82f6" onClick={()=>setModal(r)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                    <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
-          <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Общо","Плащане","Купувач",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Общо","Плащане","Купувач",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.length===0&&<tr><td colSpan={8} style={{textAlign:"center",padding:32,color:"#475569"}}>Няма продажби за {fmtDate(date)}</td></tr>}
             {filtered.map(r=>(
               <tr key={r.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={e=>e.currentTarget.style.background="#243044"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(r.date)}</td>
+                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtDate(r.date)}</td>
                 <td style={{padding:"9px 14px",fontSize:13,fontWeight:600}}>{r.item_name}</td>
                 <td style={{padding:"9px 14px"}}>{r.quantity}</td>
-                <td style={{padding:"9px 14px",fontWeight:700,color:"#10b981",whiteSpace:"nowrap"}}>{fmtM(r.sale_price)}</td>
-                <td style={{padding:"9px 14px",fontWeight:800,color:"#10b981",whiteSpace:"nowrap"}}>{fmtM(Number(r.sale_price)*Number(r.quantity||1))}</td>
+                <td style={{padding:"9px 14px",fontWeight:700,color:"#10b981"}}>{fmtM(r.sale_price)}</td>
+                <td style={{padding:"9px 14px",fontWeight:800,color:"#10b981"}}>{fmtM(Number(r.sale_price)*Number(r.quantity||1))}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={r.payment_method}/></td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#94a3b8"}}>{r.buyer_name||"—"}</td>
-                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
+                  <MBtn color="#fbbf24" title="Гаранционна карта" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба на телефон",technician:"",warranty_days:r.warranty_days||30,warranty_amount:r.warranty_amount||1,warranty_unit:r.warranty_unit||"месеца",date_out:r.date})}>🛡️</MBtn>
+                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </TableWrapper>
+      </MCard>
       {modal!==null&&<AccSaleModal sale={modal} inventory={inventory} onSave={r=>{onSave(r,modal);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -331,8 +263,7 @@ function AccSaleModal({sale,inventory,onSave,onClose}) {
   );
 }
 
-
-// ══ BUYBACKS ═══════════════════════════════════════════════════════════════════
+// ══ BUYBACKS ════════════════════════════════════════════════════════════════════
 export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory,notify}) {
   const [modal,setModal]=useState(null);
   const [search,setSearch]=useState("");
@@ -368,61 +299,32 @@ export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory
     <script>window.onload=()=>{window.print();}</script></body></html>`);
     w.document.close();
   };
-  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(b=>({Дата:b.date,Марка:b.brand,Модел:b.model,IMEI:b.imei||"",Продавач:b.seller_name||"",Телефон:b.seller_phone||"","Цена €":Number(b.price||0),Статус:b.status,"В склада":b.added_to_stock?"Да":"Не"}))), "Изкупуване");XLSX.writeFile(wb,"Изкупуване_"+today()+".xlsx");};
+  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(b=>({Дата:b.date,Марка:b.brand,Модел:b.model,IMEI:b.imei||"",Продавач:b.seller_name||"",Телефон:b.seller_phone||"","Цена €":Number(b.price||0),Статус:b.status,"В склада":b.added_to_stock?"Да":"Не"}))), "Изкупуване");XLSX.writeFile(wb,`Изкупуване_${today()}.xlsx`);};
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>📱 Изкупуване</h1>
-        <div style={{display:"flex",gap:6}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нов</MPrimaryBtn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>📱 Изкупуване на телефони</h1>
+        <div style={{display:"flex",gap:8}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нов запис</MPrimaryBtn></div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:120}}/>
-        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{["Всички",...BUYBACK_STATUSES].map(s=>(
-          <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?({Изкупен:"#10b981",Отказан:"#ef4444","Чака потвърждение":"#f59e0b"}[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
+      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
+        <div style={{display:"flex",gap:5}}>{["Всички",...BUYBACK_STATUSES].map(s=>(
+          <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?({Изкупен:"#10b981",Отказан:"#ef4444","Чака потвърждение":"#f59e0b"}[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
         ))}</div>
       </div>
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма записи</MCard>}
-            {filtered.map(b=>(
-              <MobileCard key={b.id} borderColor="#38bdf8">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{b.brand} {b.model}</div>
-                    {b.imei&&<div style={{fontSize:10,color:"#94a3b8",fontFamily:"monospace"}}>IMEI: {b.imei}</div>}
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(b.date)}{b.seller_name?" · "+b.seller_name:""}</div>
-                    {b.seller_phone&&<div style={{fontSize:11,color:"#94a3b8"}}>📞 {b.seller_phone}</div>}
-                  </div>
-                  <div style={{textAlign:"right",marginLeft:10}}>
-                    <div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(b.price)}</div>
-                    <SBadge text={b.status}/>
-                  </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-                  <div>{b.added_to_stock?<span style={{fontSize:11,color:"#10b981"}}>✅ Заприходен</span>:b.status==="Изкупен"?<MBtn color="#8b5cf6" onClick={()=>onAddToInventory(b)} style={{fontSize:11,padding:"3px 8px"}}>📦 Заприходи</MBtn>:null}</div>
-                  <div style={{display:"flex",gap:4}}>
-                    <MBtn color="#3b82f6" onClick={()=>setModal(b)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                    <MBtn color="#8b5cf6" onClick={()=>printProtocol(b)} style={{padding:"4px 8px",fontSize:12}}>📄</MBtn>
-                    <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(b.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
-          <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Продавач","Телефон","Цена","Статус","Склад",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Продавач","Телефон","Цена","Статус","Склад",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.length===0&&<tr><td colSpan={9} style={{textAlign:"center",padding:32,color:"#475569"}}>Няма записи</td></tr>}
             {filtered.map(b=>(
               <tr key={b.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={e=>e.currentTarget.style.background="#243044"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(b.date)}</td>
+                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtDate(b.date)}</td>
                 <td style={{padding:"9px 14px",fontSize:13,fontWeight:600}}>{b.brand} {b.model}</td>
                 <td style={{padding:"9px 14px",fontSize:11,fontFamily:"monospace",color:"#94a3b8"}}>{b.imei||"—"}</td>
                 <td style={{padding:"9px 14px",fontSize:12}}>{b.seller_name||"—"}</td>
                 <td style={{padding:"9px 14px",fontSize:12,color:"#94a3b8"}}>{b.seller_phone||"—"}</td>
-                <td style={{padding:"9px 14px",fontSize:13,fontWeight:700,color:"#10b981",whiteSpace:"nowrap"}}>{fmtM(b.price)}</td>
+                <td style={{padding:"9px 14px",fontSize:13,fontWeight:700,color:"#10b981"}}>{fmtM(b.price)}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={b.status}/></td>
                 <td style={{padding:"9px 14px"}}>{b.added_to_stock?<span style={{fontSize:11,color:"#10b981"}}>✅ Заприходен</span>:b.status==="Изкупен"?<MBtn color="#8b5cf6" onClick={()=>onAddToInventory(b)} style={{fontSize:11,padding:"3px 8px"}}>📦 Заприходи</MBtn>:<span style={{fontSize:11,color:"#64748b"}}>—</span>}</td>
                 <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:3}}>
@@ -434,7 +336,7 @@ export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory
             ))}
           </tbody>
         </table>
-      </TableWrapper>
+      </MCard>
       {modal!==null&&<BuybackModal buyback={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -462,7 +364,6 @@ function BuybackModal({buyback,onSave,onClose}) {
   );
 }
 
-
 // ══ PARTS SALES ════════════════════════════════════════════════════════════════
 export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
   const [modal,setModal]=useState(null);
@@ -470,58 +371,30 @@ export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
   const [search,setSearch]=useState("");
   const filtered=sales.filter(s=>{const q=search.toLowerCase();return(!q||[s.part_name,s.buyer_name,s.buyer_city,s.tracking_number].some(f=>(f||"").toLowerCase().includes(q)))&&(!date||(s.date||"").slice(0,10)===date);});
   const totalRev=filtered.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0);
-  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Артикул:r.part_name,"Бр.":r.quantity,"Продажна €":r.sale_price,Плащане:r.payment_method,Статус:r.payment_status,Доставка:r.delivery_method,Купувач:r.buyer_name||"",Телефон:r.buyer_phone||"",Град:r.buyer_city||"","Товарителница":r.tracking_number||""}))), "Продажби части");XLSX.writeFile(wb,"Продажби_части_"+today()+".xlsx");};
+  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Артикул:r.part_name,"Бр.":r.quantity,"Продажна €":r.sale_price,Плащане:r.payment_method,Статус:r.payment_status,Доставка:r.delivery_method,Купувач:r.buyer_name||"",Телефон:r.buyer_phone||"",Град:r.buyer_city||"","Товарителница":r.tracking_number||""}))), "Продажби части");XLSX.writeFile(wb,`Продажби_части_${today()}.xlsx`);};
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>🔩 Продажба части</h1>
-        <div style={{display:"flex",gap:6}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова</MPrimaryBtn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>🔩 Продажба резервни части</h1>
+        <div style={{display:"flex",gap:8}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"flex-end",flexWrap:"wrap"}}>
-        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:150}}/></MField>
+      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"flex-end"}}>
+        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:170}}/></MField>
         <button onClick={()=>setDate("")} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:7,padding:"7px 12px",cursor:"pointer",fontSize:12,marginBottom:1}}>Всички</button>
-        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:100}}/>
-        <MCard style={{padding:"8px 14px",borderLeft:"4px solid #10b981",whiteSpace:"nowrap"}}><div style={{fontSize:10,color:"#64748b"}}>Приход</div><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
+        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
+        <MCard style={{padding:"10px 16px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:18,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
       </div>
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма продажби</MCard>}
-            {filtered.map(r=>(
-              <MobileCard key={r.id} borderColor="#10b981">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{r.part_name}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(r.date)} · {r.quantity} бр.{r.buyer_name?" · "+r.buyer_name:""}</div>
-                    {r.tracking_number&&<div style={{fontSize:11,color:"#94a3b8"}}>📦 {r.tracking_number}</div>}
-                  </div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#10b981",marginLeft:10}}>{fmtM(r.sale_price)}</div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:4}}>
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                    <SBadge text={r.payment_status}/>
-                    <SBadge text={r.delivery_method}/>
-                  </div>
-                  <div style={{display:"flex",gap:4}}>
-                    <MBtn color="#3b82f6" onClick={()=>setModal(r)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                    {r.payment_status==="Не е платена"&&<MBtn color="#10b981" onClick={()=>onSave({...r,payment_status:"Платена"})} style={{padding:"4px 8px",fontSize:12}}>✅</MBtn>}
-                    <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
-          <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Плащане","Статус","Доставка","Купувач","Товарит.",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Плащане","Статус","Доставка","Купувач","Товарит.",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.length===0&&<tr><td colSpan={10} style={{textAlign:"center",padding:32,color:"#475569"}}>Няма продажби</td></tr>}
             {filtered.map(r=>(
               <tr key={r.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={e=>e.currentTarget.style.background="#243044"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(r.date)}</td>
+                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b"}}>{fmtDate(r.date)}</td>
                 <td style={{padding:"8px 12px",fontSize:12,fontWeight:600}}>{r.part_name}</td>
                 <td style={{padding:"8px 12px"}}>{r.quantity}</td>
-                <td style={{padding:"8px 12px",fontWeight:700,color:"#10b981",whiteSpace:"nowrap"}}>{fmtM(r.sale_price)}</td>
+                <td style={{padding:"8px 12px",fontWeight:700,color:"#10b981"}}>{fmtM(r.sale_price)}</td>
                 <td style={{padding:"8px 12px"}}><SBadge text={r.payment_method}/></td>
                 <td style={{padding:"8px 12px"}}><SBadge text={r.payment_status}/></td>
                 <td style={{padding:"8px 12px"}}><SBadge text={r.delivery_method}/></td>
@@ -536,7 +409,7 @@ export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
             ))}
           </tbody>
         </table>
-      </TableWrapper>
+      </MCard>
       {modal!==null&&<PartsSaleModal sale={modal} inventory={inventory} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -588,7 +461,6 @@ function printStockReceipt(sale) {
   </body></html>`);
   w.document.close();
 }
-
 
 function PartsSaleModal({sale,inventory,onSave,onClose}) {
   const emptyForm = {date:today(),part_name:"",inventory_id:null,category:"",quantity:1,cost_price:"",sale_price:"",payment_method:"В брой",payment_status:"Платена",delivery_method:"На място",delivery_type:"",buyer_name:"",buyer_phone:"",buyer_city:"",buyer_address:"",tracking_number:"",notes:""};
@@ -700,8 +572,7 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
           </div>
 
           )}
-          </>
-          )}
+          </>)}
           {/* Cart */}
           {!manualMode && items.length>0&&(
             <div style={{marginTop:12,background:"#0f172a",borderRadius:10,padding:10}}>
@@ -776,7 +647,6 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
   );
 }
 
-
 // ══ PHONE SALES ════════════════════════════════════════════════════════════════
 export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
   const [modal,setModal]=useState(null);
@@ -785,73 +655,42 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
   const filtered=sales.filter(s=>{const q=search.toLowerCase();return(!q||[s.brand,s.model,s.imei,s.buyer_name].some(f=>(f||"").toLowerCase().includes(q)))&&(!date||(s.date||"").slice(0,10)===date);});
   const totalRev=filtered.reduce((s,r)=>s+Number(r.sale_price||0),0);
   const totalCost=filtered.reduce((s,r)=>s+Number(r.cost_price||0),0);
-  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Марка:r.brand,Модел:r.model,Цвят:r.color||"",IMEI:r.imei||"","Сериен №":r.serial_number||"",Купувач:r.buyer_name||"","Доставна €":r.cost_price,"Продажна €":r.sale_price,"Печалба €":Number(r.sale_price||0)-Number(r.cost_price||0),Плащане:r.payment_method}))), "Продажби телефони");XLSX.writeFile(wb,"Продажби_телефони_"+today()+".xlsx");};
+  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Марка:r.brand,Модел:r.model,Цвят:r.color||"",IMEI:r.imei||"","Сериен №":r.serial_number||"",Купувач:r.buyer_name||"","Доставна €":r.cost_price,"Продажна €":r.sale_price,"Печалба €":Number(r.sale_price||0)-Number(r.cost_price||0),Плащане:r.payment_method}))), "Продажби телефони");XLSX.writeFile(wb,`Продажби_телефони_${today()}.xlsx`);};
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>📲 Продажба телефони</h1>
-        <div style={{display:"flex",gap:6}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова</MPrimaryBtn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>📲 Продажба на телефони</h1>
+        <div style={{display:"flex",gap:8}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"flex-end",flexWrap:"wrap"}}>
-        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:150}}/></MField>
+      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"flex-end"}}>
+        <MField label="Дата"><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:170}}/></MField>
         <button onClick={()=>setDate("")} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:7,padding:"7px 12px",cursor:"pointer",fontSize:12,marginBottom:1}}>Всички</button>
-        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:100}}/>
-        <MCard style={{padding:"8px 12px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:10,color:"#64748b"}}>Приход</div><div style={{fontSize:14,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
-        <MCard style={{padding:"8px 12px",borderLeft:"4px solid #8b5cf6"}}><div style={{fontSize:10,color:"#64748b"}}>Печалба</div><div style={{fontSize:14,fontWeight:800,color:"#8b5cf6"}}>{fmtM(totalRev-totalCost)}</div></MCard>
+        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
+        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
+        <MCard style={{padding:"10px 14px",borderLeft:"4px solid #8b5cf6"}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:16,fontWeight:800,color:"#8b5cf6"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма продажби</MCard>}
-            {filtered.map(r=>(
-              <MobileCard key={r.id} borderColor="#10b981">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{r.brand} {r.model}{r.color?" ("+r.color+")":""}</div>
-                    {r.imei&&<div style={{fontSize:10,color:"#94a3b8",fontFamily:"monospace"}}>IMEI: {r.imei}</div>}
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(r.date)}{r.buyer_name?" · "+r.buyer_name:""}</div>
-                    {r.buyer_phone&&<div style={{fontSize:11,color:"#94a3b8"}}>📞 {r.buyer_phone}</div>}
-                  </div>
-                  <div style={{textAlign:"right",marginLeft:10}}>
-                    <div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(r.sale_price)}</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>дост: {fmtM(r.cost_price)}</div>
-                  </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <SBadge text={r.payment_method}/>
-                  <div style={{display:"flex",gap:4}}>
-                    <MBtn color="#3b82f6" onClick={()=>setModal(r)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                    <MBtn color="#fbbf24" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба на телефон",technician:"",warranty_days:r.warranty_days||30,warranty_amount:r.warranty_amount||1,warranty_unit:r.warranty_unit||"месеца",date_out:r.date})} style={{padding:"4px 8px",fontSize:12}}>🛡️</MBtn>
-                    <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
-          <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Купувач","Доставна","Продажна","Плащане",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Купувач","Доставна","Продажна","Плащане",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.length===0&&<tr><td colSpan={8} style={{textAlign:"center",padding:32,color:"#475569"}}>Няма продажби</td></tr>}
             {filtered.map(r=>(
               <tr key={r.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={e=>e.currentTarget.style.background="#243044"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <td style={{padding:"9px 14px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(r.date)}</td>
-                <td style={{padding:"9px 14px",fontSize:13,fontWeight:600}}>{r.brand} {r.model} {r.color?"("+r.color+")":""}</td>
+                <td style={{padding:"9px 14px",fontSize:11,color:"#64748b"}}>{fmtDate(r.date)}</td>
+                <td style={{padding:"9px 14px",fontSize:13,fontWeight:600}}>{r.brand} {r.model} {r.color?`(${r.color})`:""}</td>
                 <td style={{padding:"9px 14px",fontSize:11,fontFamily:"monospace",color:"#94a3b8"}}>{r.imei||"—"}</td>
                 <td style={{padding:"9px 14px",fontSize:12}}>{r.buyer_name||"—"}</td>
-                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b",whiteSpace:"nowrap"}}>{fmtM(r.cost_price)}</td>
-                <td style={{padding:"9px 14px",fontWeight:700,color:"#10b981",whiteSpace:"nowrap"}}>{fmtM(r.sale_price)}</td>
+                <td style={{padding:"9px 14px",fontSize:12,color:"#64748b"}}>{fmtM(r.cost_price)}</td>
+                <td style={{padding:"9px 14px",fontWeight:700,color:"#10b981"}}>{fmtM(r.sale_price)}</td>
                 <td style={{padding:"9px 14px"}}><SBadge text={r.payment_method}/></td>
-                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}>
-                  <MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
+                <td style={{padding:"9px 14px"}}><div style={{display:"flex",gap:4}}><MBtn color="#3b82f6" onClick={()=>setModal(r)}>✏️</MBtn>
                   <MBtn color="#fbbf24" title="Гаранционна карта" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба на телефон",technician:"",warranty_days:r.warranty_days||30,warranty_amount:r.warranty_amount||1,warranty_unit:r.warranty_unit||"месеца",date_out:r.date})}>🛡️</MBtn>
-                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn>
-                </div></td>
+                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </TableWrapper>
+      </MCard>
       {modal!==null&&<PhoneSaleModal sale={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -904,74 +743,48 @@ function PhoneSaleModal({sale,onSave,onClose}) {
   );
 }
 
-
 // ══ STOCK ORDERS ════════════════════════════════════════════════════════════════
 export function StockOrdersTab({orders,onSave,onDelete,notify}) {
   const [modal,setModal]=useState(null);
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("Всички");
   const filtered=orders.filter(o=>{const q=search.toLowerCase();return(!q||[o.part_name,o.client_name,o.client_phone,o.supplier,o.category].some(f=>(f||"").toLowerCase().includes(q)))&&(filter==="Всички"||o.status===filter);});
-  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(o=>({Дата:o.date,Артикул:o.part_name,Категория:o.category||"","Бр.":o.quantity,Клиент:o.client_name||"",Телефон:o.client_phone||"","Цена клиент €":Number(o.client_price||0),Доставчик:o.supplier||"",Статус:o.status,Бележки:o.notes||""}))), "Поръчки");XLSX.writeFile(wb,"Поръчки_"+today()+".xlsx");};
+  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(o=>({Дата:o.date,Артикул:o.part_name,Категория:o.category||"","Бр.":o.quantity,Клиент:o.client_name||"",Телефон:o.client_phone||"","Цена клиент €":Number(o.client_price||0),Доставчик:o.supplier||"",Статус:o.status,Бележки:o.notes||""}))), "Поръчки");XLSX.writeFile(wb,`Поръчки_${today()}.xlsx`);};
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800}}>📋 Поръчки части</h1>
-        <div style={{display:"flex",gap:6}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова</MPrimaryBtn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h1 style={{margin:0,fontSize:22,fontWeight:800}}>📋 Поръчки към доставчици</h1>
+        <div style={{display:"flex",gap:8}}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={()=>setModal({})}>+ Нова поръчка</MPrimaryBtn></div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input placeholder="🔍  Търси по артикул, клиент, доставчик..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:120}}/>
-        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{["Всички",...SO_STATUSES].map(s=>(
-          <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?(SO_COLORS[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
+      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <input placeholder="🔍  Търси по артикул, клиент, доставчик..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
+        <div style={{display:"flex",gap:5}}>{["Всички",...SO_STATUSES].map(s=>(
+          <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?(SO_COLORS[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
         ))}</div>
       </div>
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма поръчки</MCard>}
-            {filtered.map(o=>(
-              <MobileCard key={o.id} borderColor={SO_COLORS[o.status]||"#334155"}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{o.part_name}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(o.date)} · {o.quantity} бр.{o.supplier?" · "+o.supplier:""}</div>
-                    {o.client_name&&<div style={{fontSize:11,color:"#94a3b8"}}>За: {o.client_name}{o.client_phone?" · "+o.client_phone:""}</div>}
-                    {o.notes&&<div style={{fontSize:11,color:"#64748b",marginTop:2}}>{o.notes}</div>}
-                  </div>
-                  <div style={{textAlign:"right",marginLeft:10}}>
-                    <SBadge text={o.status}/>
-                    {o.client_price>0&&<div style={{fontSize:13,fontWeight:700,color:"#10b981",marginTop:4}}>{fmtM(o.client_price)}</div>}
-                  </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"flex-end",gap:4}}>
-                  <MBtn color="#3b82f6" onClick={()=>setModal(o)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                  <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(o.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
-          <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Кат.","Бр.","Клиент","Телефон","Цена","Доставчик","Статус","Бележки",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Кат.","Бр.","Клиент","Телефон","Цена клиент","Доставчик","Статус","Бележки",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.length===0&&<tr><td colSpan={11} style={{textAlign:"center",padding:32,color:"#475569"}}>Няма поръчки</td></tr>}
             {filtered.map(o=>(
               <tr key={o.id} style={{borderTop:"1px solid #0f172a"}} onMouseEnter={e=>e.currentTarget.style.background="#243044"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(o.date)}</td>
+                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b"}}>{fmtDate(o.date)}</td>
                 <td style={{padding:"8px 12px",fontSize:13,fontWeight:600}}>{o.part_name}</td>
                 <td style={{padding:"8px 12px",fontSize:11,color:"#94a3b8"}}>{o.category||"—"}</td>
                 <td style={{padding:"8px 12px"}}>{o.quantity}</td>
                 <td style={{padding:"8px 12px",fontSize:12}}>{o.client_name||"—"}</td>
                 <td style={{padding:"8px 12px",fontSize:12,color:"#94a3b8"}}>{o.client_phone||"—"}</td>
-                <td style={{padding:"8px 12px",fontWeight:700,color:"#10b981",whiteSpace:"nowrap"}}>{o.client_price>0?fmtM(o.client_price):"—"}</td>
+                <td style={{padding:"8px 12px",fontWeight:700,color:"#10b981"}}>{o.client_price>0?fmtM(o.client_price):"—"}</td>
                 <td style={{padding:"8px 12px",fontSize:12,color:"#38bdf8"}}>{o.supplier||"—"}</td>
                 <td style={{padding:"8px 12px"}}><SBadge text={o.status}/></td>
-                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.notes||"—"}</td>
+                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.notes||"—"}</td>
                 <td style={{padding:"8px 12px"}}><div style={{display:"flex",gap:3}}><MBtn color="#3b82f6" onClick={()=>setModal(o)}>✏️</MBtn><MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(o.id);}}>🗑️</MBtn></div></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </TableWrapper>
+      </MCard>
       {modal!==null&&<StockOrderModal order={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -998,7 +811,6 @@ function StockOrderModal({order,onSave,onClose}) {
   );
 }
 
-
 // ══ SUPPLIER DEBTS ════════════════════════════════════════════════════════════
 export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
   const [modal,   setModal]   = useState(null);
@@ -1006,71 +818,53 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
   const [search,  setSearch]  = useState("");
   const [showPaid,setShowPaid]= useState(false);
   const [payModal,setPayModal]= useState(false);
+
   const filtered=debts.filter(d=>{
     const q=search.toLowerCase();
     return(!q||[d.supplier,d.part_name,d.model,d.category].some(f=>(f||"").toLowerCase().includes(q)))&&(showPaid?true:!d.is_paid);
   });
+
   const toggleSel=(id)=>setSelected(prev=>{const n=new Set(prev);n.has(id)?n.delete(id):n.add(id);return n;});
   const toggleAll=()=>selected.size===filtered.filter(d=>!d.is_paid).length?setSelected(new Set()):setSelected(new Set(filtered.filter(d=>!d.is_paid).map(d=>d.id)));
+
   const markPaid=async(method)=>{
     for(const id of selected){const d=debts.find(x=>x.id===id);if(d&&!d.is_paid)await onSave({...d,is_paid:true,paid_date:today(),payment_method:method});}
-    const cnt=selected.size;setSelected(new Set());notify("✅ "+cnt+" задължения отбелязани като платени");
+    const cnt=selected.size;setSelected(new Set());notify(`✅ ${cnt} задължения отбелязани като платени`);
   };
+
   const totalUnpaid=debts.filter(d=>!d.is_paid).reduce((s,d)=>s+Number(d.total_amount||d.cost_price||0),0);
   const totalPaid=debts.filter(d=>d.is_paid).reduce((s,d)=>s+Number(d.total_amount||d.cost_price||0),0);
-  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(d=>({"Дата поръчка":d.date_ordered,"Дата пристигане":d.date_arrived||"",Доставчик:d.supplier,Артикул:d.part_name,Модел:d.model||"",Категория:d.category||"","Бр.":d.quantity,"Доставна €":d.cost_price,"Общо €":d.total_amount||d.cost_price,Платено:d.is_paid?"Да":"Не","Дата плащане":d.paid_date||"","Начин плащане":d.payment_method||""}))), "Задължения");XLSX.writeFile(wb,"Задължения_"+today()+".xlsx");};
+
+  const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(d=>({
+    "Дата поръчка":d.date_ordered,"Дата пристигане":d.date_arrived||"",Доставчик:d.supplier,
+    Артикул:d.part_name,Модел:d.model||"",Категория:d.category||"","Бр.":d.quantity,
+    "Доставна €":d.cost_price,"Общо €":d.total_amount||d.cost_price,
+    Платено:d.is_paid?"Да":"Не","Дата плащане":d.paid_date||"","Начин плащане":d.payment_method||"",
+  }))), "Задължения");XLSX.writeFile(wb,`Задължения_${today()}.xlsx`);};
+
   return (
     <div className="animate-fade">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div>
-          <h1 style={{margin:0,fontSize:20,fontWeight:800}}>💳 Задължения</h1>
-          <p style={{margin:"3px 0 0",fontSize:12,color:"#64748b"}}>Неплатено: <b style={{color:"#ef4444"}}>{fmtM(totalUnpaid)}</b> · Платено: <b style={{color:"#10b981"}}>{fmtM(totalPaid)}</b></p>
+          <h1 style={{margin:0,fontSize:22,fontWeight:800}}>💳 Задължения към доставчици</h1>
+          <p style={{margin:"3px 0 0",fontSize:12,color:"#64748b"}}>Неплатено: <b style={{color:"#ef4444"}}>{fmtM(totalUnpaid)}</b> &nbsp;|&nbsp; Платено общо: <b style={{color:"#10b981"}}>{fmtM(totalPaid)}</b></p>
         </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:8}}>
           <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>
           {selected.size>0&&<MBtn color="#10b981" bg="#064e3b" onClick={()=>setPayModal(true)}>✅ Плати ({selected.size})</MBtn>}
-          <MPrimaryBtn onClick={()=>setModal({})}>+ Нов</MPrimaryBtn>
+          <MPrimaryBtn onClick={()=>setModal({})}>+ Нов запис</MPrimaryBtn>
         </div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
-        <input placeholder="🔍  Търси по доставчик, артикул..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:120}}/>
-        <button onClick={()=>setShowPaid(p=>!p)} style={{background:showPaid?"#334155":"#1e293b",color:showPaid?"#94a3b8":"#64748b",border:"1px solid #334155",borderRadius:7,padding:"7px 12px",cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>{showPaid?"Скрий платените":"Покажи всички"}</button>
+      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center"}}>
+        <input placeholder="🔍  Търси по доставчик, артикул, модел..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
+        <button onClick={()=>setShowPaid(p=>!p)} style={{background:showPaid?"#334155":"#1e293b",color:showPaid?"#94a3b8":"#64748b",border:"1px solid #334155",borderRadius:7,padding:"7px 14px",cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>{showPaid?"Скрий платените":"Покажи всички"}</button>
       </div>
-      <TableWrapper
-        mobileCards={
-          <div>
-            {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма задължения</MCard>}
-            {filtered.map(d=>(
-              <MobileCard key={d.id} borderColor={d.is_paid?"#10b981":"#ef4444"}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{d.part_name}</div>
-                    <div style={{fontSize:12,color:"#38bdf8",fontWeight:600}}>{d.supplier}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(d.date_ordered)}{d.date_arrived?" → "+fmtDate(d.date_arrived):""} · {d.quantity} бр.</div>
-                    {d.model&&<div style={{fontSize:11,color:"#94a3b8"}}>{d.model}</div>}
-                  </div>
-                  <div style={{textAlign:"right",marginLeft:10}}>
-                    <div style={{fontSize:16,fontWeight:800,color:d.is_paid?"#10b981":"#ef4444"}}>{fmtM(d.total_amount||d.cost_price)}</div>
-                    <SBadge text={d.is_paid?"Платено":"Неплатено"}/>
-                  </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  {d.is_paid&&d.payment_method?<SBadge text={d.payment_method}/>:<div/>}
-                  <div style={{display:"flex",gap:4}}>
-                    <MBtn color="#3b82f6" onClick={()=>setModal(d)} style={{padding:"4px 8px",fontSize:12}}>✏️</MBtn>
-                    {!d.is_paid&&<MBtn color="#10b981" onClick={()=>onSave({...d,is_paid:true,paid_date:today(),payment_method:"В брой"})} style={{padding:"4px 8px",fontSize:12}} title="Плати В брой">✅</MBtn>}
-                    <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(d.id);}} style={{padding:"4px 8px",fontSize:12}}>🗑️</MBtn>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
-          </div>
-        }>
+      <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>
-              <th style={{padding:"10px 12px",width:36}}><input type="checkbox" onChange={toggleAll} checked={selected.size>0&&selected.size===filtered.filter(d=>!d.is_paid).length} style={{width:14,height:14}}/></th>
-              {["Поръчано","Пристигнало","Доставчик","Артикул","Модел","Бр.","Доставна","Общо","Статус","Платено на","Начин",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}
+              <th style={{padding:"11px 14px",width:36}}><input type="checkbox" onChange={toggleAll} checked={selected.size>0&&selected.size===filtered.filter(d=>!d.is_paid).length} style={{width:14,height:14}}/></th>
+              {["Поръчано","Пристигнало","Доставчик","Артикул","Модел","Бр.","Доставна","Общо","Статус","Платено на","Начин",""].map(h=><th key={h} style={{padding:"11px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -1079,30 +873,32 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
               <tr key={d.id} style={{borderTop:"1px solid #0f172a",background:d.is_paid?"rgba(16,185,129,.04)":"rgba(239,68,68,.03)"}}
                 onMouseEnter={e=>e.currentTarget.style.background=d.is_paid?"rgba(16,185,129,.08)":"rgba(239,68,68,.08)"}
                 onMouseLeave={e=>e.currentTarget.style.background=d.is_paid?"rgba(16,185,129,.04)":"rgba(239,68,68,.03)"}>
-                <td style={{padding:"8px 12px"}}>{!d.is_paid&&<input type="checkbox" checked={selected.has(d.id)} onChange={()=>toggleSel(d.id)} style={{width:14,height:14}}/>}</td>
-                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(d.date_ordered)}</td>
-                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{d.date_arrived?fmtDate(d.date_arrived):"—"}</td>
-                <td style={{padding:"8px 12px",fontSize:13,fontWeight:600,color:"#38bdf8"}}>{d.supplier}</td>
-                <td style={{padding:"8px 12px",fontSize:12,fontWeight:600}}>{d.part_name}</td>
-                <td style={{padding:"8px 12px",fontSize:12,color:"#94a3b8"}}>{d.model||"—"}</td>
-                <td style={{padding:"8px 12px"}}>{d.quantity}</td>
-                <td style={{padding:"8px 12px",color:"#f59e0b",whiteSpace:"nowrap"}}>{fmtM(d.cost_price)}</td>
-                <td style={{padding:"8px 12px",fontWeight:800,color:d.is_paid?"#10b981":"#ef4444",whiteSpace:"nowrap"}}>{fmtM(d.total_amount||d.cost_price)}</td>
-                <td style={{padding:"8px 12px"}}><SBadge text={d.is_paid?"Платено":"Неплатено"}/></td>
-                <td style={{padding:"8px 12px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{d.paid_date?fmtDate(d.paid_date):"—"}</td>
-                <td style={{padding:"8px 12px"}}>{d.payment_method?<SBadge text={d.payment_method}/>:<span style={{color:"#475569",fontSize:11}}>—</span>}</td>
-                <td style={{padding:"8px 12px"}}><div style={{display:"flex",gap:3}}>
+                <td style={{padding:"9px 14px"}}>{!d.is_paid&&<input type="checkbox" checked={selected.has(d.id)} onChange={()=>toggleSel(d.id)} style={{width:14,height:14}}/>}</td>
+                <td style={{padding:"9px 12px",fontSize:11,color:"#64748b"}}>{fmtDate(d.date_ordered)}</td>
+                <td style={{padding:"9px 12px",fontSize:11,color:"#64748b"}}>{d.date_arrived?fmtDate(d.date_arrived):"—"}</td>
+                <td style={{padding:"9px 12px",fontSize:13,fontWeight:600,color:"#38bdf8"}}>{d.supplier}</td>
+                <td style={{padding:"9px 12px",fontSize:12,fontWeight:600}}>{d.part_name}</td>
+                <td style={{padding:"9px 12px",fontSize:12,color:"#94a3b8"}}>{d.model||"—"}</td>
+                <td style={{padding:"9px 12px"}}>{d.quantity}</td>
+                <td style={{padding:"9px 12px",color:"#f59e0b"}}>{fmtM(d.cost_price)}</td>
+                <td style={{padding:"9px 12px",fontWeight:800,color:d.is_paid?"#10b981":"#ef4444"}}>{fmtM(d.total_amount||d.cost_price)}</td>
+                <td style={{padding:"9px 12px"}}><SBadge text={d.is_paid?"Платено":"Неплатено"}/></td>
+                <td style={{padding:"9px 12px",fontSize:11,color:"#64748b"}}>{d.paid_date?fmtDate(d.paid_date):"—"}</td>
+                <td style={{padding:"9px 12px"}}>{d.payment_method?<SBadge text={d.payment_method}/>:<span style={{color:"#475569",fontSize:11}}>—</span>}</td>
+                <td style={{padding:"9px 12px"}}><div style={{display:"flex",gap:3}}>
                   <MBtn color="#3b82f6" onClick={()=>setModal(d)}>✏️</MBtn>
-                  {!d.is_paid&&<MBtn color="#10b981" onClick={()=>onSave({...d,is_paid:true,paid_date:today(),payment_method:"В брой"})} title="Плати В брой">✅</MBtn>}
+                  {!d.is_paid&&<MBtn color="#10b981" onClick={()=>onSave({...d,is_paid:true,paid_date:today(),payment_method:"В брой"})} title="Плати (В брой)">✅</MBtn>}
                   <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(d.id);}}>🗑️</MBtn>
                 </div></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </TableWrapper>
+      </MCard>
+
       {modal!==null&&<DebtModal debt={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
-      {payModal&&<MModal title={"✅ Плати "+selected.size+" задължения"} onClose={()=>setPayModal(false)} maxWidth={380}
+
+      {payModal&&<MModal title={`✅ Плати ${selected.size} задължения`} onClose={()=>setPayModal(false)} maxWidth={380}
         footer={<CancelBtn onClick={()=>setPayModal(false)}/>}>
         <p style={{color:"#94a3b8",fontSize:13,marginBottom:16}}>Избери начин на плащане:</p>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1116,7 +912,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
 }
 
 function DebtModal({debt,onSave,onClose}) {
-  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
+  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",is_paid:false,paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   const handleCost=(val)=>{s("cost_price",val);if(!f.total_amount||f.total_amount===String(Number(f.cost_price)*Number(f.quantity)))s("total_amount",(Number(val)*Number(f.quantity)).toFixed(2));};
   const handleQty=(val)=>{s("quantity",Number(val));s("total_amount",(Number(f.cost_price||0)*Number(val)).toFixed(2));};
@@ -1164,16 +960,20 @@ function DebtModal({debt,onSave,onClose}) {
   );
 }
 
-
 // ══ DISMANTLE TAB ═════════════════════════════════════════════════════════════
-const PHONE_PARTS = [
-  {key:"display",label:"Дисплей"},{key:"battery",label:"Батерия"},
-  {key:"back_cover",label:"Заден капак"},{key:"front_camera",label:"Предна камера"},
-  {key:"rear_camera",label:"Задна камера"},{key:"mainboard",label:"Дънна платка"},
-  {key:"charging_port",label:"Зарядно гнездо"},{key:"speaker",label:"Слушалка"},
-  {key:"microphone",label:"Микрофон"},{key:"sim_reader",label:"SIM четец"},
-  {key:"wifi_module",label:"Wi-Fi модул"},{key:"fingerprint",label:"Пръстов отпечатък"},
-  {key:"frame",label:"Рамка / Шаси"},{key:"buttons",label:"Бутони"},{key:"vibrator",label:"Вибратор"},
+const DEFAULT_PHONE_PARTS = [
+  {key:"display",       label:"Дисплей"},
+  {key:"back_cover",    label:"Заден капак"},
+  {key:"rear_camera",   label:"Задна камера"},
+  {key:"power_block",   label:"Блок захранване"},
+  {key:"frame",         label:"Рамка / Среда"},
+  {key:"battery",       label:"Батерия"},
+  {key:"front_camera",  label:"Предна камера"},
+  {key:"mainboard",     label:"Дънна платка"},
+  {key:"speaker",       label:"Слушалка"},
+  {key:"sim_holder",    label:"Сим държач"},
+  {key:"main_flex",     label:"Главен лентов кабел"},
+  {key:"button_flex",   label:"Лентов кабел бутони"},
 ];
 const PART_STATUS = ["Работи","Не работи","Не е тестван","Липсва"];
 const PSC = {"Работи":"#10b981","Не работи":"#ef4444","Не е тестван":"#f59e0b","Липсва":"#64748b"};
@@ -1223,8 +1023,9 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
           {filtered.map(r=>{
             const parts=r.parts_status||{};
-            const working=PHONE_PARTS.filter(p=>parts[p.key]==="Работи").length;
-            const broken=PHONE_PARTS.filter(p=>parts[p.key]==="Не работи").length;
+            const rAllParts=[...DEFAULT_PHONE_PARTS,...(r.custom_parts||[]).map(n=>({key:"custom_"+n,label:n}))];
+            const working=rAllParts.filter(p=>parts[p.key]==="Работи").length;
+            const broken=rAllParts.filter(p=>parts[p.key]==="Не работи").length;
             const sc=DSC[r.status]||"#64748b";
             return (
               <MCard key={r.id} style={{borderTop:"3px solid "+sc,padding:14}}>
@@ -1247,10 +1048,10 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
                 <div style={{display:"flex",gap:8,marginBottom:8,padding:"8px 10px",background:"#0f172a",borderRadius:8}}>
                   <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{working}</div><div style={{fontSize:10,color:"#64748b"}}>Работят</div></div>
                   <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#ef4444"}}>{broken}</div><div style={{fontSize:10,color:"#64748b"}}>Не работят</div></div>
-                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#64748b"}}>{PHONE_PARTS.length-working-broken}</div><div style={{fontSize:10,color:"#64748b"}}>Нетествани</div></div>
+                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#64748b"}}>{rAllParts.length-working-broken}</div><div style={{fontSize:10,color:"#64748b"}}>Нетествани</div></div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginBottom:8}}>
-                  {PHONE_PARTS.map(p=>{
+                  {rAllParts.map(p=>{
                     const st=parts[p.key]||"Не е тестван";
                     const c=PSC[st]||"#64748b";
                     return (
@@ -1279,17 +1080,40 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
 }
 
 function DismantleModal({record,onSave,onClose}) {
-  const empty={date:today(),brand:"",model:"",imei:"",color:"",storage:"",purchase_price:"",status:"Чака разглобяване",parts_status:{},notes:"",photos:[]};
+  const empty={date:today(),brand:"",model:"",imei:"",color:"",storage:"",purchase_price:"",status:"Чака разглобяване",parts_status:{},custom_parts:[],notes:"",photos:[]};
   const [f,sf]=useState(()=>{
     const base={...empty,...record};
     if(base.parts_status&&typeof base.parts_status==="string"){try{base.parts_status=JSON.parse(base.parts_status);}catch(e){}}
     if(!base.parts_status)base.parts_status={};
+    if(!base.custom_parts)base.custom_parts=[];
     return base;
   });
   const [activeTab,setActiveTab]=useState("info");
+  const [newPartName,setNewPartName]=useState("");
   const fileRef=useRef();
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   const setPart=(key,val)=>sf(x=>({...x,parts_status:{...x.parts_status,[key]:val}}));
+
+  // All parts = default + custom
+  const allParts=[
+    ...DEFAULT_PHONE_PARTS,
+    ...(f.custom_parts||[]).map(name=>({key:"custom_"+name,label:name})),
+  ];
+  const addCustomPart=()=>{
+    const name=newPartName.trim();
+    if(!name)return;
+    if(allParts.find(p=>p.label.toLowerCase()===name.toLowerCase())){alert("Тази част вече съществува!");return;}
+    sf(x=>({...x,custom_parts:[...(x.custom_parts||[]),name]}));
+    setNewPartName("");
+  };
+  const removeCustomPart=(name)=>{
+    sf(x=>{
+      const np={...x.parts_status};
+      delete np["custom_"+name];
+      return {...x,custom_parts:(x.custom_parts||[]).filter(n=>n!==name),parts_status:np};
+    });
+  };
+
   const handlePhotos=(e)=>{
     Array.from(e.target.files).forEach(file=>{
       const rd=new FileReader();
@@ -1297,6 +1121,7 @@ function DismantleModal({record,onSave,onClose}) {
       rd.readAsDataURL(file);
     });
   };
+
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:8}}>
       <div style={{background:"#1e293b",borderRadius:16,width:"100%",maxWidth:680,maxHeight:"94vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
@@ -1328,12 +1153,16 @@ function DismantleModal({record,onSave,onClose}) {
               <div style={{fontSize:12,color:"#64748b",marginBottom:10,padding:"8px 10px",background:"#0f172a",borderRadius:8}}>
                 💡 Отбележи статуса на всяка част. Работещите части могат да се заприходят в Склада.
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                {PHONE_PARTS.map(p=>{
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
+                {allParts.map(p=>{
                   const current=f.parts_status[p.key]||"Не е тестван";
+                  const isCustom=p.key.startsWith("custom_");
                   return (
                     <div key={p.key} style={{background:"#0f172a",borderRadius:8,padding:"8px 10px"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#e2e8f0",marginBottom:5}}>{p.label}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#e2e8f0"}}>{p.label}</div>
+                        {isCustom&&<button onClick={()=>removeCustomPart(p.label)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:14,padding:0,lineHeight:1}} title="Премахни">×</button>}
+                      </div>
                       <div style={{display:"flex",gap:2,flexWrap:"wrap"}}>
                         {PART_STATUS.map(st=>{
                           const isA=current===st;const c=PSC[st]||"#64748b";
@@ -1344,12 +1173,26 @@ function DismantleModal({record,onSave,onClose}) {
                   );
                 })}
               </div>
-              <div style={{marginTop:10,display:"flex",gap:8,padding:"8px 12px",background:"#0f172a",borderRadius:8}}>
+              {/* Add custom part */}
+              <div style={{background:"#0f172a",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+                <div style={{fontSize:11,color:"#64748b",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:.4}}>+ Добави нова част</div>
+                <div style={{display:"flex",gap:6}}>
+                  <input
+                    value={newPartName}
+                    onChange={e=>setNewPartName(e.target.value)}
+                    onKeyDown={e=>e.key==="Enter"&&addCustomPart()}
+                    placeholder="Напр. Fingerprint, Proximity..."
+                    style={{flex:1,fontSize:12,padding:"6px 10px"}}
+                  />
+                  <button onClick={addCustomPart} style={{background:"#10b981",color:"#fff",border:"none",borderRadius:7,padding:"6px 14px",cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0}}>+ Добави</button>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,padding:"8px 12px",background:"#0f172a",borderRadius:8}}>
                 {[
-                  {l:"Работят",v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Работи").length,c:"#10b981"},
-                  {l:"Не работят",v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Не работи").length,c:"#ef4444"},
-                  {l:"Нетествани",v:PHONE_PARTS.filter(p=>!f.parts_status[p.key]||f.parts_status[p.key]==="Не е тестван").length,c:"#f59e0b"},
-                  {l:"Липсва",v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Липсва").length,c:"#64748b"},
+                  {l:"Работят",v:allParts.filter(p=>f.parts_status[p.key]==="Работи").length,c:"#10b981"},
+                  {l:"Не работят",v:allParts.filter(p=>f.parts_status[p.key]==="Не работи").length,c:"#ef4444"},
+                  {l:"Нетествани",v:allParts.filter(p=>!f.parts_status[p.key]||f.parts_status[p.key]==="Не е тестван").length,c:"#f59e0b"},
+                  {l:"Липсва",v:allParts.filter(p=>f.parts_status[p.key]==="Липсва").length,c:"#64748b"},
                 ].map(({l,v,c})=>(
                   <div key={l} style={{textAlign:"center",flex:1}}>
                     <div style={{fontSize:18,fontWeight:800,color:c}}>{v}</div>
