@@ -1,74 +1,240 @@
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
-  --accent:#38bdf8;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--radius:10px;
-}
-html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
-input,select,textarea{background:var(--bg);color:var(--text);border:1px solid var(--bg3);border-radius:var(--radius);padding:8px 12px;font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;width:100%}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-input::placeholder{color:var(--text3)}
-button{cursor:pointer;font-family:inherit}
-table{border-collapse:collapse;width:100%}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.animate-fade{animation:fadeIn .25s ease}
-.spinner{animation:spin .8s linear infinite;display:inline-block}
+/* ═══════════════════════════════════════════════════════════════
+   RepairPro — index.css   (mobile-first, всички модули)
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ── Desktop/mobile toggle for modules.jsx ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:    #0f172a;
+  --bg2:   #1e293b;
+  --bg3:   #334155;
+  --accent:#38bdf8;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red:   #ef4444;
+  --purple:#8b5cf6;
+  --text:  #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --radius:10px;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+/* ── Inputs ── */
+input, select, textarea {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--bg3);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input::placeholder { color: var(--text3); }
+
+button { cursor: pointer; font-family: inherit; }
+table  { border-collapse: collapse; width: 100%; }
+
+/* ── Animations ── */
+@keyframes fadeIn  { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+@keyframes slideIn { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:none } }
+@keyframes spin    { to { transform:rotate(360deg) } }
+.animate-fade { animation: fadeIn .25s ease; }
+.spinner { animation: spin .8s linear infinite; display: inline-block; }
+
+/* ══════════════════════════════════════════════════════
+   DESKTOP — всичко видимо по подразбиране
+   ══════════════════════════════════════════════════════ */
+
+/* App.jsx tables visible, cards hidden */
+.orders-desktop-table  { display: block; }
+.orders-mobile-cards   { display: none;  }
+.inv-desktop-table     { display: block; }
+.mobile-inv-card       { display: none;  }
+
+/* modules.jsx — desktop table visible, mobile cards hidden */
 .m-desktop-only { display: block; }
 .m-mobile-only  { display: none;  }
 
-/* ── App.jsx tables ── */
-.orders-mobile-cards { display: none; }
-.mobile-topbar       { display: none; }
-.t-scroll { overflow-x:auto !important; -webkit-overflow-scrolling:touch; display:block !important; }
-.t-scroll table { min-width:480px; }
+/* Топбар скрит на десктоп */
+.mobile-topbar { display: none; }
 
-/* ── Modal 2-col grid ── */
-.m-modal-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-/* ════════ MOBILE ≤768px ════════ */
+/* ══════════════════════════════════════════════════════
+   МОБИЛЕН  ≤ 768px
+   ══════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* Sidebar */
-  .mobile-topbar { display: flex !important; }
-  .hide-mobile   { display: none  !important; }
+
+  /* ── Layout ── */
+  .mobile-topbar {
+    display: flex !important;
+    background: #0a1628;
+    padding: 10px 12px;
+    border-bottom: 1px solid #1e293b;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
   aside {
-    position: fixed !important; left: 0; top: 0; z-index: 100;
-    transform: translateX(-100%); transition: transform .25s;
-    height: 100vh !important; width: 240px !important; overflow-y: auto;
+    position: fixed !important;
+    left: 0; top: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    height: 100vh !important;
+    width: 240px !important;
+    overflow-y: auto;
   }
   aside.open { transform: translateX(0) !important; }
 
-  /* Content */
+  /* Content padding */
   .main-content { padding: 8px !important; }
 
-  /* modules.jsx: cards on mobile */
+  /* Hide desktop, show mobile */
+  .hide-mobile { display: none !important; }
+
+  /* ── modules.jsx desktop/mobile switch ── */
   .m-desktop-only { display: none  !important; }
   .m-mobile-only  { display: block !important; }
 
-  /* App.jsx orders/inventory */
+  /* ── App.jsx orders ── */
   .orders-desktop-table { display: none  !important; }
   .orders-mobile-cards  { display: block !important; }
-  .inv-desktop-table    { display: none  !important; }
-  .mobile-inv-card      { display: block !important; }
 
-  /* KPI grids */
+  /* ── App.jsx inventory ── */
+  .inv-desktop-table { display: none  !important; }
+  .mobile-inv-card   { display: block !important; }
+
+  /* ── KPI grids ── */
   .kpi-grid  { grid-template-columns: 1fr 1fr !important; }
   .dash-grid { grid-template-columns: 1fr     !important; }
   .calc-grid { grid-template-columns: 1fr     !important; }
   .form-grid { grid-template-columns: 1fr 1fr !important; }
 
-  /* Modal grids → 1 col */
+  /* ── App.jsx DailyReport KPI 4-col → 2-col ── */
+  div[style*="gridTemplateColumns:\"repeat(4,1fr)\""] { grid-template-columns: 1fr 1fr !important; }
+  div[style*='gridTemplateColumns:"repeat(4,1fr)"']   { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── App.jsx DailyReport 3-col → 1-col ── */
+  div[style*="gridTemplateColumns:\"repeat(3,1fr)\""] { grid-template-columns: 1fr 1fr !important; }
+  div[style*='gridTemplateColumns:"repeat(3,1fr)"']   { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Modal grids → 1 col ── */
   .m-modal-2col { grid-template-columns: 1fr !important; }
   .m-modal-grid { grid-template-columns: 1fr !important; }
 
-  /* Headings */
+  /* ── All fixed modals — full width ── */
+  div[style*="maxWidth:820"], div[style*="maxWidth:860"],
+  div[style*="maxWidth:700"], div[style*="maxWidth:680"] {
+    max-width: calc(100vw - 12px) !important;
+    max-height: 96vh !important;
+    border-radius: 12px !important;
+  }
+
+  /* ── Pricing service tabs — horizontal scroll ── */
+  .pricing-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .pricing-tabs button { flex-shrink: 0; }
+
+  /* ── Pricing table — scroll ── */
+  .pricing-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pricing-table-wrap table { min-width: 360px; font-size: 11px; }
+
+  /* ── App.jsx inline tables (DailyReport) — scroll ── */
+  .daily-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+
+  /* ── Dashboard charts grids ── */
+  div[style*="gridTemplateColumns:\"1.6fr 1fr\""],
+  div[style*="gridTemplateColumns:\"1fr 1.4fr\""],
+  div[style*="gridTemplateColumns:\"1fr 1fr\""] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Calculator 2-col → 1-col ── */
+  div[style*="gridTemplateColumns:\"1fr 1fr\",gap:20"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Technicians 3-col → 1-col ── */
+  div[style*="gridTemplateColumns:\"repeat(3,1fr)\""] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Font size */
   h1 { font-size: 17px !important; }
 
   /* Scrollbar */
   ::-webkit-scrollbar { width: 2px; height: 2px; }
+}
+
+/* ══════════════════════════════════════════════════════
+   TABLET  769px – 1024px  (малко подобрения)
+   ══════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main-content { padding: 16px !important; }
+  .kpi-grid     { grid-template-columns: 1fr 1fr !important; }
+  .dash-grid    { grid-template-columns: 1fr     !important; }
+}
+
+/* ── Extra classes added by App.jsx ── */
+.orders-desktop-table { display: block; }
+.inv-desktop-table    { display: block; }
+.mobile-inv-card      { display: none;  }
+
+@media (max-width: 768px) {
+  /* Technicians cards → 1 col */
+  .tech-grid { grid-template-columns: 1fr !important; }
+
+  /* Users form → 1 col */
+  .form-grid { grid-template-columns: 1fr !important; }
+
+  /* Pricing service tabs — prevent wrap */
+  div[style*="flexWrap:\"nowrap\""] { flex-wrap: nowrap !important; overflow-x: auto; }
+
+  /* Fix input min-width inside forms on mobile */
+  input, select { min-width: 0; }
+
+  /* Order modal padding */
+  div[style*="maxWidth:820"] {
+    max-width: calc(100vw - 12px) !important;
+    max-height: 96vh !important;
+    border-radius: 12px !important;
+  }
+
+  /* DailyReport KPI cards — prevent overflow */
+  .kpi-grid > div { min-width: 0; overflow: hidden; }
+
+  /* Pricing table min-width */
+  div[style*="borderRadius:14"] table { min-width: 340px; }
 }
