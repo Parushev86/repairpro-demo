@@ -99,3 +99,19 @@ table{border-collapse:collapse;width:100%}
   h1{font-size:17px !important}
   ::-webkit-scrollbar{width:2px;height:2px}
 }
+
+/* modules.jsx desktop/mobile toggle */
+.m-cards-only { display: none; }
+.m-table-only { display: block; }
+
+@media (max-width: 768px) {
+  .m-cards-only { display: block !important; }
+  .m-table-only { display: none !important; }
+
+  /* Modal grids → 1 колона */
+  .m-modal-2col { grid-template-columns: 1fr !important; }
+  .m-modal-grid { grid-template-columns: 1fr !important; }
+
+  /* Expenses top grid */
+  .m-exp-grid { grid-template-columns: 1fr 1fr !important; }
+}
