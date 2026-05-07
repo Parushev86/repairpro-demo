@@ -33,9 +33,7 @@ function MCard({children,style={},className=""}) {
     ? {background:"#1e293b",borderRadius:12,padding:20,...style,overflowX:"auto",WebkitOverflowScrolling:"touch",display:"block"}
     : {background:"#1e293b",borderRadius:12,padding:20,...style};
   if(isScroll) return (
-    <div className={className} style={s2}>
-      <div style={{minWidth:520}}>{children}</div>
-    </div>
+    <div className={className} style={s2}><div style={{minWidth:520}}>{children}</div></div>
   );
   return <div className={className} style={s2}>{children}</div>;
 }
@@ -97,7 +95,7 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #ef4444"}}><div style={{fontSize:11,color:"#64748b"}}>Разходи</div><div style={{fontSize:20,fontWeight:800,color:"#ef4444"}}>{fmtM(totalExp)}</div></MCard>
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #38bdf8"}}><div style={{fontSize:11,color:"#64748b"}}>Баланс (каса)</div><div style={{fontSize:20,fontWeight:800,color:"#38bdf8"}}>{fmtM(openingCash-totalFromCash)}</div><div style={{fontSize:10,color:"#64748b",marginTop:2}}>Не от каса: {fmtM(totalNotCash)}</div></MCard>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Описание","Категория","Платено на","Сума","Бележки",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -116,6 +114,32 @@ export function ExpensesTab({expenses,cashRegister,onSaveExpense,onDeleteExpense
           </tbody>
         </table>
       </MCard>
+      {/* Mobile cards */}
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма разходи за {fmtDate(date)}</MCard>}
+        {filtered.map(e=>(
+          <div key={e.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid #ef4444"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{e.description}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(e.date)} · {e.category}</div>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:"#ef4444",marginLeft:8}}>{fmtM(e.amount)}</div>
+            </div>
+            {e.paid_to&&<div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Платено на: {e.paid_to}</div>}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                <SBadge text={e.category}/>
+                {e.from_cash===false&&<span style={{background:"#1e293b",color:"#64748b",padding:"2px 6px",borderRadius:10,fontSize:10}}>🏦 не от каса</span>}
+              </div>
+              <div style={{display:"flex",gap:4}}>
+                <MBtn color="#3b82f6" onClick={()=>setModal(e)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+                <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDeleteExpense(e.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<ExpenseModal expense={modal} onSave={r=>{onSaveExpense(r);setModal(null);}} onClose={()=>setModal(null)}/>}
       {showCash&&<MModal title="💰 Начало на деня — Каса" onClose={()=>setShowCash(false)} footer={<><CancelBtn onClick={()=>setShowCash(false)}/><MPrimaryBtn onClick={()=>{onSaveCash({id:cashEntry?.id,date,opening_cash:Number(cashInput)||0});setShowCash(false);notify("💰 Касата е записана ✓");}} color="linear-gradient(135deg,#10b981,#059669)">💾 Запази</MPrimaryBtn></>}>
         <MField label={`Начална сума за ${fmtDate(date)} (€)`}><input type="number" min="0" step="0.01" value={cashInput} onChange={e=>setCashInput(e.target.value)} placeholder="0.00" style={{fontSize:22,fontWeight:800,textAlign:"center"}}/></MField>
@@ -176,7 +200,7 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #10b981",flex:1}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:20,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{padding:"12px 16px",borderLeft:"4px solid #f59e0b",flex:1}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:20,fontWeight:800,color:"#f59e0b"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Общо","Плащане","Купувач",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -198,6 +222,27 @@ export function AccessorySalesTab({sales,inventory,onSave,onDelete,notify}) {
           </tbody>
         </table>
       </MCard>
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма продажби за {fmtDate(date)}</MCard>}
+        {filtered.map(r=>(
+          <div key={r.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid #10b981"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{r.item_name}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(r.date)} · {r.quantity} бр.</div>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:"#10b981",marginLeft:8}}>{fmtM(Number(r.sale_price)*Number(r.quantity||1))}</div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <SBadge text={r.payment_method}/>
+              <div style={{display:"flex",gap:4}}>
+                <MBtn color="#3b82f6" onClick={()=>setModal(r)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+                <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<AccSaleModal sale={modal} inventory={inventory} onSave={r=>{onSave(r,modal);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -321,7 +366,7 @@ export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory
           <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?({Изкупен:"#10b981",Отказан:"#ef4444","Чака потвърждение":"#f59e0b"}[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
         ))}</div>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Продавач","Телефон","Цена","Статус","Склад",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -346,6 +391,32 @@ export function BuybacksTab({buybacks,inventory,onSave,onDelete,onAddToInventory
           </tbody>
         </table>
       </MCard>
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма записи</MCard>}
+        {filtered.map(b=>(
+          <div key={b.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid #38bdf8"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{b.brand} {b.model}</div>
+                {b.imei&&<div style={{fontSize:10,color:"#94a3b8",fontFamily:"monospace"}}>IMEI: {b.imei}</div>}
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(b.date)} · {b.seller_name||"—"}</div>
+              </div>
+              <div style={{textAlign:"right",marginLeft:8}}>
+                <div style={{fontSize:14,fontWeight:800,color:"#10b981"}}>{fmtM(b.price)}</div>
+                <SBadge text={b.status}/>
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+              <div>{b.added_to_stock?<span style={{fontSize:11,color:"#10b981"}}>✅ Заприходен</span>:b.status==="Изкупен"?<MBtn color="#8b5cf6" onClick={()=>onAddToInventory(b)} style={{fontSize:11,padding:"2px 7px"}}>📦 Заприходи</MBtn>:null}</div>
+              <div style={{display:"flex",gap:4}}>
+                <MBtn color="#3b82f6" onClick={()=>setModal(b)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+                <MBtn color="#8b5cf6" onClick={()=>printProtocol(b)} style={{padding:"3px 7px",fontSize:11}}>📄</MBtn>
+                <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(b.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<BuybackModal buyback={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -393,7 +464,7 @@ export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
         <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
         <MCard style={{padding:"10px 16px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:18,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Бр.","Продажна","Плащане","Статус","Доставка","Купувач","Товарит.",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -419,6 +490,31 @@ export function PartsSalesTab({sales,inventory,onSave,onDelete}) {
           </tbody>
         </table>
       </MCard>
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма продажби</MCard>}
+        {filtered.map(r=>(
+          <div key={r.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid #10b981"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{r.part_name}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(r.date)} · {r.quantity} бр. · {r.buyer_name||"—"}</div>
+              </div>
+              <div style={{fontSize:14,fontWeight:800,color:"#10b981",marginLeft:8}}>{fmtM(r.sale_price)}</div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:4}}>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                <SBadge text={r.payment_status}/>
+                <SBadge text={r.delivery_method}/>
+              </div>
+              <div style={{display:"flex",gap:4}}>
+                <MBtn color="#3b82f6" onClick={()=>setModal(r)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+                {r.payment_status==="Не е платена"&&<MBtn color="#10b981" onClick={()=>onSave({...r,payment_status:"Платена"})} style={{padding:"3px 7px",fontSize:11}}>✅</MBtn>}
+                <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<PartsSaleModal sale={modal} inventory={inventory} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -679,7 +775,7 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
         <MCard style={{padding:"10px 14px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{padding:"10px 14px",borderLeft:"4px solid #8b5cf6"}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:16,fontWeight:800,color:"#8b5cf6"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Купувач","Доставна","Продажна","Плащане",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -701,6 +797,32 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
           </tbody>
         </table>
       </MCard>
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма продажби</MCard>}
+        {filtered.map(r=>(
+          <div key={r.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid #10b981"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{r.brand} {r.model} {r.color?"("+r.color+")":""}</div>
+                {r.imei&&<div style={{fontSize:10,color:"#94a3b8",fontFamily:"monospace"}}>IMEI: {r.imei}</div>}
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(r.date)} · {r.buyer_name||"—"}</div>
+              </div>
+              <div style={{textAlign:"right",marginLeft:8}}>
+                <div style={{fontSize:14,fontWeight:800,color:"#10b981"}}>{fmtM(r.sale_price)}</div>
+                <div style={{fontSize:10,color:"#64748b"}}>дост: {fmtM(r.cost_price)}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <SBadge text={r.payment_method}/>
+              <div style={{display:"flex",gap:4}}>
+                <MBtn color="#3b82f6" onClick={()=>setModal(r)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+                <MBtn color="#fbbf24" onClick={()=>onWarranty&&onWarranty({id:r.id,client_name:r.buyer_name,phone:r.buyer_phone,device_type:r.brand,brand:r.brand,model:r.model,serial_number:r.serial_number||r.imei,problem:"Продажба на телефон",technician:"",warranty_days:r.warranty_days||30,warranty_amount:r.warranty_amount||1,warranty_unit:r.warranty_unit||"месеца",date_out:r.date})} style={{padding:"3px 7px",fontSize:11}}>🛡️</MBtn>
+                <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(r.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<PhoneSaleModal sale={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -772,7 +894,7 @@ export function StockOrdersTab({orders,onSave,onDelete,notify}) {
           <button key={s} onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:filter===s?(SO_COLORS[s]||"#38bdf8"):"#1e293b",color:filter===s?"#fff":"#64748b"}}>{s}</button>
         ))}</div>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Артикул","Кат.","Бр.","Клиент","Телефон","Цена клиент","Доставчик","Статус","Бележки",""].map(h=><th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -795,6 +917,28 @@ export function StockOrdersTab({orders,onSave,onDelete,notify}) {
           </tbody>
         </table>
       </MCard>
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма поръчки</MCard>}
+        {filtered.map(o=>(
+          <div key={o.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid "+(SO_COLORS[o.status]||"#334155")}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{o.part_name}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(o.date)} · {o.quantity} бр.{o.supplier?" · "+o.supplier:""}</div>
+                {o.client_name&&<div style={{fontSize:11,color:"#94a3b8"}}>За: {o.client_name} {o.client_phone?"· "+o.client_phone:""}</div>}
+              </div>
+              <div style={{marginLeft:8}}>
+                <SBadge text={o.status}/>
+                {o.client_price>0&&<div style={{fontSize:12,fontWeight:700,color:"#10b981",textAlign:"right",marginTop:2}}>{fmtM(o.client_price)}</div>}
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"flex-end",gap:4}}>
+              <MBtn color="#3b82f6" onClick={()=>setModal(o)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+              <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(o.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<StockOrderModal order={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
@@ -869,7 +1013,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
         <input placeholder="🔍  Търси по доставчик, артикул, модел..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1}}/>
         <button onClick={()=>setShowPaid(p=>!p)} style={{background:showPaid?"#334155":"#1e293b",color:showPaid?"#94a3b8":"#64748b",border:"1px solid #334155",borderRadius:7,padding:"7px 14px",cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>{showPaid?"Скрий платените":"Покажи всички"}</button>
       </div>
-      <MCard className="scroll-x" style={{padding:0}}>
+      <MCard className="scroll-x m-table-only" style={{padding:0}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>
@@ -906,6 +1050,32 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
         </table>
       </MCard>
 
+      <div className="m-cards-only">
+        {filtered.length===0&&<MCard style={{textAlign:"center",padding:30,color:"#475569"}}>Няма задължения</MCard>}
+        {filtered.map(d=>(
+          <div key={d.id+"m"} style={{background:"#1e293b",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid "+(d.is_paid?"#10b981":"#ef4444")}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{d.part_name}</div>
+                <div style={{fontSize:11,color:"#38bdf8",fontWeight:600}}>{d.supplier}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{fmtDate(d.date_ordered)}{d.date_arrived?" → "+fmtDate(d.date_arrived):""}</div>
+              </div>
+              <div style={{textAlign:"right",marginLeft:8}}>
+                <div style={{fontSize:14,fontWeight:800,color:d.is_paid?"#10b981":"#ef4444"}}>{fmtM(d.total_amount||d.cost_price)}</div>
+                <SBadge text={d.is_paid?"Платено":"Неплатено"}/>
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              {d.is_paid&&d.payment_method?<SBadge text={d.payment_method}/>:<div/>}
+              <div style={{display:"flex",gap:4}}>
+                <MBtn color="#3b82f6" onClick={()=>setModal(d)} style={{padding:"3px 7px",fontSize:11}}>✏️</MBtn>
+                {!d.is_paid&&<MBtn color="#10b981" onClick={()=>onSave({...d,is_paid:true,paid_date:today(),payment_method:"В брой"})} style={{padding:"3px 7px",fontSize:11}}>✅</MBtn>}
+                <MBtn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(d.id);}} style={{padding:"3px 7px",fontSize:11}}>🗑️</MBtn>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       {modal!==null&&<DebtModal debt={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
 
       {payModal&&<MModal title={`✅ Плати ${selected.size} задължения`} onClose={()=>setPayModal(false)} maxWidth={380}
@@ -970,7 +1140,7 @@ function DebtModal({debt,onSave,onClose}) {
   );
 }
 
-// ══ DISMANTLE TAB — За разглобяване ══════════════════════════════════════════
+// ══ DISMANTLE TAB ═════════════════════════════════════════════════════════════
 const PHONE_PARTS = [
   {key:"display",      label:"Дисплей"},
   {key:"battery",      label:"Батерия"},
@@ -993,27 +1163,23 @@ const PART_STATUS_COLOR = {"Работи":"#10b981","Не работи":"#ef4444
 const DISMANTLE_STATUSES = ["Чака разглобяване","В процес","Разглобен","Продаден за части"];
 const DISMANTLE_STATUS_COLOR = {"Чака разглобяване":"#f59e0b","В процес":"#3b82f6","Разглобен":"#10b981","Продаден за части":"#8b5cf6"};
 
-export function DismantleTab({records, onSave, onDelete, onAddPartToInventory, notify}) {
-  const [modal,  setModal]  = useState(null);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Всички");
-
-  const filtered = (records||[]).filter(r => {
-    const q = search.toLowerCase();
-    return (!q || [r.brand,r.model,r.imei,r.notes].some(f=>(f||"").toLowerCase().includes(q)))
-        && (filter==="Всички" || r.status===filter);
+export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notify}) {
+  const [modal,setModal]=useState(null);
+  const [search,setSearch]=useState("");
+  const [filter,setFilter]=useState("Всички");
+  const filtered=(records||[]).filter(r=>{
+    const q=search.toLowerCase();
+    return(!q||[r.brand,r.model,r.imei,r.notes].some(f=>(f||"").toLowerCase().includes(q)))
+      &&(filter==="Всички"||r.status===filter);
   });
-
-  const exportAll = () => {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r=>({
+  const exportAll=()=>{
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({
       "Дата":r.date,"Марка":r.brand,"Модел":r.model,"IMEI":r.imei||"",
-      "Цвят":r.color||"","Цена €":Number(r.purchase_price||0),
-      "Статус":r.status,"Бележки":r.notes||"",
-    }))), "За разглобяване");
-    XLSX.writeFile(wb, "Разглобяване_"+today()+".xlsx");
+      "Цвят":r.color||"","Цена €":Number(r.purchase_price||0),"Статус":r.status,"Бележки":r.notes||"",
+    }))),"За разглобяване");
+    XLSX.writeFile(wb,"Разглобяване_"+today()+".xlsx");
   };
-
   return (
     <div className="animate-fade">
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
@@ -1026,9 +1192,8 @@ export function DismantleTab({records, onSave, onDelete, onAddPartToInventory, n
           <MPrimaryBtn onClick={()=>setModal({})}>+ Нов запис</MPrimaryBtn>
         </div>
       </div>
-
       <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input placeholder="🔍  Търси по марка, модел, IMEI..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:0}}/>
+        <input placeholder="🔍  Търси..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:0}}/>
         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
           {["Всички",...DISMANTLE_STATUSES].map(s=>(
             <button key={s} onClick={()=>setFilter(s)} style={{
@@ -1039,20 +1204,19 @@ export function DismantleTab({records, onSave, onDelete, onAddPartToInventory, n
           ))}
         </div>
       </div>
-
-      {filtered.length === 0 ? (
+      {filtered.length===0?(
         <MCard style={{textAlign:"center",padding:40}}>
           <div style={{fontSize:40,marginBottom:12}}>🔨</div>
           <div style={{color:"#64748b",fontSize:14}}>Няма записи за разглобяване</div>
-          <div style={{color:"#475569",fontSize:12,marginTop:6}}>Натисни "+ Нов запис" за да добавиш телефон</div>
+          <div style={{color:"#475569",fontSize:12,marginTop:6}}>Натисни "+ Нов запис"</div>
         </MCard>
-      ) : (
+      ):(
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
-          {filtered.map(r => {
-            const parts = r.parts_status || {};
-            const working = PHONE_PARTS.filter(p=>parts[p.key]==="Работи").length;
-            const broken  = PHONE_PARTS.filter(p=>parts[p.key]==="Не работи").length;
-            const sc = DISMANTLE_STATUS_COLOR[r.status]||"#64748b";
+          {filtered.map(r=>{
+            const parts=r.parts_status||{};
+            const working=PHONE_PARTS.filter(p=>parts[p.key]==="Работи").length;
+            const broken=PHONE_PARTS.filter(p=>parts[p.key]==="Не работи").length;
+            const sc=DISMANTLE_STATUS_COLOR[r.status]||"#64748b";
             return (
               <MCard key={r.id} style={{borderTop:"3px solid "+sc,padding:14}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
@@ -1072,23 +1236,14 @@ export function DismantleTab({records, onSave, onDelete, onAddPartToInventory, n
                   {r.purchase_price>0&&<span style={{fontSize:11,fontWeight:700,color:"#f59e0b"}}>{fmtM(r.purchase_price)}</span>}
                 </div>
                 <div style={{display:"flex",gap:8,marginBottom:8,padding:"8px 10px",background:"#0f172a",borderRadius:8}}>
-                  <div style={{textAlign:"center",flex:1}}>
-                    <div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{working}</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>Работят</div>
-                  </div>
-                  <div style={{textAlign:"center",flex:1}}>
-                    <div style={{fontSize:16,fontWeight:800,color:"#ef4444"}}>{broken}</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>Не работят</div>
-                  </div>
-                  <div style={{textAlign:"center",flex:1}}>
-                    <div style={{fontSize:16,fontWeight:800,color:"#64748b"}}>{PHONE_PARTS.length-working-broken}</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>Нетествани</div>
-                  </div>
+                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{working}</div><div style={{fontSize:10,color:"#64748b"}}>Работят</div></div>
+                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#ef4444"}}>{broken}</div><div style={{fontSize:10,color:"#64748b"}}>Не работят</div></div>
+                  <div style={{textAlign:"center",flex:1}}><div style={{fontSize:16,fontWeight:800,color:"#64748b"}}>{PHONE_PARTS.length-working-broken}</div><div style={{fontSize:10,color:"#64748b"}}>Нетествани</div></div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginBottom:8}}>
                   {PHONE_PARTS.map(p=>{
-                    const st = parts[p.key]||"Не е тестван";
-                    const c  = PART_STATUS_COLOR[st]||"#64748b";
+                    const st=parts[p.key]||"Не е тестван";
+                    const c=PART_STATUS_COLOR[st]||"#64748b";
                     return (
                       <div key={p.key} style={{display:"flex",alignItems:"center",gap:4,padding:"2px 5px",borderRadius:4,background:"#0f172a"}}>
                         <div style={{width:6,height:6,borderRadius:"50%",background:c,flexShrink:0}}/>
@@ -1098,13 +1253,11 @@ export function DismantleTab({records, onSave, onDelete, onAddPartToInventory, n
                     );
                   })}
                 </div>
-                {working > 0 && r.status !== "Разглобен" && (
+                {working>0&&r.status!=="Разглобен"&&(
                   <button onClick={()=>onAddPartToInventory&&onAddPartToInventory(r)} style={{
                     width:"100%",background:"#064e3b",color:"#6ee7b7",border:"1px solid #10b981",
                     borderRadius:8,padding:"7px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:4,
-                  }}>
-                    {"📦 Заприходи работещите части ("+working+")"}
-                  </button>
+                  }}>{"📦 Заприходи работещите части ("+working+")"}</button>
                 )}
                 {r.notes&&<div style={{fontSize:11,color:"#64748b",marginTop:4,borderTop:"1px solid #334155",paddingTop:4}}>{r.notes}</div>}
               </MCard>
@@ -1112,35 +1265,30 @@ export function DismantleTab({records, onSave, onDelete, onAddPartToInventory, n
           })}
         </div>
       )}
-
       {modal!==null&&<DismantleModal record={modal} onSave={r=>{onSave(r);setModal(null);}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
 
-function DismantleModal({record, onSave, onClose}) {
-  const empty = {date:today(),brand:"",model:"",imei:"",color:"",storage:"",purchase_price:"",status:"Чака разглобяване",parts_status:{},notes:"",photos:[]};
-  const [f, sf] = useState(() => {
-    const base = {...empty,...record};
-    if(base.parts_status && typeof base.parts_status==="string"){
-      try{ base.parts_status = JSON.parse(base.parts_status); }catch(e){}
-    }
-    if(!base.parts_status) base.parts_status = {};
+function DismantleModal({record,onSave,onClose}) {
+  const empty={date:today(),brand:"",model:"",imei:"",color:"",storage:"",purchase_price:"",status:"Чака разглобяване",parts_status:{},notes:"",photos:[]};
+  const [f,sf]=useState(()=>{
+    const base={...empty,...record};
+    if(base.parts_status&&typeof base.parts_status==="string"){try{base.parts_status=JSON.parse(base.parts_status);}catch(e){}}
+    if(!base.parts_status)base.parts_status={};
     return base;
   });
-  const [activeTab, setActiveTab] = useState("info");
-  const fileRef = useRef();
-  const s = (k,v) => sf(x=>({...x,[k]:v}));
-  const setPart = (key,val) => sf(x=>({...x,parts_status:{...x.parts_status,[key]:val}}));
-
-  const handlePhotos = (e) => {
+  const [activeTab,setActiveTab]=useState("info");
+  const fileRef=useRef();
+  const s=(k,v)=>sf(x=>({...x,[k]:v}));
+  const setPart=(key,val)=>sf(x=>({...x,parts_status:{...x.parts_status,[key]:val}}));
+  const handlePhotos=(e)=>{
     Array.from(e.target.files).forEach(file=>{
       const rd=new FileReader();
       rd.onload=ev=>sf(x=>({...x,photos:[...(x.photos||[]),{name:file.name,data:ev.target.result}]}));
       rd.readAsDataURL(file);
     });
   };
-
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:8}}>
       <div style={{background:"#1e293b",borderRadius:16,width:"100%",maxWidth:680,maxHeight:"94vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
@@ -1168,10 +1316,8 @@ function DismantleModal({record, onSave, onClose}) {
               <MField label="IMEI"><input value={f.imei||""} onChange={e=>s("imei",e.target.value)} placeholder="358XXXXXXXXXXXX"/></MField>
               <MField label="Цвят"><input value={f.color||""} onChange={e=>s("color",e.target.value)} placeholder="Черен / Бял..."/></MField>
               <MField label="Памет"><input value={f.storage||""} onChange={e=>s("storage",e.target.value)} placeholder="128GB..."/></MField>
-              <MField label="Цена на изкупуване (€)"><input type="number" min="0" step="0.01" value={f.purchase_price||""} onChange={e=>s("purchase_price",e.target.value)} placeholder="0.00"/></MField>
-              <MField label="Бележки" style={{gridColumn:"1/-1"}}>
-                <textarea value={f.notes||""} onChange={e=>s("notes",e.target.value)} rows={3} style={{resize:"vertical"}} placeholder="Допълнителна информация..."/>
-              </MField>
+              <MField label="Цена (€)"><input type="number" min="0" step="0.01" value={f.purchase_price||""} onChange={e=>s("purchase_price",e.target.value)} placeholder="0.00"/></MField>
+              <MField label="Бележки" style={{gridColumn:"1/-1"}}><textarea value={f.notes||""} onChange={e=>s("notes",e.target.value)} rows={3} style={{resize:"vertical"}} placeholder="Допълнителна информация..."/></MField>
             </div>
           )}
           {activeTab==="parts"&&(
@@ -1181,20 +1327,19 @@ function DismantleModal({record, onSave, onClose}) {
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 {PHONE_PARTS.map(p=>{
-                  const current = f.parts_status[p.key]||"Не е тестван";
+                  const current=f.parts_status[p.key]||"Не е тестван";
                   return (
                     <div key={p.key} style={{background:"#0f172a",borderRadius:8,padding:"8px 10px"}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#e2e8f0",marginBottom:5}}>{p.label}</div>
                       <div style={{display:"flex",gap:2,flexWrap:"wrap"}}>
                         {PART_STATUS.map(st=>{
-                          const isActive = current===st;
-                          const c = PART_STATUS_COLOR[st]||"#64748b";
+                          const isActive=current===st;
+                          const c=PART_STATUS_COLOR[st]||"#64748b";
                           return (
                             <button key={st} onClick={()=>setPart(p.key,st)} style={{
                               padding:"2px 6px",borderRadius:4,fontSize:10,fontWeight:600,cursor:"pointer",
                               border:isActive?"1px solid "+c:"1px solid #334155",
-                              background:isActive?c+"33":"transparent",
-                              color:isActive?c:"#64748b",
+                              background:isActive?c+"33":"transparent",color:isActive?c:"#64748b",
                             }}>{st}</button>
                           );
                         })}
@@ -1205,10 +1350,10 @@ function DismantleModal({record, onSave, onClose}) {
               </div>
               <div style={{marginTop:10,display:"flex",gap:8,padding:"8px 12px",background:"#0f172a",borderRadius:8}}>
                 {[
-                  {l:"Работят",    v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Работи").length,       c:"#10b981"},
-                  {l:"Не работят", v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Не работи").length,    c:"#ef4444"},
-                  {l:"Нетествани", v:PHONE_PARTS.filter(p=>!f.parts_status[p.key]||f.parts_status[p.key]==="Не е тестван").length, c:"#f59e0b"},
-                  {l:"Липсва",     v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Липсва").length,        c:"#64748b"},
+                  {l:"Работят",v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Работи").length,c:"#10b981"},
+                  {l:"Не работят",v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Не работи").length,c:"#ef4444"},
+                  {l:"Нетествани",v:PHONE_PARTS.filter(p=>!f.parts_status[p.key]||f.parts_status[p.key]==="Не е тестван").length,c:"#f59e0b"},
+                  {l:"Липсва",v:PHONE_PARTS.filter(p=>f.parts_status[p.key]==="Липсва").length,c:"#64748b"},
                 ].map(({l,v,c})=>(
                   <div key={l} style={{textAlign:"center",flex:1}}>
                     <div style={{fontSize:18,fontWeight:800,color:c}}>{v}</div>
@@ -1222,7 +1367,7 @@ function DismantleModal({record, onSave, onClose}) {
             <div>
               <input type="file" ref={fileRef} multiple accept="image/*" onChange={handlePhotos} style={{display:"none"}}/>
               <button onClick={()=>fileRef.current.click()} style={{background:"#0f172a",color:"#64748b",border:"2px dashed #334155",borderRadius:10,padding:"12px",cursor:"pointer",fontSize:13,marginBottom:12,width:"100%"}}>
-                📷 Добави снимки на устройството
+                📷 Добави снимки
               </button>
               <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                 {(f.photos||[]).map((ph,i)=>(
@@ -1238,10 +1383,7 @@ function DismantleModal({record, onSave, onClose}) {
         </div>
         <div style={{padding:"10px 16px",borderTop:"1px solid #334155",display:"flex",justifyContent:"flex-end",gap:8,flexShrink:0}}>
           <CancelBtn onClick={onClose}/>
-          <MPrimaryBtn onClick={()=>{
-            if(!f.brand||!f.model){alert("Въведи марка и модел!");return;}
-            onSave(f);
-          }} color="linear-gradient(135deg,#f59e0b,#d97706)">💾 Запази</MPrimaryBtn>
+          <MPrimaryBtn onClick={()=>{if(!f.brand||!f.model){alert("Въведи марка и модел!");return;}onSave(f);}} color="linear-gradient(135deg,#f59e0b,#d97706)">💾 Запази</MPrimaryBtn>
         </div>
       </div>
     </div>
