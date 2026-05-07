@@ -742,7 +742,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
       </div>
 
       {/* KPI */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
         {[
           {l:"Активни поръчки", v:activeOrders.length, icon:"🔧", c:"#3b82f6"},
           {l:"Готови за вземане",v:readyOrders.length, icon:"✅", c:"#10b981"},
@@ -757,7 +757,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
         ))}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
         {/* Revenue chart */}
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Оборот — последните 6 месеца</div>
@@ -784,7 +784,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
         </Card>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:14}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:14}}>
         {/* Tech stats */}
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Техници</div>
@@ -1038,7 +1038,7 @@ const OrderModal = memo(function OrderModal({order,technicians,inventory,setInve
         {/* Body */}
         <div style={{flex:1,overflow:"auto",padding:22}}>
           {activeTab==="info"&&(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+            <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 <div style={{fontSize:11,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Клиент</div>
                 <Field label="Три имена *"><input value={form.client_name} onChange={e=>set("client_name",e.target.value)} placeholder="Иван Иванов"/></Field>
@@ -1255,7 +1255,7 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
         {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap",flexShrink:0}}>{c}</button>)}
       </div>
-      <Card className="inv-desktop-table" style={{padding:0,overflow:"hidden"}}>
+      <Card className="inv-desktop-table mobile-scroll-table" style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Наименование","Категория","Наличност","Мин.","Продажна цена","Себестойност","Стойност","Доставчик",""].map(h=><th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr>
@@ -1334,7 +1334,7 @@ function InvModal({item,onSave,onClose,syncing,allInventory=[]}) {
         </div>
         <div style={{padding:22,display:"flex",flexDirection:"column",gap:12}}>
           <Field label="Наименование *"><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Дисплей Samsung Galaxy S22"/></Field>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             <Field label="Категория"><select value={form.category||"Дисплеи"} onChange={e=>set("category",e.target.value)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></Field>
             <Field label="SKU / Код"><input value={form.sku||""} onChange={e=>set("sku",e.target.value)} placeholder="SAM-S22-LCD"/></Field>
             <Field label="Наличност (бр.)"><input type="number" min="0" value={form.quantity} onChange={e=>set("quantity",Number(e.target.value))}/></Field>
@@ -1450,7 +1450,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
         <Field label="От дата"><input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={{width:160}}/></Field>
         <Field label="До дата"><input type="date" value={to} onChange={e=>setTo(e.target.value)} style={{width:160}}/></Field>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:16}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:16}}>
         {[
           {l:"Поръчки в периода",v:filtered.length,c:"#3b82f6"},
           {l:"Издадени",v:filtered.filter(o=>o.status==="Издаден").length,c:"#10b981"},
@@ -1463,7 +1463,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
           </Card>
         ))}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Справка по техници (всички)</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -1491,7 +1491,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
         </Card>
       </div>
       {/* Filtered orders list */}
-      {filtered.length>0&&<Card style={{padding:0,overflow:"hidden"}}>
+      {filtered.length>0&&<Card style={{padding:0,overflow:"hidden"}} className="mobile-scroll-table">
         <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:600,color:"var(--text3)"}}>Поръчки в периода ({filtered.length})</div>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Устройство","Техник","Статус","Цена","Дата"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
@@ -1547,7 +1547,7 @@ function TechniciansTab({technicians,orders,onSave,onDelete,onExport}) {
           {editing&&<button onClick={()=>{setEditing(null);setForm({name:"",phone:"",email:"",color:"#38bdf8"});}} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:8,padding:"9px 16px",cursor:"pointer"}}>Отказ</button>}
         </div>
       </Card>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
         {technicians.map((t,i)=>{
           const to=orders.filter(o=>o.technician===t.name);
           const rev=to.filter(o=>o.status==="Издаден").reduce((s,o)=>s+Number(o.price||0),0);
@@ -1615,7 +1615,7 @@ function SettingsModal({settings,onSave,onClose,connected}) {
           {/* Email */}
           <div>
             <div style={{fontSize:13,fontWeight:700,color:"#38bdf8",marginBottom:10}}>📧 Имейл (изпращане при готово устройство)</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Field label="SMTP сървър"><input value={form.smtpHost||""} onChange={e=>set("smtpHost",e.target.value)} placeholder="smtp.gmail.com"/></Field>
               <Field label="SMTP порт"><input value={form.smtpPort||"587"} onChange={e=>set("smtpPort",e.target.value)} placeholder="587"/></Field>
               <Field label="Имейл адрес"><input value={form.smtpUser||""} onChange={e=>set("smtpUser",e.target.value)} placeholder="serviz@gmail.com"/></Field>
@@ -2173,7 +2173,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
       </Card>
 
       {/* KPI cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
         <Card style={{borderLeft:"4px solid #10b981",padding:"14px 16px"}}>
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>💰 ОБЩО ПРИХОДИ</div>
           <div style={{fontSize:24,fontWeight:800,color:"#10b981"}}>€ {totalRevenue.toFixed(2)}</div>
@@ -2234,7 +2234,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
         </Card>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:18}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:18}}>
         <Card style={{borderLeft:"4px solid #3b82f6",padding:"14px 18px"}}>
           <div style={{fontSize:22,fontWeight:800}}>{receivedToday.length}</div>
           <div style={{fontSize:11,color:"var(--text3)"}}>Приети устройства</div>
@@ -2319,7 +2319,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
 
       {/* Received today */}
       {receivedToday.length > 0 && (
-        <Card style={{padding:0,overflow:"hidden"}}>
+        <Card style={{padding:0,overflow:"hidden"}} className="mobile-scroll-table">
           <div style={{padding:"12px 16px",borderBottom:"1px solid #0f172a",fontSize:12,fontWeight:700,color:"#3b82f6"}}>📥 Приети устройства ({receivedToday.length})</div>
           <table>
             <thead style={{background:"#0a1628"}}><tr>{["№","Клиент","Телефон","Устройство","Проблем","Техник"].map(h=><th key={h} style={{padding:"9px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
@@ -2445,7 +2445,7 @@ function Calculator() {
     <div className="animate-fade">
       <h1 style={{margin:"0 0 22px",fontSize:22,fontWeight:800}}>🧮 Калкулатор за ремонт</h1>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
 
         {/* ── Main calculator ── */}
         <Card>
@@ -2908,7 +2908,7 @@ function TrashTab({trash, onRestore, onDelete}) {
           <div style={{color:"#475569",fontSize:12,marginTop:6}}>Изтритите записи ще се появят тук</div>
         </Card>
       ) : (
-        <Card style={{padding:0,overflow:"hidden"}}>
+        <Card style={{padding:0,overflow:"hidden"}} className="mobile-scroll-table">
           <table>
             <thead style={{background:"#0a1628"}}>
               <tr>{["Тип","Запис","Изтрит на","Остават дни",""].map(h=>(
