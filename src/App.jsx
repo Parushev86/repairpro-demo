@@ -88,7 +88,7 @@ export default function App() {
   const [stockOrders, setStockOrders] = useState([]);
   const [supplierDebts,setSupplierDebts]=useState([]);
   const [trash,       setTrash]        = useState([]);
-  const [dismantleRecs,setDismantleRecs]= useState([]);
+  const [dismantleRecs,setDismantleRecs]= useState(()=>{try{return JSON.parse(localStorage.getItem("rp_dismantle")||"[]");}catch{return [];}});
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type="success", dur=3500) => {
@@ -144,11 +144,6 @@ export default function App() {
       setBuybacks(bb); setPartsSales(ps); setPhoneSales(phs);
       setStockOrders(so); setSupplierDebts(sd); setTrash(tr);
       cleanExpiredTrash();
-      // Load dismantle records from localStorage
-      try {
-        const dr = JSON.parse(localStorage.getItem("rp_dismantle")||"[]");
-        setDismantleRecs(dr);
-      } catch(e) {}
       setConnected(true);
     } catch(e) {
       notify("❌ Грешка при зареждане: " + e.message, "error");
@@ -481,6 +476,39 @@ export default function App() {
             onAddToInventory={async b=>{const item={name:`${b.brand} ${b.model}`,category:"Дънни платки",quantity:1,min_qty:0,price:0,cost:Number(b.price||0),supplier:"Изкупуване",notes:`IMEI: ${b.imei||"—"}`};const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);await upsertBuyback({...b,added_to_stock:true,inventory_id:saved.id});setBuybacks(p=>p.map(x=>x.id===b.id?{...x,added_to_stock:true}:x));notify("📦 Заприходен в склада ✓");}}
             notify={notify}
           />}
+          {tab==="dismantle"    && <DismantleTab
+            records={dismantleRecs}
+            onSave={r=>{
+              const isNew=!r.id;
+              const saved=isNew?{...r,id:"DIS-"+Date.now()}:r;
+              const updated=isNew?[saved,...dismantleRecs]:dismantleRecs.map(x=>x.id===saved.id?saved:x);
+              setDismantleRecs(updated);
+              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
+              notify("✅ Записът е запазен");
+            }}
+            onDelete={id=>{
+              const updated=dismantleRecs.filter(x=>x.id!==id);
+              setDismantleRecs(updated);
+              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
+              notify("🗑️ Изтрит","warn");
+            }}
+            onAddPartToInventory={async r=>{
+              const PARTS_MAP={display:"Дисплей",battery:"Батерия",back_cover:"Заден капак",front_camera:"Предна камера",rear_camera:"Задна камера",mainboard:"Дънна платка",charging_port:"Зарядно гнездо",speaker:"Слушалка",microphone:"Микрофон",sim_reader:"SIM четец",wifi_module:"Wi-Fi модул",fingerprint:"Пръстов отпечатък",frame:"Рамка / Шаси",buttons:"Бутони",vibrator:"Вибратор"};
+              const parts=r.parts_status||{};
+              let added=0;
+              for(const [key,label] of Object.entries(PARTS_MAP)){
+                if(parts[key]==="Работи"){
+                  const item={name:label+" "+r.brand+" "+r.model,category:"За разглобяване",quantity:1,min_qty:0,price:0,cost:0,supplier:"Разглобяване",notes:"IMEI: "+(r.imei||"—"),payment_status:"Платен",payment_method:"В брой"};
+                  try{const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);added++;}catch(e){console.warn(e);}
+                }
+              }
+              const updated=dismantleRecs.map(x=>x.id===r.id?{...x,status:"Разглобен"}:x);
+              setDismantleRecs(updated);
+              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
+              notify("📦 "+added+" части заприходени в Склада ✓");
+            }}
+            notify={notify}
+          />}
           {tab==="partssales"   && <PartsSalesTab
             sales={partsSales} inventory={inventory}
             onSave={async r=>{
@@ -572,62 +600,6 @@ export default function App() {
             onDelete={async id=>{const r=supplierDebts.find(x=>x.id===id);if(r)await moveToTrash("supplier_debts",r);await deleteSupplierDebt(id);setSupplierDebts(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"supplier_debts",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             notify={notify}
           />}
-          {tab==="dismantle"    && <DismantleTab
-            records={dismantleRecs}
-            onSave={r=>{
-              const isNew = !r.id;
-              const saved = isNew ? {...r, id:"DIS-"+Date.now()} : r;
-              let updated;
-              if(isNew) updated=[saved,...dismantleRecs];
-              else updated=dismantleRecs.map(x=>x.id===saved.id?saved:x);
-              setDismantleRecs(updated);
-              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
-              notify("✅ Записът е запазен");
-            }}
-            onDelete={id=>{
-              const updated=dismantleRecs.filter(x=>x.id!==id);
-              setDismantleRecs(updated);
-              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
-              notify("🗑️ Изтрит","warn");
-            }}
-            onAddPartToInventory={async r=>{
-              const parts = r.parts_status||{};
-              const PHONE_PARTS_KEYS = {
-                display:"Дисплей",battery:"Батерия",back_cover:"Заден капак",
-                front_camera:"Предна камера",rear_camera:"Задна камера",
-                mainboard:"Дънна платка",charging_port:"Зарядно гнездо",
-                speaker:"Слушалка",microphone:"Микрофон",sim_reader:"SIM четец",
-                wifi_module:"Wi-Fi модул",fingerprint:"Пръстов отпечатък",
-                frame:"Рамка / Шаси",buttons:"Бутони",vibrator:"Вибратор",
-              };
-              let added=0;
-              for(const [key,label] of Object.entries(PHONE_PARTS_KEYS)){
-                if(parts[key]==="Работи"){
-                  const item={
-                    name:`${label} ${r.brand} ${r.model}`,
-                    category:"За разглобяване",
-                    quantity:1, min_qty:0, price:0, cost:0,
-                    supplier:"Разглобяване",
-                    notes:`IMEI: ${r.imei||"—"} | ${r.color||""} ${r.storage||""}`.trim(),
-                    payment_status:"Платен", payment_method:"В брой",
-                  };
-                  try {
-                    const saved=await upsertInventory(item);
-                    setInventory(p=>[...p,saved]);
-                    added++;
-                  } catch(e){
-                    console.warn("Inventory add error:",e.message);
-                  }
-                }
-              }
-              // Mark as dismantled
-              const updated=dismantleRecs.map(x=>x.id===r.id?{...x,status:"Разглобен"}:x);
-              setDismantleRecs(updated);
-              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
-              notify(`📦 ${added} части заприходени в Склада ✓`);
-            }}
-            notify={notify}
-          />}
           {tab==="phonesales"   && <PhoneSalesTab
             sales={phoneSales} inventory={inventory}
             onSave={async r=>{
@@ -711,12 +683,12 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
           ["pricing",      "💲", "Готови цени",           null],
           ["expenses",     "💸", "Разходи",               null],
           ["buybacks",     "📱", "Изкупуване",            null],
+          ["dismantle",    "🔨", "За разглобяване",       null],
           ["accsales",     "🎧", "Продажба аксесоари",    null],
           ["partssales",   "🔩", "Продажба части",        null],
           ["phonesales",   "📲", "Продажба телефони",     null],
           ["stockorders",  "📋", "Поръчки части",         null],
           ["debts",        "💳", "Задължения",            null],
-          ["dismantle",    "🔨", "За разглобяване",       null],
           // Admin-only
           ...(!isAdmin ? [] : [
             ["dashboard",   "📊", "Дашборд",              null],
