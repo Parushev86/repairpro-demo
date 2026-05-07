@@ -1287,8 +1287,8 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
             })}
             {filtered.length===0&&<tr><td colSpan={9} style={{textAlign:"center",padding:30,color:"var(--text3)"}}>Няма намерени артикули</td></tr>}
           </tbody>
-        </table>
-      </div></div>
+        </table></div>
+      </div>
       {/* Mobile cards */}
       {filtered.map(i=>{
         const low=Number(i.quantity)<=Number(i.min_qty);
@@ -2957,7 +2957,7 @@ function TrashTab({trash, onRestore, onDelete}) {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       )}
     </div>
@@ -3239,7 +3239,7 @@ export function UsersTab() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       <div style={{marginTop:16,padding:"12px 16px",background:"#0f172a",borderRadius:10,fontSize:12,color:"#64748b"}}>
