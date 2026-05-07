@@ -68,3 +68,35 @@ table{border-collapse:collapse;width:100%}
   h1{font-size:17px !important}
   ::-webkit-scrollbar{width:2px;height:2px}
 }
+
+/* ── modules.jsx mobile ── */
+.scroll-x {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  display: block !important;
+}
+.scroll-x table {
+  min-width: 500px;
+  font-size: 11px;
+}
+.scroll-x td, .scroll-x th {
+  padding: 5px 8px !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  /* Expenses top grid → 1 колона */
+  .m-exp-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* PartsSaleModal 2-col → 1 колона */
+  .m-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ExpenseModal, BuybackModal и др. вградени гридове */
+  div[style*="gridTemplateColumns:\"1fr 1fr\",gap:12"] {
+    grid-template-columns: 1fr !important;
+  }
+}
