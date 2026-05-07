@@ -22,18 +22,16 @@ table{border-collapse:collapse;width:100%}
 .animate-fade{animation:fadeIn .25s ease}
 .spinner{animation:spin .8s linear infinite;display:inline-block}
 
-/* Hidden by default */
 .mobile-topbar{display:none}
 .orders-mobile-cards{display:none}
 .mobile-inv-card{display:none}
 
-/* t-scroll: auto scroll when Card handles it via JS */
+/* t-scroll tables */
 .t-scroll table{min-width:480px;font-size:11px}
 .t-scroll td,.t-scroll th{padding:5px 8px !important;white-space:nowrap}
 
 /* ════════ MOBILE ════════ */
 @media(max-width:768px){
-
   .mobile-topbar{display:flex !important}
   .hide-mobile{display:none !important}
 
@@ -46,30 +44,17 @@ table{border-collapse:collapse;width:100%}
 
   .main-content{padding:10px !important}
 
-  /* Сервиз */
   .orders-desktop-table{display:none !important}
   .orders-mobile-cards{display:block !important}
-
-  /* Склад */
   .inv-desktop-table{display:none !important}
   .mobile-inv-card{display:block !important}
 
-  /* KPI грид → 2 колони */
   .kpi-grid{grid-template-columns:1fr 1fr !important}
-
-  /* Dashboard/Reports грид → 1 колона */
   .dash-grid{grid-template-columns:1fr !important}
-
-  /* Technicians карти */
-  .kpi-grid[style*="repeat(3"]{grid-template-columns:1fr !important}
-
-  /* Technicians/Users form */
+  .calc-grid{grid-template-columns:1fr !important}
   .form-grid{grid-template-columns:1fr 1fr !important}
 
-  /* Calculator */
-  .calc-grid{grid-template-columns:1fr !important}
-
-  /* Modals */
+  /* Modals full width */
   div[style*="maxWidth:820"],
   div[style*="maxWidth:700"],
   div[style*="maxWidth:620"],
