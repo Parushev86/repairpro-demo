@@ -483,12 +483,16 @@ export default function App() {
             records={dismantleRecs}
             onSave={async r=>{
               try{
-                // Strip base64 photo data before saving (store only names)
-                const toSave={...r, photos:(r.photos||[]).map(p=>typeof p==="object"&&p.data?{name:p.name}:p)};
+                const {id,date,brand,model,imei,color,storage,purchase_price,status,parts_status,custom_parts,notes}=r;
+                const toSave={date,brand,model,imei:imei||null,color:color||null,storage:storage||null,
+                  purchase_price:Number(purchase_price||0),status:status||"Чака разглобяване",
+                  parts_status:parts_status||{},custom_parts:custom_parts||[],notes:notes||null,
+                  photos:[],
+                };
+                if(id) toSave.id=id;
                 const saved=await upsertDismantle(toSave);
-                // Keep full photos in local state
-                const withPhotos={...saved, photos:r.photos||[]};
-                if(!r.id) setDismantleRecs(p=>[withPhotos,...p]);
+                const withPhotos={...saved,photos:r.photos||[]};
+                if(!id) setDismantleRecs(p=>[withPhotos,...p]);
                 else setDismantleRecs(p=>p.map(x=>x.id===saved.id?withPhotos:x));
                 notify("✅ Записът е запазен");
               }catch(e){notify("❌ "+e.message,"error");}
@@ -512,7 +516,13 @@ export default function App() {
                   try{const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);added++;}catch(e){console.warn(e);}
                 }
               }
-              try{const upd=await upsertDismantle({...r,status:"Разглобен"});setDismantleRecs(p=>p.map(x=>x.id===r.id?upd:x));}catch(e){}
+              try{
+                const {id,date,brand,model,imei,color,storage,purchase_price,parts_status,custom_parts,notes}=r;
+                const upd=await upsertDismantle({id,date,brand,model,imei:imei||null,color:color||null,storage:storage||null,
+                  purchase_price:Number(purchase_price||0),status:"Разглобен",
+                  parts_status:parts_status||{},custom_parts:custom_parts||[],notes:notes||null,photos:[]});
+                setDismantleRecs(p=>p.map(x=>x.id===r.id?{...upd,photos:r.photos||[]}:x));
+              }catch(e){console.warn(e);}
               notify("📦 "+added+" части заприходени в Склада ✓");
             }}
             notify={notify}
