@@ -52,48 +52,6 @@ export const fetchSupplierDebts  = () => fetchTable("supplier_debts", "created_a
 export const upsertSupplierDebt  = (r) => upsertRow("supplier_debts", r);
 export const deleteSupplierDebt  = (id)=> deleteRow("supplier_debts", id);
 
-// ── Trash (Кошче) ─────────────────────────────────────────────────────────────
-export async function moveToTrash(tableName, record) {
-  const sb = getSupabase();
-  if (!sb) return;
-  try {
-    await sb.from("trash").insert({
-      table_name:  tableName,
-      record_id:   String(record.id),
-      record_data: record,
-      deleted_at:  new Date().toISOString(),
-      expires_at:  new Date(Date.now() + 5*24*60*60*1000).toISOString(),
-    });
-  } catch(e) { console.error("Trash error:", e.message); }
-}
-
-export async function fetchTrash() {
-  const sb = getSupabase();
-  if (!sb) return [];
-  const { data } = await sb.from("trash").select("*").order("deleted_at", { ascending: false });
-  return data || [];
-}
-
-export async function restoreFromTrash(trashItem, setters) {
-  const sb = getSupabase();
-  if (!sb) throw new Error("Не е конфигурирана Supabase");
-  // Re-insert the original record
-  const { error } = await sb.from(trashItem.table_name).upsert(trashItem.record_data, { onConflict: "id" });
-  if (error) throw error;
-  // Remove from trash
-  await sb.from("trash").delete().eq("id", trashItem.id);
-  return trashItem.record_data;
-}
-
-export async function deleteFromTrash(id) {
-  const sb = getSupabase();
-  if (!sb) throw new Error("Не е конфигурирана Supabase");
-  const { error } = await sb.from("trash").delete().eq("id", id);
-  if (error) throw error;
-}
-
-export async function cleanExpiredTrash() {
-  const sb = getSupabase();
-  if (!sb) return;
-  await sb.from("trash").delete().lt("expires_at", new Date().toISOString());
-}
+export const fetchDismantle    = () => fetchTable("dismantle", "created_at");
+export const upsertDismantle   = (r) => upsertRow("dismantle", r);
+export const deleteDismantle   = (id)=> deleteRow("dismantle", id);
