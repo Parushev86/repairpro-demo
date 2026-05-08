@@ -52,6 +52,49 @@ export const fetchSupplierDebts  = () => fetchTable("supplier_debts", "created_a
 export const upsertSupplierDebt  = (r) => upsertRow("supplier_debts", r);
 export const deleteSupplierDebt  = (id)=> deleteRow("supplier_debts", id);
 
-export const fetchDismantle    = () => fetchTable("dismantle", "created_at");
-export const upsertDismantle   = (r) => upsertRow("dismantle", r);
-export const deleteDismantle   = (id)=> deleteRow("dismantle", id);
+export const fetchDismantle      = () => fetchTable("dismantle",      "created_at");
+export const upsertDismantle     = (r) => upsertRow("dismantle",      r);
+export const deleteDismantle     = (id)=> deleteRow("dismantle",      id);
+
+// ── Trash ──────────────────────────────────────────────────────────────────────
+export async function moveToTrash(tableName, record) {
+  const sb = getSupabase();
+  if (!sb) return;
+  const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+  await sb.from("trash").insert({
+    table_name:  tableName,
+    record_id:   record.id,
+    record_data: record,
+    expires_at:  expiresAt,
+  });
+}
+
+export async function fetchTrash() {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb.from("trash").select("*").order("deleted_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function restoreFromTrash(item) {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Не е конфигурирана Supabase");
+  const { table_name, record_data } = item;
+  const { error } = await sb.from(table_name).upsert(record_data, { onConflict: "id" });
+  if (error) throw error;
+  await sb.from("trash").delete().eq("id", item.id);
+}
+
+export async function deleteFromTrash(id) {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Не е конфигурирана Supabase");
+  const { error } = await sb.from("trash").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function cleanExpiredTrash() {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.from("trash").delete().lt("expires_at", new Date().toISOString());
+}
