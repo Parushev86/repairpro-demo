@@ -570,8 +570,6 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
             })}
             {filteredInv.length===0&&<p style={{color:"#475569",fontSize:12,padding:"8px 0"}}>Няма намерени артикули</p>}
           </div>
-
-          )}
           </>)}
           {/* Cart */}
           {!manualMode && items.length>0&&(
@@ -648,11 +646,12 @@ function PartsSaleModal({sale,inventory,onSave,onClose}) {
 }
 
 // ══ PHONE SALES ════════════════════════════════════════════════════════════════
-export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
+export function PhoneSalesTab({sales,inventory=[],onSave,onDelete,onWarranty}) {
   const [modal,setModal]=useState(null);
   const [search,setSearch]=useState("");
   const [date,setDate]=useState("");
   const filtered=sales.filter(s=>{const q=search.toLowerCase();return(!q||[s.brand,s.model,s.imei,s.buyer_name].some(f=>(f||"").toLowerCase().includes(q)))&&(!date||(s.date||"").slice(0,10)===date);});
+  const phoneStock = inventory.filter(i=>i.category==="Телефони"&&Number(i.quantity)>0);
   const totalRev=filtered.reduce((s,r)=>s+Number(r.sale_price||0),0);
   const totalCost=filtered.reduce((s,r)=>s+Number(r.cost_price||0),0);
   const exportAll=()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(r=>({Дата:r.date,Марка:r.brand,Модел:r.model,Цвят:r.color||"",IMEI:r.imei||"","Сериен №":r.serial_number||"",Купувач:r.buyer_name||"","Доставна €":r.cost_price,"Продажна €":r.sale_price,"Печалба €":Number(r.sale_price||0)-Number(r.cost_price||0),Плащане:r.payment_method}))), "Продажби телефони");XLSX.writeFile(wb,`Продажби_телефони_${today()}.xlsx`);};
@@ -669,7 +668,37 @@ export function PhoneSalesTab({sales,onSave,onDelete,onWarranty}) {
         <MCard style={{padding:"10px 14px",borderLeft:"4px solid #10b981"}}><div style={{fontSize:11,color:"#64748b"}}>Приход</div><div style={{fontSize:16,fontWeight:800,color:"#10b981"}}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{padding:"10px 14px",borderLeft:"4px solid #8b5cf6"}}><div style={{fontSize:11,color:"#64748b"}}>Печалба</div><div style={{fontSize:16,fontWeight:800,color:"#8b5cf6"}}>{fmtM(totalRev-totalCost)}</div></MCard>
       </div>
-      <MCard style={{padding:0,overflow:"hidden"}}>
+      {phoneStock.length>0&&(
+        <div style={{background:"#0f172a",border:"1px solid #1d4ed8",borderRadius:10,padding:14,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#60a5fa",marginBottom:8}}>📱 Наличен склад — Телефони ({phoneStock.length} бр.)</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {phoneStock.map(ph=>(
+              <button key={ph.id} onClick={()=>setModal({
+                brand:ph.phone_brand||ph.name.split(" ")[0]||"",
+                model:ph.phone_model||ph.name.split(" ").slice(1).join(" ")||"",
+                color:ph.phone_color||"",
+                imei:ph.phone_imei||"",
+                serial_number:ph.phone_serial||"",
+                storage:ph.sku||"",
+                cost_price:ph.cost||0,
+                sale_price:ph.price||0,
+                inventory_id:ph.id,
+              })} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:8,padding:"7px 12px",cursor:"pointer",textAlign:"left",transition:"border-color .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#60a5fa"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#334155"}>
+                <div style={{fontSize:12,fontWeight:700,color:"#e2e8f0"}}>{ph.phone_brand?ph.phone_brand+" ":""}{ph.phone_model||ph.name}</div>
+                <div style={{display:"flex",gap:8,fontSize:10,marginTop:2}}>
+                  {ph.phone_color&&<span style={{color:"#64748b"}}>{ph.phone_color}</span>}
+                  {ph.sku&&<span style={{color:"#64748b"}}>{ph.sku}</span>}
+                  <span style={{color:"#f59e0b"}}>{ph.quantity} бр.</span>
+                  <span style={{color:"#10b981",fontWeight:700}}>€ {Number(ph.price).toFixed(2)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+  <MCard style={{padding:0,overflow:"hidden"}}>
         <table>
           <thead style={{background:"#0a1628"}}><tr>{["Дата","Устройство","IMEI","Купувач","Доставна","Продажна","Плащане",""].map(h=><th key={h} style={{padding:"11px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
@@ -912,7 +941,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
 }
 
 function DebtModal({debt,onSave,onClose}) {
-  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",is_paid:false,paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
+  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",is_paid:false,paid_date:"",payment_method:"",notes:"",...debt,...(debt?{is_paid:debt.is_paid||false}:{})});
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   const handleCost=(val)=>{s("cost_price",val);if(!f.total_amount||f.total_amount===String(Number(f.cost_price)*Number(f.quantity)))s("total_amount",(Number(val)*Number(f.quantity)).toFixed(2));};
   const handleQty=(val)=>{s("quantity",Number(val));s("total_amount",(Number(f.cost_price||0)*Number(val)).toFixed(2));};
@@ -1002,7 +1031,10 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
         <div>
           <h1 style={{margin:0,fontSize:20,fontWeight:800}}>🔨 За разглобяване</h1>
-          <p style={{margin:"3px 0 0",fontSize:12,color:"#64748b"}}>Телефони за разглобяване</p>
+          <p style={{margin:"3px 0 0",fontSize:12,color:"#64748b"}}>
+            Общо: <b style={{color:"#f1f5f9"}}>{(records||[]).length}</b> бр. &nbsp;|&nbsp;
+            Чакат: <b style={{color:"#f59e0b"}}>{(records||[]).filter(r=>r.status==="Чака разглобяване"||r.status==="В процес").length}</b> бр.
+          </p>
         </div>
         <div style={{display:"flex",gap:6}}>
           <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>
