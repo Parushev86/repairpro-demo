@@ -483,9 +483,13 @@ export default function App() {
             records={dismantleRecs}
             onSave={async r=>{
               try{
-                const saved=await upsertDismantle(r);
-                if(!r.id) setDismantleRecs(p=>[saved,...p]);
-                else setDismantleRecs(p=>p.map(x=>x.id===saved.id?saved:x));
+                // Strip base64 photo data before saving (store only names)
+                const toSave={...r, photos:(r.photos||[]).map(p=>typeof p==="object"&&p.data?{name:p.name}:p)};
+                const saved=await upsertDismantle(toSave);
+                // Keep full photos in local state
+                const withPhotos={...saved, photos:r.photos||[]};
+                if(!r.id) setDismantleRecs(p=>[withPhotos,...p]);
+                else setDismantleRecs(p=>p.map(x=>x.id===saved.id?withPhotos:x));
                 notify("✅ Записът е запазен");
               }catch(e){notify("❌ "+e.message,"error");}
             }}
