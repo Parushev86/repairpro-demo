@@ -7,7 +7,7 @@ import { sendReadyEmail } from "./lib/email.js";
 import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
 import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash } from "./lib/db2.js";
-import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab } from "./modules.jsx";
+import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -88,6 +88,7 @@ export default function App() {
   const [stockOrders, setStockOrders] = useState([]);
   const [supplierDebts,setSupplierDebts]=useState([]);
   const [trash,       setTrash]        = useState([]);
+  const [dismantleRecs,setDismantleRecs]= useState(()=>{try{return JSON.parse(localStorage.getItem("rp_dismantle")||"[]");}catch{return [];}});
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type="success", dur=3500) => {
@@ -439,7 +440,7 @@ export default function App() {
           <span style={{fontSize:16,fontWeight:800,color:"#38bdf8"}}>🔧 RepairPro</span>
         </div>
         {sidebarOpen && <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:98}}/>}
-        <div style={{flex:1, overflow:"auto", padding:24}}>
+        <div className="main-content" style={{flex:1, overflow:"auto", padding:24}}>
         {tab==="dashboard"    && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={()=>setOrderModal("new")} onExport={()=>exportFullReport(orders,inventory,technicians)} notify={notify}/>}
         {tab==="dashboard"    && !isAdmin && <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",flexDirection:"column",gap:16}}><div style={{fontSize:48}}>🔒</div><div style={{fontSize:18,color:"#64748b"}}>Нямаш достъп до тази страница</div></div>}
         {tab==="orders"       && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={()=>setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={()=>exportOrders(orders)} onImport={()=>setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder}/>}
@@ -473,6 +474,41 @@ export default function App() {
             onSave={async r=>{const s=await upsertBuyback(r);if(!r.id)setBuybacks(p=>[s,...p]);else setBuybacks(p=>p.map(x=>x.id===s.id?s:x));notify("✅ Записът е запазен");}}
             onDelete={async id=>{const r=buybacks.find(x=>x.id===id);if(r)await moveToTrash("buybacks",r);await deleteBuyback(id);setBuybacks(p=>p.filter(x=>x.id!==id));setTrash(p=>[{table_name:"buybacks",record_id:id,record_data:r,id:crypto.randomUUID(),deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+5*24*60*60*1000).toISOString()},...p]);notify("🗑️ В кошчето","warn");}}
             onAddToInventory={async b=>{const item={name:`${b.brand} ${b.model}`,category:"Дънни платки",quantity:1,min_qty:0,price:0,cost:Number(b.price||0),supplier:"Изкупуване",notes:`IMEI: ${b.imei||"—"}`};const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);await upsertBuyback({...b,added_to_stock:true,inventory_id:saved.id});setBuybacks(p=>p.map(x=>x.id===b.id?{...x,added_to_stock:true}:x));notify("📦 Заприходен в склада ✓");}}
+            notify={notify}
+          />}
+          {tab==="dismantle"    && <DismantleTab
+            records={dismantleRecs}
+            onSave={r=>{
+              const isNew=!r.id;
+              const saved=isNew?{...r,id:"DIS-"+Date.now()}:r;
+              const updated=isNew?[saved,...dismantleRecs]:dismantleRecs.map(x=>x.id===saved.id?saved:x);
+              setDismantleRecs(updated);
+              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
+              notify("✅ Записът е запазен");
+            }}
+            onDelete={id=>{
+              const updated=dismantleRecs.filter(x=>x.id!==id);
+              setDismantleRecs(updated);
+              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
+              notify("🗑️ Изтрит","warn");
+            }}
+            onAddPartToInventory={async r=>{
+              const PARTS_MAP={display:"Дисплей",back_cover:"Заден капак",rear_camera:"Задна камера",power_block:"Блок захранване",frame:"Рамка / Среда",battery:"Батерия",front_camera:"Предна камера",mainboard:"Дънна платка",speaker:"Слушалка",sim_holder:"Сим държач",main_flex:"Главен лентов кабел",button_flex:"Лентов кабел бутони"};
+              const customMap=Object.fromEntries((r.custom_parts||[]).map(n=>["custom_"+n,n]));
+              const allMap={...PARTS_MAP,...customMap};
+              const parts=r.parts_status||{};
+              let added=0;
+              for(const [key,label] of Object.entries(allMap)){
+                if(parts[key]==="Работи"){
+                  const item={name:label+" "+r.brand+" "+r.model,category:"За разглобяване",quantity:1,min_qty:0,price:0,cost:0,supplier:"Разглобяване",notes:"IMEI: "+(r.imei||"—"),payment_status:"Платен",payment_method:"В брой"};
+                  try{const saved=await upsertInventory(item);setInventory(p=>[...p,saved]);added++;}catch(e){console.warn(e);}
+                }
+              }
+              const updated=dismantleRecs.map(x=>x.id===r.id?{...x,status:"Разглобен"}:x);
+              setDismantleRecs(updated);
+              localStorage.setItem("rp_dismantle",JSON.stringify(updated));
+              notify("📦 "+added+" части заприходени в Склада ✓");
+            }}
             notify={notify}
           />}
           {tab==="partssales"   && <PartsSalesTab
@@ -649,6 +685,7 @@ function Sidebar({tab,setTab,readyOrders,lowStock,activeOrders,orders,connected,
           ["pricing",      "💲", "Готови цени",           null],
           ["expenses",     "💸", "Разходи",               null],
           ["buybacks",     "📱", "Изкупуване",            null],
+          ["dismantle",    "🔨", "За разглобяване",       null],
           ["accsales",     "🎧", "Продажба аксесоари",    null],
           ["partssales",   "🔩", "Продажба части",        null],
           ["phonesales",   "📲", "Продажба телефони",     null],
@@ -742,7 +779,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
       </div>
 
       {/* KPI */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
         {[
           {l:"Активни поръчки", v:activeOrders.length, icon:"🔧", c:"#3b82f6"},
           {l:"Готови за вземане",v:readyOrders.length, icon:"✅", c:"#10b981"},
@@ -757,7 +794,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
         ))}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:14,marginBottom:14}}>
         {/* Revenue chart */}
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Оборот — последните 6 месеца</div>
@@ -784,7 +821,7 @@ function Dashboard({orders,lowStock,activeOrders,readyOrders,technicians,onNewOr
         </Card>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:14}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:14}}>
         {/* Tech stats */}
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Техници</div>
@@ -859,8 +896,8 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
           }}>{d}</button>
         ))}
       </div>
-      <div style={{background:"var(--bg2)",borderRadius:12,overflow:"hidden"}}>
-        <table>
+      <div className="orders-desktop-table" style={{background:"var(--bg2)",borderRadius:12,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{minWidth:700}}><table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["№ Поръчка","Клиент","Телефон","Устройство","Проблем","Техник","Крайна цена","Статус","Плащане","Дата",""].map(h=>(
               <th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>
@@ -906,7 +943,33 @@ function OrdersTab({orders,allOrders,search,setSearch,filterStatus,setFilterStat
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
+      </div>
+      {/* Mobile cards */}
+      <div className="orders-mobile-cards">
+        {orders.length===0&&<div style={{textAlign:"center",padding:28,color:"var(--text3)",background:"var(--bg2)",borderRadius:12}}>Няма намерени поръчки</div>}
+        {orders.map(o=>(
+          <div key={o.id+"m"} style={{background:"var(--bg2)",borderRadius:10,padding:"12px 14px",marginBottom:8,borderLeft:"3px solid "+(STATUS_COLOR[o.status]||"#334155")}} onClick={()=>onEdit(o)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{o.client_name}</div>
+                <div style={{fontSize:11,color:"#38bdf8",fontFamily:"monospace"}}>{o.id}</div>
+              </div>
+              <Badge status={o.status}/>
+            </div>
+            <div style={{fontSize:12,color:"var(--text2)",marginBottom:3}}>{o.device_type} {o.brand} {o.model}</div>
+            {o.problem&&<div style={{fontSize:11,color:"var(--text3)",marginBottom:5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.problem}</div>}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#10b981"}}>€ {Number(o.total_price||o.price||0).toFixed(2)}</div>
+              <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+                <Btn color="#3b82f6" onClick={()=>onEdit(o)} style={{padding:"4px 8px",fontSize:11}}>✏️</Btn>
+                <Btn color="#8b5cf6" onClick={()=>onPrint(o)} style={{padding:"4px 8px",fontSize:11}}>📄</Btn>
+                <Btn color="#ef4444" onClick={()=>{if(confirm("Изтрий?"))onDelete(o.id);}} style={{padding:"4px 8px",fontSize:11}}>🗑️</Btn>
+              </div>
+            </div>
+            <div style={{fontSize:11,color:"var(--text3)",marginTop:3}}>{o.phone} · {fmtDate(o.date_in)}{o.technician?" · "+o.technician:""}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1229,7 +1292,7 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
         {cats.map(c=><button key={c} onClick={()=>setCatFilter(c)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:"pointer",border:"none",background:catFilter===c?"#38bdf8":"#1e293b",color:catFilter===c?"#0f172a":"#64748b",whiteSpace:"nowrap",flexShrink:0}}>{c}</button>)}
       </div>
-      <Card style={{padding:0,overflow:"hidden"}}>
+      <div className="inv-desktop-table" style={{background:"var(--bg2)",borderRadius:12,overflowX:"auto",WebkitOverflowScrolling:"touch"}}><div style={{minWidth:620}}>
         <table>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Наименование","Категория","Наличност","Мин.","Продажна цена","Себестойност","Стойност","Доставчик",""].map(h=><th key={h} style={{padding:"11px 13px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr>
@@ -1261,8 +1324,7 @@ function InventoryTab({inventory,lowStock,onNew,onEdit,onDelete,onExport,onImpor
             })}
             {filtered.length===0&&<tr><td colSpan={9} style={{textAlign:"center",padding:30,color:"var(--text3)"}}>Няма намерени артикули</td></tr>}
           </tbody>
-        </table>
-      </Card>
+        </table></div></div>
       {/* Mobile cards */}
       {filtered.map(i=>{
         const low=Number(i.quantity)<=Number(i.min_qty);
@@ -1424,7 +1486,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
         <Field label="От дата"><input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={{width:160}}/></Field>
         <Field label="До дата"><input type="date" value={to} onChange={e=>setTo(e.target.value)} style={{width:160}}/></Field>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:16}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:16}}>
         {[
           {l:"Поръчки в периода",v:filtered.length,c:"#3b82f6"},
           {l:"Издадени",v:filtered.filter(o=>o.status==="Издаден").length,c:"#10b981"},
@@ -1437,7 +1499,7 @@ function ReportsTab({orders,inventory,technicians,onExport}) {
           </Card>
         ))}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
         <Card>
           <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Справка по техници (всички)</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -1505,7 +1567,7 @@ function TechniciansTab({technicians,orders,onSave,onDelete,onExport}) {
       </div>
       <Card style={{marginBottom:18}}>
         <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:14}}>{editing?"Редактирай техник":"Добави нов техник"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
+        <div className="form-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
           <Field label="Три имена *"><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Иван Петров" onKeyDown={e=>e.key==="Enter"&&submit()}/></Field>
           <Field label="Телефон"><input value={form.phone||""} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="0888 123 456"/></Field>
           <Field label="Имейл"><input value={form.email||""} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="ivan@serviz.bg"/></Field>
@@ -1521,7 +1583,7 @@ function TechniciansTab({technicians,orders,onSave,onDelete,onExport}) {
           {editing&&<button onClick={()=>{setEditing(null);setForm({name:"",phone:"",email:"",color:"#38bdf8"});}} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:8,padding:"9px 16px",cursor:"pointer"}}>Отказ</button>}
         </div>
       </Card>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+      <div className="tech-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
         {technicians.map((t,i)=>{
           const to=orders.filter(o=>o.technician===t.name);
           const rev=to.filter(o=>o.status==="Издаден").reduce((s,o)=>s+Number(o.price||0),0);
@@ -2009,8 +2071,10 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
     toDate(o.updated_at) === date
   );
   
-  // Приходи от ремонти (крайна цена = труд + части + външна услуга)
-  const revenue = issuedToday.reduce((s,o) => s + Number(o.total_price||o.price||0), 0);
+  // Приходи от ремонти
+  const revenue     = issuedToday.reduce((s,o)=>s+Number(o.total_price||o.price||0),0);
+  const revenueCash = issuedToday.filter(o=>o.payment_method==="В брой"||!o.payment_method).reduce((s,o)=>s+Number(o.total_price||o.price||0),0);
+  const revenueCard = issuedToday.filter(o=>["С карта","Банка","Еконт","Спиди"].includes(o.payment_method)).reduce((s,o)=>s+Number(o.total_price||o.price||0),0);
   // Стойност на外ните услуги (разход) включен в цената
   const extServiceCost = issuedToday.reduce((s,o) => s + Number(o.external_service_price||0), 0);
 
@@ -2029,8 +2093,12 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
   const openingCash = Number(cashEntry?.opening_cash||0);
   // Общо приходи
   const totalRevenue = revenue + accRevToday + partsRevToday + phoneRevToday;
-  // Налични в касата
-  const cashNow = openingCash + totalRevenue - expensesToday;
+  // Само В брой влиза в каса
+  const accRevCash   = accSales.filter(s=>toDate(s.date)===date&&s.payment_method==="В брой").reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0);
+  const partsRevCash = partsSales.filter(s=>toDate(s.date)===date&&s.payment_status==="Платена"&&s.payment_method==="В брой").reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0);
+  const phoneRevCash = phoneSales.filter(s=>toDate(s.date)===date&&s.payment_method==="В брой").reduce((s,r)=>s+Number(r.sale_price||0),0);
+  const cashInflow   = revenueCash + accRevCash + partsRevCash + phoneRevCash;
+  const cashNow      = openingCash + cashInflow - expensesToday;
   const totalAllCash = cashNow + Number(bankAmount||0) + Number(externalCash||0);
 
   // По начин на плащане
@@ -2147,7 +2215,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
       </Card>
 
       {/* KPI cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14}}>
         <Card style={{borderLeft:"4px solid #10b981",padding:"14px 16px"}}>
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>💰 ОБЩО ПРИХОДИ</div>
           <div style={{fontSize:24,fontWeight:800,color:"#10b981"}}>€ {totalRevenue.toFixed(2)}</div>
@@ -2180,6 +2248,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
           <div style={{fontSize:10,color:"var(--text3)",marginBottom:3}}>🏦 НАЛИЧНО В КАСА</div>
           <div style={{fontSize:24,fontWeight:800,color:"#f59e0b"}}>€ {cashNow.toFixed(2)}</div>
           <div style={{fontSize:10,color:"var(--text3)",marginTop:2}}>Начало: € {openingCash.toFixed(2)}</div>
+          {revenueCard>0&&<div style={{fontSize:10,color:"#3b82f6",marginTop:1}}>💳 Карта/Банка/Доставка: € {revenueCard.toFixed(2)}</div>}
           <div style={{marginTop:10,borderTop:"1px solid #334155",paddingTop:8,display:"flex",flexDirection:"column",gap:7}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:10,color:"#64748b",minWidth:70}}>🏛️ Банка:</span>
@@ -2208,7 +2277,7 @@ function DailyReport({orders, inventory, expenses=[], accSales=[], partsSales=[]
         </Card>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:18}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:18}}>
         <Card style={{borderLeft:"4px solid #3b82f6",padding:"14px 18px"}}>
           <div style={{fontSize:22,fontWeight:800}}>{receivedToday.length}</div>
           <div style={{fontSize:11,color:"var(--text3)"}}>Приети устройства</div>
@@ -2419,7 +2488,7 @@ function Calculator() {
     <div className="animate-fade">
       <h1 style={{margin:"0 0 22px",fontSize:22,fontWeight:800}}>🧮 Калкулатор за ремонт</h1>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+      <div className="calc-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
 
         {/* ── Main calculator ── */}
         <Card>
@@ -3130,7 +3199,7 @@ export function UsersTab() {
         <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,marginBottom:14,textTransform:"uppercase",letterSpacing:.5}}>
           {editing!==null ? "✏️ Редактирай потребител" : "➕ Нов потребител"}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
+        <div className="form-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"flex-end"}}>
           <div>
             <label style={{fontSize:11,color:"var(--text3)",display:"block",marginBottom:4}}>Потребителско име</label>
             <input value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="ivan_technik"/>
@@ -3173,8 +3242,8 @@ export function UsersTab() {
       </div>
 
       {/* Users list */}
-      <div style={{background:"#1e293b",borderRadius:14,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-        <div style={{minWidth:480}}><table style={{width:"100%",borderCollapse:"collapse"}}>
+      <div style={{background:"#1e293b",borderRadius:14,overflow:"hidden"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Потребител","Роля","Парола",""].map(h=>(
               <th key={h} style={{padding:"11px 16px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase"}}>{h}</th>
