@@ -3242,8 +3242,8 @@ export function UsersTab() {
       </div>
 
       {/* Users list */}
-      <div style={{background:"#1e293b",borderRadius:14,overflow:"hidden"}}>
-        <table style={{width:"100%",borderCollapse:"collapse"}}>
+      <div style={{background:"#1e293b",borderRadius:14,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{minWidth:480}}><table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead style={{background:"#0a1628"}}>
             <tr>{["Потребител","Роля","Парола",""].map(h=>(
               <th key={h} style={{padding:"11px 16px",textAlign:"left",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase"}}>{h}</th>
