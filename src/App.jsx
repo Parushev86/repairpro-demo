@@ -87,6 +87,7 @@ export default function App() {
   const [phoneSales,  setPhoneSales]  = useState([]);
   const [stockOrders, setStockOrders] = useState([]);
   const [supplierDebts,setSupplierDebts]=useState([]);
+  const [dismantleRecs,setDismantleRecs]= useState([]);
   const [trash,       setTrash]        = useState([]);
   const subsRef = useRef([]);
 
