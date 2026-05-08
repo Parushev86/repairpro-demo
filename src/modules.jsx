@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
 import { CATEGORIES } from "./lib/constants.js";
 
@@ -912,7 +912,7 @@ export function SupplierDebtsTab({debts,onSave,onDelete,notify}) {
 }
 
 function DebtModal({debt,onSave,onClose}) {
-  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
+  const [f,sf]=useState({date_ordered:today(),date_arrived:"",supplier:"",part_name:"",model:"",category:"",quantity:1,cost_price:"",total_amount:"",is_paid:false,paid_date:"",payment_method:"",notes:"",...debt,is_paid:debt?.is_paid||false});
   const s=(k,v)=>sf(x=>({...x,[k]:v}));
   const handleCost=(val)=>{s("cost_price",val);if(!f.total_amount||f.total_amount===String(Number(f.cost_price)*Number(f.quantity)))s("total_amount",(Number(val)*Number(f.quantity)).toFixed(2));};
   const handleQty=(val)=>{s("quantity",Number(val));s("total_amount",(Number(f.cost_price||0)*Number(val)).toFixed(2));};
@@ -1027,8 +1027,7 @@ export function DismantleTab({records,onSave,onDelete,onAddPartToInventory,notif
           <div style={{color:"#475569",fontSize:12,marginTop:6}}>Натисни "+ Нов запис"</div>
         </MCard>
       ):(
-        /* Grid — на мобилен 1 колона, на десктоп auto-fill */
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))",gap:14}}>
           {filtered.map(r=>{
             const parts=r.parts_status||{};
             const rAll=[...DEFAULT_PHONE_PARTS,...(r.custom_parts||[]).map(n=>({key:"custom_"+n,label:n}))];
