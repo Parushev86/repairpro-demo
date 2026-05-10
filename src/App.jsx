@@ -67,7 +67,7 @@ export default function App() {
   const [inventory, setInventory] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [tab, setTab] = useState("dashboard");
-  const [orderModal, setOrderModal] = useState(null); // null | "new" | order
+  const [orderModal, setOrderModal] = useState(null);
   const [invModal, setInvModal] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importModal, setImportModal] = useState(null);
@@ -137,11 +137,41 @@ export default function App() {
         fetchStockOrders(), fetchSupplierDebts(), fetchTrash(),
         fetchDismantle(),
       ]);
-      setOrders(o); setInventory(inv); setTechnicians(tech);
-      setExpenses(exp); setCashReg(cash); setAccSales(acc);
-      setBuybacks(bb); setPartsSales(ps); setPhoneSales(phs);
-      setStockOrders(so); setSupplierDebts(sd); setTrash(tr);
+      setOrders(o);
+      setTechnicians(tech);
+      setExpenses(exp);
+      setCashReg(cash);
+      setAccSales(acc);
+      setBuybacks(bb);
+      setPartsSales(ps);
+      setPhoneSales(phs);
+      setStockOrders(so);
+      setSupplierDebts(sd);
+      setTrash(tr);
       setDismantleRecs(dis);
+
+      // 🧹 Премахване на дубликати в склада (по име, case-insensitive)
+      const seen = new Set();
+      const uniqueInv = inv.filter(item => {
+        const key = (item.name || "").trim().toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      const duplicateCount = inv.length - uniqueInv.length;
+      if (duplicateCount > 0) {
+        inv.forEach(item => {
+          const key = (item.name || "").trim().toLowerCase();
+          if (key && !uniqueInv.find(u => (u.name || "").trim().toLowerCase() === key)) {
+            dbDeleteInv(item.id).catch(() => { });
+          }
+        });
+        notify(`🧹 Премахнати ${duplicateCount} дублиращи се артикула от склада`, "warn");
+        setInventory(uniqueInv);
+      } else {
+        setInventory(inv);
+      }
+
       cleanExpiredTrash();
       setConnected(true);
     } catch (e) {
@@ -275,6 +305,16 @@ export default function App() {
   const saveInv = async (item) => {
     setSyncing(true);
     try {
+      // ⛔ Проверка за дубликат по име (case-insensitive)
+      const duplicate = inventory.find(
+        i => i.name?.trim().toLowerCase() === item.name?.trim().toLowerCase() && i.id !== item.id
+      );
+      if (duplicate) {
+        notify(`❌ Артикул "${item.name}" вече съществува в склада!`, "error");
+        setSyncing(false);
+        return; // Не затваряме модала, за да може потребителят да коригира
+      }
+
       if (Number(item.quantity) === 0 && item.id) {
         const confirmed = confirm(`Наличността е 0. Изтрий "${item.name}" от склада?`);
         if (confirmed) {
@@ -1281,10 +1321,24 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
 function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, onImport }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("Всички");
-  const filtered = inventory.filter(i =>
-    (catFilter === "Всички" || i.category === catFilter) &&
-    (!search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.supplier || "").toLowerCase().includes(search.toLowerCase()))
-  );
+
+  // 🔍 Подобрена търсачка – търси във всички релевантни полета
+  const filtered = inventory.filter(i => {
+    const q = search.toLowerCase().trim();
+    const matchCat = catFilter === "Всички" || i.category === catFilter;
+    if (!matchCat) return false;
+    if (!q) return true;
+    // Търси в наименование, категория, доставчик, SKU, локация, бележки
+    return (
+      (i.name || "").toLowerCase().includes(q) ||
+      (i.category || "").toLowerCase().includes(q) ||
+      (i.supplier || "").toLowerCase().includes(q) ||
+      (i.sku || "").toLowerCase().includes(q) ||
+      (i.location || "").toLowerCase().includes(q) ||
+      (i.notes || "").toLowerCase().includes(q)
+    );
+  });
+
   const totalValue = inventory.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.price || 0), 0);
   const totalCost = inventory.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.cost || 0), 0);
   const cats = ["Всички", ...new Set(inventory.map(i => i.category).filter(Boolean))];
@@ -1304,10 +1358,30 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
       </div>
       {lowStock.length > 0 && <div style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 12, color: "#fca5a5" }}>⚠️ <b>{lowStock.length} артикула</b> са под минималната наличност!</div>}
       <div style={{ marginBottom: 10 }}>
-        <input placeholder="🔍  Търси артикул или доставчик..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
+        <input
+          placeholder="🔍  Търси по наименование, категория, доставчик, SKU, локация..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: "100%", boxSizing: "border-box" }}
+        />
+        {search && (
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+            Намерени: <b style={{ color: "#38bdf8" }}>{filtered.length}</b> артикула
+          </div>
+        )}
       </div>
       <div style={{ display: "flex", gap: 5, marginBottom: 14, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
-        {cats.map(c => <button key={c} onClick={() => setCatFilter(c)} style={{ padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", background: catFilter === c ? "#38bdf8" : "#1e293b", color: catFilter === c ? "#0f172a" : "#64748b", whiteSpace: "nowrap", flexShrink: 0 }}>{c}</button>)}
+        {cats.map(c => (
+          <button key={c} onClick={() => setCatFilter(c)} style={{
+            padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+            cursor: "pointer", border: "none",
+            background: catFilter === c ? "#38bdf8" : "#1e293b",
+            color: catFilter === c ? "#0f172a" : "#64748b",
+            whiteSpace: "nowrap", flexShrink: 0
+          }}>
+            {c}
+          </button>
+        ))}
       </div>
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-wrap">
@@ -1318,12 +1392,25 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
             <tbody>
               {filtered.map(i => {
                 const low = Number(i.quantity) <= Number(i.min_qty);
+                // Подчертаване на съвпадащия текст
+                const highlight = (text) => {
+                  if (!search || !text) return text;
+                  const idx = text.toLowerCase().indexOf(search.toLowerCase());
+                  if (idx === -1) return text;
+                  return (
+                    <>
+                      {text.slice(0, idx)}
+                      <span style={{ background: "#f59e0b33", color: "#f59e0b", fontWeight: 700 }}>{text.slice(idx, idx + search.length)}</span>
+                      {text.slice(idx + search.length)}
+                    </>
+                  );
+                };
                 return (
                   <tr key={i.id} style={{ borderTop: "1px solid #0f172a", background: low ? "rgba(239,68,68,.05)" : "transparent", transition: "background .1s" }}
                     onMouseEnter={e => e.currentTarget.style.background = low ? "rgba(239,68,68,.1)" : "#243044"}
                     onMouseLeave={e => e.currentTarget.style.background = low ? "rgba(239,68,68,.05)" : "transparent"}>
-                    <td style={{ padding: "9px 13px", fontSize: 13, fontWeight: 600 }}>{i.name}</td>
-                    <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text2)" }}>{i.category}</td>
+                    <td style={{ padding: "9px 13px", fontSize: 13, fontWeight: 600 }}>{highlight(i.name)}</td>
+                    <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text2)" }}>{highlight(i.category)}</td>
                     <td style={{ padding: "9px 13px" }}>
                       <span style={{ fontWeight: 700, fontSize: 14, color: Number(i.quantity) === 0 ? "#ef4444" : low ? "#f59e0b" : "#10b981" }}>{i.quantity} бр.</span>
                       {low && <span style={{ fontSize: 10, color: "#ef4444", marginLeft: 5 }}>⚠</span>}
@@ -1332,7 +1419,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
                     <td style={{ padding: "9px 13px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmtMoney(i.price)}</td>
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text2)" }}>{fmtMoney(i.cost)}</td>
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "#f59e0b" }}>{fmtMoney(Number(i.quantity) * Number(i.price))}</td>
-                    <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text3)" }}>{i.supplier || "—"}</td>
+                    <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text3)" }}>{highlight(i.supplier || "—")}</td>
                     <td style={{ padding: "9px 13px" }}><div style={{ display: "flex", gap: 4 }}>
                       <Btn color="#3b82f6" onClick={() => onEdit(i)} title="Редактирай">✏️</Btn>
                       <Btn color="#ef4444" onClick={() => { if (confirm("Изтрий?")) onDelete(i.id); }} title="Изтрий">🗑️</Btn>
@@ -1494,7 +1581,8 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
             if (f2.category === "Телефони" && !f2.name?.trim() && f2.phone_brand && f2.phone_model) {
               f2.name = `${f2.phone_brand} ${f2.phone_model}${f2.phone_color ? " " + f2.phone_color : ""}${f2.sku ? " " + f2.sku : ""}`.trim();
             }
-            if (!f2.name?.trim()) { alert("Въведи наименование!"); return; } onSave(f2);
+            if (!f2.name?.trim()) { alert("Въведи наименование!"); return; }
+            onSave(f2);
           }} disabled={syncing} color="linear-gradient(135deg,#10b981,#059669)">
             {syncing ? "⏳ Запазване..." : "💾 Запази"}
           </PrimaryBtn>
@@ -1605,7 +1693,7 @@ function TechniciansTab({ technicians, orders, onSave, onDelete, onExport }) {
   const [editing, setEditing] = useState(null);
   const COLORS = ["#38bdf8", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#ef4444", "#06b6d4", "#84cc16"];
   const submit = () => {
-    if (!form.name?.trim()) { alert("Въведи名 на техника!"); return; }
+    if (!form.name?.trim()) { alert("Въведи име на техника!"); return; }
     onSave(editing ? { ...editing, ...form } : { ...form });
     setForm({ name: "", phone: "", email: "", color: "#38bdf8" });
     setEditing(null);
@@ -2118,7 +2206,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const openingCash = Number(cashEntry?.opening_cash || 0);
   const totalRevenue = revenue + accRevToday + partsRevToday + phoneRevToday;
 
-  // *** НОВО: Само приходи в брой ***
+  // *** Само приходи в брой ***
   const cashRevenue = issuedToday.filter(o => o.payment_method === "В брой").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
   const accCash = accSales.filter(s => toDate(s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const partsCash = partsSales.filter(s => toDate(s.date) === date && s.payment_status === "Платена" && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
@@ -2128,7 +2216,6 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const cashNow = openingCash + totalCashIn - expensesToday;
   const totalAllCash = cashNow + Number(bankAmount || 0) + Number(externalCash || 0);
 
-  // По начин на плащане
   const paymentBreakdown = ["В брой", "С карта", "Банка", "Еконт", "Спиди", "Не е платен"].map(pm => ({
     method: pm,
     count: issuedToday.filter(o => o.payment_method === pm).length,
@@ -2184,15 +2271,15 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
     ${techDay.length > 0 ? `<h2>По техник</h2>
     <table><thead><tr><th>Техник</th><th>Приети</th><th>Издадени</th><th>Приход</th></tr></thead><tbody>
     ${techDay.map(t => `<tr><td>${t.name}</td><td>${t.received}</td><td>${t.issued}</td><td><b>€ ${t.revenue.toFixed(2)}</b></td></tr>`).join("")}
-    </tbody></table>`: ""}
+    </tbody></table>` : ""}
     ${issuedToday.length > 0 ? `<h2>Издадени устройства</h2>
     <table><thead><tr><th>№</th><th>Клиент</th><th>Устройство</th><th>Техник</th><th>Цена</th></tr></thead><tbody>
     ${issuedToday.map(o => `<tr><td style="font-family:monospace">${o.id}</td><td>${o.client_name}</td><td>${o.device_type || ""} ${o.brand || ""} ${o.model || ""}</td><td>${o.technician || "—"}</td><td><b>€ ${Number(o.price || 0).toFixed(2)}</b></td></tr>`).join("")}
-    </tbody></table>`: ""}
+    </tbody></table>` : ""}
     ${receivedToday.length > 0 ? `<h2>Приети устройства</h2>
     <table><thead><tr><th>№</th><th>Клиент</th><th>Устройство</th><th>Проблем</th><th>Техник</th></tr></thead><tbody>
     ${receivedToday.map(o => `<tr><td style="font-family:monospace">${o.id}</td><td>${o.client_name}</td><td>${o.device_type || ""} ${o.brand || ""} ${o.model || ""}</td><td>${o.problem || ""}</td><td>${o.technician || "—"}</td></tr>`).join("")}
-    </tbody></table>`: ""}
+    </tbody></table>` : ""}
     <p style="font-size:11px;color:#999;margin-top:20px;text-align:center">RepairPro — Дневен отчет генериран на ${new Date().toLocaleString("bg-BG")}</p>
     <script>window.onload=()=>{window.print();}</script>
     </body></html>`);
@@ -2647,7 +2734,6 @@ function Calculator() {
 
 // ═══════════════════════════════ PRICING TAB ══════════════════════════════════
 const RATE = 1.95583;
-const bgn2eur = (bgn) => (bgn / RATE).toFixed(2);
 
 const DEFAULT_PRICES = {
   iphone_battery: {
@@ -3065,9 +3151,7 @@ function LoginScreen({ onLogin }) {
       setResetMsg("❌ Не е намерен потребител с този имейл.");
       return;
     }
-    setResetMsg(`✅ Намерен акаунт!
-Потребителско: ${user.username}
-Парола: ${user.password}`);
+    setResetMsg(`✅ Намерен акаунт!\nПотребителско: ${user.username}\nПарола: ${user.password}`);
   };
 
   return (
