@@ -2357,14 +2357,43 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
         <Card style={{ borderLeft: "4px solid #f59e0b", padding: "14px 16px" }}>
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>🏦 НАЛИЧНО В КАСА</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "#f59e0b" }}>€ {cashNow.toFixed(2)}</div>
-          <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>Начало: € {openingCash.toFixed(2)}</div>
-          <div style={{ marginTop: 10, borderTop: "1px solid #334155", paddingTop: 8 }}>
-            <span style={{ fontSize: 10, color: "#64748b" }}>В брой: € {totalCashIn.toFixed(2)}</span><br />
-            <span style={{ fontSize: 10, color: "#64748b" }}>Разходи от каса: € {expensesToday.toFixed(2)}</span>
+          <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>
+            Начало: € {openingCash.toFixed(2)}
+          </div>
+          <div style={{ marginTop: 8, borderTop: "1px solid #334155", paddingTop: 6 }}>
+            <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4 }}>📋 Как е платено:</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#10b981" }}>💵 В брой:</span>
+                <span style={{ color: "#6ee7b7", fontWeight: 700 }}>€ {totalCashIn.toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#3b82f6" }}>💳 С карта:</span>
+                <span style={{ color: "#93c5fd", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "С карта").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#8b5cf6" }}>🏦 Банка:</span>
+                <span style={{ color: "#a78bfa", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "Банка").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#f59e0b" }}>📦 Еконт:</span>
+                <span style={{ color: "#fcd34d", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "Еконт").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#06b6d4" }}>🚚 Спиди:</span>
+                <span style={{ color: "#67e8f9", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "Спиди").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+              </div>
+              {unpaid > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#ef4444" }}>❌ Неплатени:</span>
+                  <span style={{ color: "#fca5a5", fontWeight: 700 }}>€ {unpaid.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
           </div>
           <div style={{ marginTop: 10, borderTop: "1px solid #334155", paddingTop: 8, display: "flex", flexDirection: "column", gap: 7 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, color: "#64748b", minWidth: 70 }}>🏛️ Банка:</span>
+              <span style={{ fontSize: 10, color: "#64748b", minWidth: 70 }}>🏛️ Банкова сметка:</span>
               <input type="number" min="0" step="0.01"
                 value={bankAmount || ""}
                 onChange={e => { setBankAmount(e.target.value); localStorage.setItem("rp_bank_" + date, e.target.value); }}
@@ -2373,7 +2402,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
                 placeholder="0.00" />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, color: "#64748b", minWidth: 70 }}>💼 Вън. каса:</span>
+              <span style={{ fontSize: 10, color: "#64748b", minWidth: 70 }}>💼 Външна каса:</span>
               <input type="number" min="0" step="0.01"
                 value={externalCash || ""}
                 onChange={e => { setExternalCash(e.target.value); localStorage.setItem("rp_ext_" + date, e.target.value); }}
@@ -2382,9 +2411,8 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
                 placeholder="0.00" />
             </div>
             <div style={{ marginTop: 4, paddingTop: 6, borderTop: "1px solid #334155" }}>
-              <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: .4 }}>💰 Всичко налично:</div>
+              <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: .4 }}>💰 ВСИЧКО НАЛИЧНО</div>
               <div style={{ fontSize: 20, fontWeight: 900, color: "#10b981", marginTop: 2 }}>€ {totalAllCash.toFixed(2)}</div>
-              <div style={{ fontSize: 9, color: "#475569", marginTop: 1 }}>Каса {cashNow.toFixed(2)} + Банка {Number(bankAmount || 0).toFixed(2)} + Вън. {Number(externalCash || 0).toFixed(2)}</div>
             </div>
           </div>
         </Card>
