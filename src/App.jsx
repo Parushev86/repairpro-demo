@@ -7,8 +7,8 @@ import MonthlyReport from "./MonthlyReport.jsx";
 import { sendReadyEmail } from "./lib/email.js";
 import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
 import { exportDailyReport } from "./lib/excel_daily.js";
-import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash } from "./lib/db2.js";
-import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab } from "./modules.jsx";
+import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle } from "./lib/db2.js";
+import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -89,6 +89,7 @@ export default function App() {
   const [stockOrders, setStockOrders] = useState([]);
   const [supplierDebts, setSupplierDebts] = useState([]);
   const [trash, setTrash] = useState([]);
+  const [dismantleRecs, setDismantleRecs] = useState([]);
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
@@ -129,11 +130,12 @@ export default function App() {
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const [o, inv, tech, exp, cash, acc, bb, ps, phs, so, sd, tr] = await Promise.all([
+      const [o, inv, tech, exp, cash, acc, bb, ps, phs, so, sd, tr, dis] = await Promise.all([
         fetchOrders(), fetchInventory(), fetchTechnicians(),
         fetchExpenses(), fetchCashRegister(), fetchAccessorySales(),
         fetchBuybacks(), fetchPartsSales(), fetchPhoneSales(),
         fetchStockOrders(), fetchSupplierDebts(), fetchTrash(),
+        fetchDismantle(),
       ]);
       setOrders(o);
       setTechnicians(tech);
@@ -146,6 +148,7 @@ export default function App() {
       setStockOrders(so);
       setSupplierDebts(sd);
       setTrash(tr);
+      setDismantleRecs(dis);
 
       // 🧹 Премахване на дубликати в склада (по име, case-insensitive)
       const seen = new Set();
@@ -455,7 +458,8 @@ export default function App() {
       <Sidebar tab={tab} setTab={(t) => { setTab(t); setSidebarOpen(false); }} readyOrders={readyOrders} lowStock={lowStock}
         activeOrders={activeOrders} orders={orders} connected={connected} realtimeOn={realtimeOn}
         syncing={syncing} onSettings={() => setSettingsOpen(true)} onRefresh={() => loadData(false)}
-        onNewOrder={() => setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        onNewOrder={() => setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
+        dismantleCount={dismantleRecs.filter(r => r.status === "Чака разглобяване" || r.status === "В процес").length} />
 
       {/* ── MAIN ── */}
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
@@ -498,6 +502,57 @@ export default function App() {
             onSave={async r => { const s = await upsertBuyback(r); if (!r.id) setBuybacks(p => [s, ...p]); else setBuybacks(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Записът е запазен"); }}
             onDelete={async id => { const r = buybacks.find(x => x.id === id); if (r) await moveToTrash("buybacks", r); await deleteBuyback(id); setBuybacks(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "buybacks", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             onAddToInventory={async b => { const item = { name: `${b.brand} ${b.model}`, category: "Дънни платки", quantity: 1, min_qty: 0, price: 0, cost: Number(b.price || 0), supplier: "Изкупуване", notes: `IMEI: ${b.imei || "—"}` }; const saved = await upsertInventory(item); setInventory(p => [...p, saved]); await upsertBuyback({ ...b, added_to_stock: true, inventory_id: saved.id }); setBuybacks(p => p.map(x => x.id === b.id ? { ...x, added_to_stock: true } : x)); notify("📦 Заприходен в склада ✓"); }}
+            notify={notify}
+          />}
+          {tab === "dismantle" && <DismantleTab
+            records={dismantleRecs}
+            onSave={async r => {
+              try {
+                const { id, date, brand, model, imei, color, storage, purchase_price, status, parts_status, custom_parts, notes } = r;
+                const toSave = {
+                  date, brand, model, imei: imei || null, color: color || null, storage: storage || null,
+                  purchase_price: Number(purchase_price || 0), status: status || "Чака разглобяване",
+                  parts_status: parts_status || {}, custom_parts: custom_parts || [], notes: notes || null,
+                  photos: [],
+                };
+                if (id) toSave.id = id;
+                const saved = await upsertDismantle(toSave);
+                const withPhotos = { ...saved, photos: r.photos || [] };
+                if (!id) setDismantleRecs(p => [withPhotos, ...p]);
+                else setDismantleRecs(p => p.map(x => x.id === saved.id ? withPhotos : x));
+                notify("✅ Записът е запазен");
+              } catch (e) { notify("❌ " + e.message, "error"); }
+            }}
+            onDelete={async id => {
+              try {
+                await deleteDismantle(id);
+                setDismantleRecs(p => p.filter(x => x.id !== id));
+                notify("🗑️ Изтрит", "warn");
+              } catch (e) { notify("❌ " + e.message, "error"); }
+            }}
+            onAddPartToInventory={async r => {
+              const PARTS_MAP = { display: "Дисплей", back_cover: "Заден капак", rear_camera: "Задна камера", power_block: "Блок захранване", frame: "Рамка / Среда", battery: "Батерия", front_camera: "Предна камера", mainboard: "Дънна платка", speaker: "Слушалка", sim_holder: "Сим държач", main_flex: "Главен лентов кабел", button_flex: "Лентов кабел бутони" };
+              const customMap = Object.fromEntries((r.custom_parts || []).map(n => ["custom_" + n, n]));
+              const allMap = { ...PARTS_MAP, ...customMap };
+              const parts = r.parts_status || {};
+              let added = 0;
+              for (const [key, label] of Object.entries(allMap)) {
+                if (parts[key] === "Работи") {
+                  const item = { name: label + " " + r.brand + " " + r.model, category: "За разглобяване", quantity: 1, min_qty: 0, price: 0, cost: 0, supplier: "Разглобяване", notes: "IMEI: " + (r.imei || "—"), payment_status: "Платен", payment_method: "В брой" };
+                  try { const saved = await upsertInventory(item); setInventory(p => [...p, saved]); added++; } catch (e) { console.warn(e); }
+                }
+              }
+              try {
+                const { id, date, brand, model, imei, color, storage, purchase_price, parts_status, custom_parts, notes } = r;
+                const upd = await upsertDismantle({
+                  id, date, brand, model, imei: imei || null, color: color || null, storage: storage || null,
+                  purchase_price: Number(purchase_price || 0), status: "Разглобен",
+                  parts_status: parts_status || {}, custom_parts: custom_parts || [], notes: notes || null, photos: []
+                });
+                setDismantleRecs(p => p.map(x => x.id === r.id ? { ...upd, photos: r.photos || [] } : x));
+              } catch (e) { console.warn(e); }
+              notify("📦 " + added + " части заприходени в Склада ✓");
+            }}
             notify={notify}
           />}
           {tab === "partssales" && <PartsSalesTab
@@ -648,7 +703,7 @@ export default function App() {
 // КРАЙ НА ЧАСТ 1
 // ЧАСТ 2
 // ═══════════════════════════════ SIDEBAR ══════════════════════════════════════
-function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { } }) {
+function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { }, dismantleCount = 0 }) {
   const totalRev = orders.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   return (
     <>
@@ -684,6 +739,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["pricing", "💲", "Готови цени", null],
             ["expenses", "💸", "Разходи", null],
             ["buybacks", "📱", "Изкупуване", null],
+            ["dismantle", "🔨", "За разглобяване", dismantleCount || null],
             ["accsales", "🎧", "Продажба аксесоари", null],
             ["partssales", "🔩", "Продажба части", null],
             ["phonesales", "📲", "Продажба телефони", null],
@@ -1265,7 +1321,6 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("Всички");
 
-  // 🔍 Подобрена търсачка – търси във всички релевантни полета
   const filtered = inventory.filter(i => {
     const q = search.toLowerCase().trim();
     const matchCat = catFilter === "Всички" || i.category === catFilter;
