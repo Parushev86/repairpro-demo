@@ -7,8 +7,8 @@ import MonthlyReport from "./MonthlyReport.jsx";
 import { sendReadyEmail } from "./lib/email.js";
 import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
 import { exportDailyReport } from "./lib/excel_daily.js";
-import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash } from "./lib/db2.js";
-import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab } from "./modules.jsx";
+import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle } from "./lib/db2.js";
+import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -89,6 +89,7 @@ export default function App() {
   const [stockOrders, setStockOrders] = useState([]);
   const [supplierDebts, setSupplierDebts] = useState([]);
   const [trash, setTrash] = useState([]);
+  const [dismantleRecs, setDismantleRecs] = useState([]);
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
@@ -129,11 +130,12 @@ export default function App() {
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const [o, inv, tech, exp, cash, acc, bb, ps, phs, so, sd, tr] = await Promise.all([
+      const [o, inv, tech, exp, cash, acc, bb, ps, phs, so, sd, tr, dis] = await Promise.all([
         fetchOrders(), fetchInventory(), fetchTechnicians(),
         fetchExpenses(), fetchCashRegister(), fetchAccessorySales(),
         fetchBuybacks(), fetchPartsSales(), fetchPhoneSales(),
         fetchStockOrders(), fetchSupplierDebts(), fetchTrash(),
+        fetchDismantle(),
       ]);
       setOrders(o);
       setTechnicians(tech);
@@ -146,6 +148,7 @@ export default function App() {
       setStockOrders(so);
       setSupplierDebts(sd);
       setTrash(tr);
+      setDismantleRecs(dis);
 
       // 🧹 Премахване на дубликати в склада (по име, case-insensitive)
       const seen = new Set();
@@ -309,7 +312,7 @@ export default function App() {
       if (duplicate) {
         notify(`❌ Артикул "${item.name}" вече съществува в склада!`, "error");
         setSyncing(false);
-        return;
+        return; // Не затваряме модала, за да може потребителят да коригира
       }
 
       if (Number(item.quantity) === 0 && item.id) {
@@ -455,7 +458,8 @@ export default function App() {
       <Sidebar tab={tab} setTab={(t) => { setTab(t); setSidebarOpen(false); }} readyOrders={readyOrders} lowStock={lowStock}
         activeOrders={activeOrders} orders={orders} connected={connected} realtimeOn={realtimeOn}
         syncing={syncing} onSettings={() => setSettingsOpen(true)} onRefresh={() => loadData(false)}
-        onNewOrder={() => setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        onNewOrder={() => setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
+        dismantleCount={dismantleRecs.filter(r => r.status === "Чака разглобяване" || r.status === "В процес").length} />
 
       {/* ── MAIN ── */}
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
@@ -498,6 +502,57 @@ export default function App() {
             onSave={async r => { const s = await upsertBuyback(r); if (!r.id) setBuybacks(p => [s, ...p]); else setBuybacks(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Записът е запазен"); }}
             onDelete={async id => { const r = buybacks.find(x => x.id === id); if (r) await moveToTrash("buybacks", r); await deleteBuyback(id); setBuybacks(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "buybacks", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             onAddToInventory={async b => { const item = { name: `${b.brand} ${b.model}`, category: "Дънни платки", quantity: 1, min_qty: 0, price: 0, cost: Number(b.price || 0), supplier: "Изкупуване", notes: `IMEI: ${b.imei || "—"}` }; const saved = await upsertInventory(item); setInventory(p => [...p, saved]); await upsertBuyback({ ...b, added_to_stock: true, inventory_id: saved.id }); setBuybacks(p => p.map(x => x.id === b.id ? { ...x, added_to_stock: true } : x)); notify("📦 Заприходен в склада ✓"); }}
+            notify={notify}
+          />}
+          {tab === "dismantle" && <DismantleTab
+            records={dismantleRecs}
+            onSave={async r => {
+              try {
+                const { id, date, brand, model, imei, color, storage, purchase_price, status, parts_status, custom_parts, notes } = r;
+                const toSave = {
+                  date, brand, model, imei: imei || null, color: color || null, storage: storage || null,
+                  purchase_price: Number(purchase_price || 0), status: status || "Чака разглобяване",
+                  parts_status: parts_status || {}, custom_parts: custom_parts || [], notes: notes || null,
+                  photos: [],
+                };
+                if (id) toSave.id = id;
+                const saved = await upsertDismantle(toSave);
+                const withPhotos = { ...saved, photos: r.photos || [] };
+                if (!id) setDismantleRecs(p => [withPhotos, ...p]);
+                else setDismantleRecs(p => p.map(x => x.id === saved.id ? withPhotos : x));
+                notify("✅ Записът е запазен");
+              } catch (e) { notify("❌ " + e.message, "error"); }
+            }}
+            onDelete={async id => {
+              try {
+                await deleteDismantle(id);
+                setDismantleRecs(p => p.filter(x => x.id !== id));
+                notify("🗑️ Изтрит", "warn");
+              } catch (e) { notify("❌ " + e.message, "error"); }
+            }}
+            onAddPartToInventory={async r => {
+              const PARTS_MAP = { display: "Дисплей", back_cover: "Заден капак", rear_camera: "Задна камера", power_block: "Блок захранване", frame: "Рамка / Среда", battery: "Батерия", front_camera: "Предна камера", mainboard: "Дънна платка", speaker: "Слушалка", sim_holder: "Сим държач", main_flex: "Главен лентов кабел", button_flex: "Лентов кабел бутони" };
+              const customMap = Object.fromEntries((r.custom_parts || []).map(n => ["custom_" + n, n]));
+              const allMap = { ...PARTS_MAP, ...customMap };
+              const parts = r.parts_status || {};
+              let added = 0;
+              for (const [key, label] of Object.entries(allMap)) {
+                if (parts[key] === "Работи") {
+                  const item = { name: label + " " + r.brand + " " + r.model, category: "За разглобяване", quantity: 1, min_qty: 0, price: 0, cost: 0, supplier: "Разглобяване", notes: "IMEI: " + (r.imei || "—"), payment_status: "Платен", payment_method: "В брой" };
+                  try { const saved = await upsertInventory(item); setInventory(p => [...p, saved]); added++; } catch (e) { console.warn(e); }
+                }
+              }
+              try {
+                const { id, date, brand, model, imei, color, storage, purchase_price, parts_status, custom_parts, notes } = r;
+                const upd = await upsertDismantle({
+                  id, date, brand, model, imei: imei || null, color: color || null, storage: storage || null,
+                  purchase_price: Number(purchase_price || 0), status: "Разглобен",
+                  parts_status: parts_status || {}, custom_parts: custom_parts || [], notes: notes || null, photos: []
+                });
+                setDismantleRecs(p => p.map(x => x.id === r.id ? { ...upd, photos: r.photos || [] } : x));
+              } catch (e) { console.warn(e); }
+              notify("📦 " + added + " части заприходени в Склада ✓");
+            }}
             notify={notify}
           />}
           {tab === "partssales" && <PartsSalesTab
@@ -593,9 +648,8 @@ export default function App() {
             sales={phoneSales} inventory={inventory}
             onSave={async r => {
               try {
-                const { _inv_id, ...rClean } = r;
                 const clean = {
-                  ...rClean,
+                  ...r,
                   warranty_amount: r.warranty_amount || null,
                   warranty_unit: r.warranty_unit || null,
                   buyer_name: r.buyer_name || null,
@@ -612,16 +666,17 @@ export default function App() {
                 const s = await upsertPhoneSale(clean);
                 if (!r.id) {
                   setPhoneSales(p => [s, ...p]);
-                  if (_inv_id) {
-                    const invItem = inventory.find(i => i.id === _inv_id);
+                  // Намаляване на складовата наличност при продажба от инвентара
+                  if (r._inv_id) {
+                    const invItem = inventory.find(i => i.id === r._inv_id);
                     if (invItem) {
                       const newQty = Number(invItem.quantity) - 1;
                       if (newQty <= 0) {
                         await dbDeleteInv(invItem.id);
                         setInventory(p => p.filter(i => i.id !== invItem.id));
                       } else {
-                        const upd = await upsertInventory({ ...invItem, quantity: newQty });
-                        setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+                        const updated = await upsertInventory({ ...invItem, quantity: newQty });
+                        setInventory(p => p.map(i => i.id === updated.id ? updated : i));
                       }
                     }
                   }
@@ -645,10 +700,9 @@ export default function App() {
     </div>
   );
 }
-// КРАЙ НА ЧАСТ 1
-// ЧАСТ 2
+
 // ═══════════════════════════════ SIDEBAR ══════════════════════════════════════
-function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { } }) {
+function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { }, dismantleCount = 0 }) {
   const totalRev = orders.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   return (
     <>
@@ -684,6 +738,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["pricing", "💲", "Готови цени", null],
             ["expenses", "💸", "Разходи", null],
             ["buybacks", "📱", "Изкупуване", null],
+            ["dismantle", "🔨", "За разглобяване", dismantleCount || null],
             ["accsales", "🎧", "Продажба аксесоари", null],
             ["partssales", "🔩", "Продажба части", null],
             ["phonesales", "📲", "Продажба телефони", null],
@@ -870,7 +925,8 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
     </div>
   );
 }
-
+// КРАЙ НА ЧАСТ 1
+// ЧАСТ 2
 // ═══════════════════════════════ ORDERS TAB ════════════════════════════════════
 function OrdersTab({ orders, allOrders, search, setSearch, filterStatus, setFilterStatus, filterDevice, setFilterDevice, onNew, onEdit, onDelete, onPrint, onLabel, onDownloadTXT, onWarranty, onExport, onImport, inventory, setInventory, upsertOrder }) {
   return (
@@ -1056,6 +1112,7 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
     });
   };
   const partsTotal = (form.parts || []).reduce((s, p) => s + Number(p.price || 0), 0);
+  const techObj = technicians.find(t => t.name === form.technician);
 
   const tabs = [["info", "📋", "Основна"], ["parts", "🔩", "Части"], ["photos", "📷", "Снимки"], ["notes", "📝", "Бележки"]];
 
@@ -1271,6 +1328,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
     const matchCat = catFilter === "Всички" || i.category === catFilter;
     if (!matchCat) return false;
     if (!q) return true;
+    // Търси в наименование, категория, доставчик, SKU, локация, бележки
     return (
       (i.name || "").toLowerCase().includes(q) ||
       (i.category || "").toLowerCase().includes(q) ||
@@ -1334,6 +1392,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
             <tbody>
               {filtered.map(i => {
                 const low = Number(i.quantity) <= Number(i.min_qty);
+                // Подчертаване на съвпадащия текст
                 const highlight = (text) => {
                   if (!search || !text) return text;
                   const idx = text.toLowerCase().indexOf(search.toLowerCase());
@@ -1398,8 +1457,10 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
   );
 }
 
+
 function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
-  const [form, setForm] = useState({ name: "", category: "Дисплеи", quantity: 0, min_qty: 0, price: 0, cost: 0, supplier: "", location: "", sku: "", notes: "", payment_status: "Платен", payment_method: "В брой", supplier_note: "", ...item });
+  const [form, setForm] = useState({ name: "", category: "Дисплеи", quantity: 0, min_qty: 0, price: 0, cost: 0, supplier: "", location: "", sku: "", notes: "", payment_status: "Платен", payment_method: "В брой", supplier_note: "", phone_brand: "", phone_model: "", phone_color: "", phone_imei: "", phone_serial: "", phone_condition: "", ...item });
+  const isPhone = (form.category || "") === "Телефони";
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const [showSuppliers, setShowSuppliers] = useState(false);
 
@@ -1448,6 +1509,28 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
             </Field>
             <Field label="Локация в склада"><input value={form.location || ""} onChange={e => set("location", e.target.value)} placeholder="Рафт A-3" /></Field>
           </div>
+          {isPhone && (
+            <div style={{ background: "#0f172a", border: "1px solid #1d4ed8", borderRadius: 10, padding: 14, marginTop: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>📱 Детайли на телефона</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <Field label="Марка"><input value={form.phone_brand || ""} onChange={e => set("phone_brand", e.target.value)} placeholder="Apple / Samsung..." /></Field>
+                <Field label="Модел"><input value={form.phone_model || ""} onChange={e => set("phone_model", e.target.value)} placeholder="iPhone 14..." /></Field>
+                <Field label="Цвят"><input value={form.phone_color || ""} onChange={e => set("phone_color", e.target.value)} placeholder="Черен / Бял..." /></Field>
+                <Field label="Памет / SKU"><input value={form.sku || ""} onChange={e => set("sku", e.target.value)} placeholder="128GB..." /></Field>
+                <Field label="IMEI"><input value={form.phone_imei || ""} onChange={e => set("phone_imei", e.target.value)} placeholder="358XXXXXXXXXXXX" /></Field>
+                <Field label="Сериен №"><input value={form.phone_serial || ""} onChange={e => set("phone_serial", e.target.value)} placeholder="C02XXXXXXX" /></Field>
+                <Field label="Доставчик / Клиент" style={{ gridColumn: "1/-1" }}><input value={form.supplier || ""} onChange={e => set("supplier", e.target.value)} placeholder="Доставчик или Иван Иванов (изкупуване)" /></Field>
+                <Field label="Състояние" style={{ gridColumn: "1/-1" }}>
+                  <select value={form.phone_condition || ""} onChange={e => set("phone_condition", e.target.value)}>
+                    <option value="">— Избери —</option>
+                    <option>Нов (запечатан)</option><option>Като нов (отворен)</option>
+                    <option>Много добро</option><option>Добро</option>
+                    <option>Задоволително</option><option>За ремонт</option>
+                  </select>
+                </Field>
+              </div>
+            </div>
+          )}
           <Field label="💳 Статус на плащането към доставчика">
             <div style={{ display: "flex", gap: 8 }}>
               {["Платен", "Не е платен"].map(opt => (
@@ -1493,7 +1576,14 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
         </div>
         <div style={{ padding: "14px 22px", borderTop: "1px solid #334155", display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button onClick={onClose} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "9px 18px", cursor: "pointer", fontWeight: 600 }}>Отказ</button>
-          <PrimaryBtn onClick={() => { if (!form.name?.trim()) { alert("Въведи наименование!"); return; } onSave(form); }} disabled={syncing} color="linear-gradient(135deg,#10b981,#059669)">
+          <PrimaryBtn onClick={() => {
+            const f2 = { ...form };
+            if (f2.category === "Телефони" && !f2.name?.trim() && f2.phone_brand && f2.phone_model) {
+              f2.name = `${f2.phone_brand} ${f2.phone_model}${f2.phone_color ? " " + f2.phone_color : ""}${f2.sku ? " " + f2.sku : ""}`.trim();
+            }
+            if (!f2.name?.trim()) { alert("Въведи наименование!"); return; }
+            onSave(f2);
+          }} disabled={syncing} color="linear-gradient(135deg,#10b981,#059669)">
             {syncing ? "⏳ Запазване..." : "💾 Запази"}
           </PrimaryBtn>
         </div>
@@ -2694,10 +2784,10 @@ const DEFAULT_PRICES = {
   },
 };
 
-const PRICES_TABLE = "global_settings";
-
 function PricingTab() {
-  const [prices, setPrices] = useState(DEFAULT_PRICES);
+  const [prices, setPrices] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("rp_prices")) || DEFAULT_PRICES; } catch { return DEFAULT_PRICES; }
+  });
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState(null);
   const [activeService, setActiveService] = useState("iphone_display");
@@ -2705,44 +2795,10 @@ function PricingTab() {
   const [newSvcKey, setNewSvcKey] = useState("");
   const [newSvcLabel, setNewSvcLabel] = useState("");
   const [showNewSvc, setShowNewSvc] = useState(false);
-  const [pricesLoaded, setPricesLoaded] = useState(false);
 
-  useEffect(() => {
-    const loadPrices = async () => {
-      try {
-        const sb = getSupabase();
-        if (sb) {
-          const { data, error } = await sb.from(PRICES_TABLE)
-            .select("value")
-            .eq("key", "pricing")
-            .maybeSingle();
-          if (!error && data?.value) {
-            const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
-            if (parsed && Object.keys(parsed).length > 0) {
-              setPrices(parsed);
-              localStorage.setItem("rp_prices", JSON.stringify(parsed));
-              setPricesLoaded(true);
-              return;
-            }
-          }
-        }
-      } catch (e) { }
-      try {
-        const saved = localStorage.getItem("rp_prices");
-        if (saved) setPrices(JSON.parse(saved));
-      } catch (e) { }
-      setPricesLoaded(true);
-    };
-    loadPrices();
-  }, []);
-
-  const saveCustomPrices = async (data) => {
+  const saveCustomPrices = (data) => {
     setPrices(data);
     localStorage.setItem("rp_prices", JSON.stringify(data));
-    try {
-      const sb = getSupabase();
-      if (sb) await sb.from(PRICES_TABLE).upsert({ key: "pricing", value: data }, { onConflict: "key" });
-    } catch (e) { }
     setEditMode(false);
     setEditData(null);
     setNewModelName("");
@@ -2751,7 +2807,6 @@ function PricingTab() {
   const addModel = () => {
     if (!newModelName.trim()) return;
     const nd = JSON.parse(JSON.stringify(editData));
-    if (!nd[activeService]) return;
     if (nd[activeService].models.includes(newModelName.trim())) {
       alert("Моделът вече съществува!");
       return;
@@ -2765,7 +2820,6 @@ function PricingTab() {
 
   const removeModel = (m) => {
     const nd = JSON.parse(JSON.stringify(editData));
-    if (!nd[activeService]) return;
     nd[activeService].models = nd[activeService].models.filter(x => x !== m);
     delete nd[activeService].client[m];
     delete nd[activeService].colleague[m];
@@ -2786,29 +2840,26 @@ function PricingTab() {
   };
 
   const removeService = (key) => {
-    if (!confirm(`Изтрий услугата "${editData[key]?.label || key}"?`)) return;
+    if (!confirm(`Изтрий услугата "${editData[key].label}"?`)) return;
     const nd = JSON.parse(JSON.stringify(editData));
     delete nd[key];
     setEditData(nd);
-    const keys = Object.keys(nd);
-    setActiveService(keys.length > 0 ? keys[0] : "");
+    setActiveService(Object.keys(nd)[0] || "");
   };
 
-  const service = prices[activeService] || DEFAULT_PRICES["iphone_display"];
-  const activeLabel = service?.label || "Смяна на дисплей — iPhone";
-  const serviceModels = service?.models || [];
+  const service = prices[activeService];
 
   const printPriceList = () => {
     const w = window.open("", "_blank");
-    const rows = serviceModels.map(m => `
+    const rows = service.models.map(m => `
       <tr>
         <td>${m}</td>
-        <td style="text-align:center;font-weight:700;color:#065f46">€ ${service.client?.[m] || "—"}</td>
-        <td style="text-align:center;color:#555">лв ${((service.client?.[m] || 0) * RATE).toFixed(2)}</td>
-        <td style="text-align:center;font-weight:700;color:#1e40af">€ ${service.colleague?.[m] || "—"}</td>
-        <td style="text-align:center;color:#555">лв ${((service.colleague?.[m] || 0) * RATE).toFixed(2)}</td>
+        <td style="text-align:center;font-weight:700;color:#065f46">€ ${service.client[m] || "—"}</td>
+        <td style="text-align:center;color:#555">лв ${((service.client[m] || 0) * RATE).toFixed(2)}</td>
+        <td style="text-align:center;font-weight:700;color:#1e40af">€ ${service.colleague[m] || "—"}</td>
+        <td style="text-align:center;color:#555">лв ${((service.colleague[m] || 0) * RATE).toFixed(2)}</td>
       </tr>`).join("");
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${activeLabel}</title>
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${service.label}</title>
     <style>body{font-family:Arial,sans-serif;padding:30px;max-width:650px;margin:auto}
     h1{font-size:18px;color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px}
     table{width:100%;border-collapse:collapse;margin-top:16px}
@@ -2816,15 +2867,13 @@ function PricingTab() {
     td{padding:8px 10px;font-size:13px;border:1px solid #eee}
     tr:nth-child(even){background:#f9fafb}
     @media print{body{padding:16px}}</style></head><body>
-    <h1>💲 ${activeLabel}</h1>
+    <h1>💲 ${service.label}</h1>
     <table><thead><tr><th>Модел</th><th colspan="2" style="text-align:center;color:#065f46">Клиент</th><th colspan="2" style="text-align:center;color:#1e40af">Колега</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <p style="font-size:10px;color:#999;margin-top:16px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
     <script>window.onload=()=>{window.print();}</script></body></html>`);
     w.document.close();
   };
-
-  if (!pricesLoaded) return <div className="animate-fade"><p style={{ color: "var(--text3)" }}>Зареждане на цените...</p></div>;
 
   return (
     <div className="animate-fade">
@@ -2839,19 +2888,19 @@ function PricingTab() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
         {Object.entries(prices).map(([key, svc]) => (
           <button key={key} onClick={() => setActiveService(key)} style={{
             padding: "8px 18px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
             background: activeService === key ? "linear-gradient(135deg,#38bdf8,#0ea5e9)" : "#1e293b",
             color: activeService === key ? "#fff" : "#64748b",
-          }}>{svc.label || key}</button>
+          }}>{svc.label}</button>
         ))}
       </div>
 
       <div style={{ background: "#1e293b", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "12px 18px", background: "#0a1628", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{activeLabel}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{service.label}</span>
           <div style={{ display: "flex", gap: 20 }}>
             <span style={{ fontSize: 12, color: "#10b981", fontWeight: 700 }}>● Клиент</span>
             <span style={{ fontSize: 12, color: "#38bdf8", fontWeight: 700 }}>● Колега</span>
@@ -2869,15 +2918,15 @@ function PricingTab() {
               </tr>
             </thead>
             <tbody>
-              {serviceModels.map((m, i) => (
+              {service.models.map((m, i) => (
                 <tr key={m} style={{ borderTop: "1px solid #0f172a", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,.02)" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#243044"}
                   onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "rgba(255,255,255,.02)"}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{m}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#10b981" }}>€ {service.client?.[m] || "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.client?.[m] ? ((service.client[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#38bdf8" }}>€ {service.colleague?.[m] || "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.colleague?.[m] ? ((service.colleague[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#10b981" }}>€ {service.client[m] || "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.client[m] ? ((service.client[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#38bdf8" }}>€ {service.colleague[m] || "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.colleague[m] ? ((service.colleague[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -2889,7 +2938,7 @@ function PricingTab() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.78)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#1e293b", borderRadius: 16, width: "100%", maxWidth: 700, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 30px 80px rgba(0,0,0,.6)" }}>
             <div style={{ padding: "16px 22px", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>✏️ Редактирай цени — {editData[activeService]?.label || activeLabel}</h2>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>✏️ Редактирай цени — {editData[activeService]?.label}</h2>
               <button onClick={() => setEditMode(false)} style={{ background: "#334155", border: "none", color: "#94a3b8", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 16 }}>×</button>
             </div>
             <div style={{ padding: "10px 20px 0", borderBottom: "1px solid #334155", display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
@@ -2899,7 +2948,7 @@ function PricingTab() {
                     padding: "6px 14px", borderRadius: "7px 0 0 7px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
                     background: activeService === key ? "#38bdf8" : "#0f172a",
                     color: activeService === key ? "#0f172a" : "#64748b",
-                  }}>{svc.label || key}</button>
+                  }}>{svc.label}</button>
                   <button onClick={() => removeService(key)} style={{ padding: "6px 8px", borderRadius: "0 7px 7px 0", fontSize: 11, cursor: "pointer", border: "none", background: activeService === key ? "#0ea5e9" : "#1e293b", color: "#ef4444" }}>✕</button>
                 </div>
               ))}
@@ -2924,13 +2973,13 @@ function PricingTab() {
                         <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>{m}</td>
                         <td style={{ padding: "6px 12px" }}>
                           <input type="number" min="0" step="0.5"
-                            value={editData[activeService].client?.[m] || ""}
+                            value={editData[activeService].client[m] || ""}
                             onChange={e => { const nd = JSON.parse(JSON.stringify(editData)); nd[activeService].client[m] = Number(e.target.value); setEditData(nd); }}
                             style={{ width: "100%" }} />
                         </td>
                         <td style={{ padding: "6px 12px" }}>
                           <input type="number" min="0" step="0.5"
-                            value={editData[activeService].colleague?.[m] || ""}
+                            value={editData[activeService].colleague[m] || ""}
                             onChange={e => { const nd = JSON.parse(JSON.stringify(editData)); nd[activeService].colleague[m] = Number(e.target.value); setEditData(nd); }}
                             style={{ width: "100%" }} />
                         </td>
@@ -2955,7 +3004,7 @@ function PricingTab() {
               </>}
             </div>
             <div style={{ padding: "14px 22px", borderTop: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <span style={{ fontSize: 12, color: "#64748b" }}>Промените се запазват в облака (Supabase) и локално</span>
+              <span style={{ fontSize: 12, color: "#64748b" }}>Промените се запазват локално на този компютър</span>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => { setEditMode(false); setShowNewSvc(false); }} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "9px 18px", cursor: "pointer", fontWeight: 600 }}>Отказ</button>
                 <button onClick={() => saveCustomPrices(editData)} style={{ background: "linear-gradient(135deg,#38bdf8,#0ea5e9)", color: "#fff", border: "none", borderRadius: 8, padding: "9px 22px", cursor: "pointer", fontWeight: 700 }}>💾 Запази цените</button>
