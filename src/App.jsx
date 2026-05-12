@@ -2849,9 +2849,32 @@ function PricingTab() {
     setActiveService(keys.length > 0 ? keys[0] : "");
   };
 
-  const service = prices[activeService] || DEFAULT_PRICES["iphone_display"];
-  const activeLabel = service?.label || "Смяна на дисплей — iPhone";
-  const serviceModels = service?.models || [];
+  // Ключът на текущо избраната услуга (ако не съществува, взима първата налична)
+const currentKey = Object.keys(prices).includes(activeService)
+  ? activeService
+  : Object.keys(prices)[0] || "";
+
+// Ако няма никакви услуги – показваме празно състояние
+if (!currentKey) {
+  return (
+    <div className="animate-fade">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>💲 Готови цени</h1>
+          <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>Все още нямаш въведени цени</p>
+        </div>
+        <button onClick={() => { setEditData(JSON.parse(JSON.stringify(DEFAULT_PRICES))); setEditMode(true); }}
+          style={{ background: "#1e293b", color: "#64748b", border: "1px solid #334155", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+          ✏️ Създай цени
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const service = prices[currentKey];
+const activeLabel = service.label || currentKey;
+const serviceModels = service.models || [];
 
   const printPriceList = () => {
     const w = window.open("", "_blank");
