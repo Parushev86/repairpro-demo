@@ -2906,7 +2906,7 @@ function PricingTab() {
 
       <div style={{ background: "#1e293b", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "12px 18px", background: "#0a1628", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{activeLabel}</span>
+         <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>Цени</span>
           <div style={{ display: "flex", gap: 20 }}>
             <span style={{ fontSize: 12, color: "#10b981", fontWeight: 700 }}>● Клиент</span>
             <span style={{ fontSize: 12, color: "#38bdf8", fontWeight: 700 }}>● Колега</span>
