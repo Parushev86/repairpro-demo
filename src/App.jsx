@@ -2761,6 +2761,7 @@ function Calculator() {
 }
 
 // ═══════════════════════════════ PRICING TAB ══════════════════════════════════
+// ═══════════════════════════════ PRICING TAB ══════════════════════════════════
 const RATE = 1.95583;
 
 const DEFAULT_PRICES = {
@@ -2784,10 +2785,10 @@ const DEFAULT_PRICES = {
   },
 };
 
+const PRICES_TABLE = "global_settings";
+
 function PricingTab() {
-  const [prices, setPrices] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("rp_prices")) || DEFAULT_PRICES; } catch { return DEFAULT_PRICES; }
-  });
+  const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState(null);
   const [activeService, setActiveService] = useState("iphone_display");
@@ -2795,18 +2796,79 @@ function PricingTab() {
   const [newSvcKey, setNewSvcKey] = useState("");
   const [newSvcLabel, setNewSvcLabel] = useState("");
   const [showNewSvc, setShowNewSvc] = useState(false);
+  const [pricesLoaded, setPricesLoaded] = useState(false);
 
-  const saveCustomPrices = (data) => {
+  // ── Зареждане от Supabase + localStorage ─────────────────────────────────
+  useEffect(() => {
+    const loadPrices = async () => {
+      try {
+        // 1) Опит от Supabase
+        const sb = getSupabase();
+        if (sb) {
+          const { data, error } = await sb.from(PRICES_TABLE)
+            .select("value")
+            .eq("key", "pricing")
+            .maybeSingle();
+          if (!error && data?.value) {
+            const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+            if (parsed && Object.keys(parsed).length > 0) {
+              setPrices(parsed);
+              localStorage.setItem("rp_prices", JSON.stringify(parsed));
+              setPricesLoaded(true);
+              return;
+            }
+          }
+        }
+      } catch (e) { /* fallback */ }
+
+      // 2) Fallback: localStorage
+      try {
+        const saved = localStorage.getItem("rp_prices");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && Object.keys(parsed).length > 0) {
+            setPrices(parsed);
+            setPricesLoaded(true);
+            return;
+          }
+        }
+      } catch (e) { /* fallback */ }
+
+      // 3) Нищо не е намерено – остава DEFAULT_PRICES
+      setPrices(DEFAULT_PRICES);
+      setPricesLoaded(true);
+    };
+    loadPrices();
+  }, []);
+
+  // ── Записване и в двете места ────────────────────────────────────────────
+  const saveCustomPrices = async (data) => {
     setPrices(data);
+    // Винаги записвай в localStorage
     localStorage.setItem("rp_prices", JSON.stringify(data));
     setEditMode(false);
     setEditData(null);
     setNewModelName("");
+
+    // Запис в Supabase
+    try {
+      const sb = getSupabase();
+      if (sb) {
+        await sb.from(PRICES_TABLE).upsert(
+          { key: "pricing", value: data },
+          { onConflict: "key" }
+        );
+      }
+    } catch (e) {
+      console.warn("Supabase pricing save failed, using localStorage only", e);
+    }
   };
 
+  // ── Помощни функции ──────────────────────────────────────────────────────
   const addModel = () => {
     if (!newModelName.trim()) return;
     const nd = JSON.parse(JSON.stringify(editData));
+    if (!nd[activeService]) return;
     if (nd[activeService].models.includes(newModelName.trim())) {
       alert("Моделът вече съществува!");
       return;
@@ -2820,6 +2882,7 @@ function PricingTab() {
 
   const removeModel = (m) => {
     const nd = JSON.parse(JSON.stringify(editData));
+    if (!nd[activeService]) return;
     nd[activeService].models = nd[activeService].models.filter(x => x !== m);
     delete nd[activeService].client[m];
     delete nd[activeService].colleague[m];
@@ -2840,26 +2903,30 @@ function PricingTab() {
   };
 
   const removeService = (key) => {
-    if (!confirm(`Изтрий услугата "${editData[key].label}"?`)) return;
+    if (!confirm(`Изтрий услугата "${editData[key]?.label || key}"?`)) return;
     const nd = JSON.parse(JSON.stringify(editData));
     delete nd[key];
     setEditData(nd);
-    setActiveService(Object.keys(nd)[0] || "");
+    const keys = Object.keys(nd);
+    setActiveService(keys.length > 0 ? keys[0] : "");
   };
 
-  const service = prices[activeService];
+  // ⚠️ Безопасен достъп
+  const service = prices[activeService] || DEFAULT_PRICES["iphone_display"];
+  const activeLabel = service?.label || "Смяна на дисплей — iPhone";
+  const serviceModels = service?.models || [];
 
   const printPriceList = () => {
     const w = window.open("", "_blank");
-    const rows = service.models.map(m => `
+    const rows = serviceModels.map(m => `
       <tr>
         <td>${m}</td>
-        <td style="text-align:center;font-weight:700;color:#065f46">€ ${service.client[m] || "—"}</td>
-        <td style="text-align:center;color:#555">лв ${((service.client[m] || 0) * RATE).toFixed(2)}</td>
-        <td style="text-align:center;font-weight:700;color:#1e40af">€ ${service.colleague[m] || "—"}</td>
-        <td style="text-align:center;color:#555">лв ${((service.colleague[m] || 0) * RATE).toFixed(2)}</td>
+        <td style="text-align:center;font-weight:700;color:#065f46">€ ${service.client?.[m] || "—"}</td>
+        <td style="text-align:center;color:#555">лв ${((service.client?.[m] || 0) * RATE).toFixed(2)}</td>
+        <td style="text-align:center;font-weight:700;color:#1e40af">€ ${service.colleague?.[m] || "—"}</td>
+        <td style="text-align:center;color:#555">лв ${((service.colleague?.[m] || 0) * RATE).toFixed(2)}</td>
       </tr>`).join("");
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${service.label}</title>
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${activeLabel}</title>
     <style>body{font-family:Arial,sans-serif;padding:30px;max-width:650px;margin:auto}
     h1{font-size:18px;color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px}
     table{width:100%;border-collapse:collapse;margin-top:16px}
@@ -2867,13 +2934,16 @@ function PricingTab() {
     td{padding:8px 10px;font-size:13px;border:1px solid #eee}
     tr:nth-child(even){background:#f9fafb}
     @media print{body{padding:16px}}</style></head><body>
-    <h1>💲 ${service.label}</h1>
+    <h1>💲 ${activeLabel}</h1>
     <table><thead><tr><th>Модел</th><th colspan="2" style="text-align:center;color:#065f46">Клиент</th><th colspan="2" style="text-align:center;color:#1e40af">Колега</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <p style="font-size:10px;color:#999;margin-top:16px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
     <script>window.onload=()=>{window.print();}</script></body></html>`);
     w.document.close();
   };
+
+  // ── Ако все още се зарежда ───────────────────────────────────────────────
+  if (!pricesLoaded) return <div className="animate-fade"><p style={{ color: "var(--text3)" }}>Зареждане на цените...</p></div>;
 
   return (
     <div className="animate-fade">
@@ -2888,19 +2958,19 @@ function PricingTab() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
         {Object.entries(prices).map(([key, svc]) => (
           <button key={key} onClick={() => setActiveService(key)} style={{
             padding: "8px 18px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
             background: activeService === key ? "linear-gradient(135deg,#38bdf8,#0ea5e9)" : "#1e293b",
             color: activeService === key ? "#fff" : "#64748b",
-          }}>{svc.label}</button>
+          }}>{svc.label || key}</button>
         ))}
       </div>
 
       <div style={{ background: "#1e293b", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "12px 18px", background: "#0a1628", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{service.label}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{activeLabel}</span>
           <div style={{ display: "flex", gap: 20 }}>
             <span style={{ fontSize: 12, color: "#10b981", fontWeight: 700 }}>● Клиент</span>
             <span style={{ fontSize: 12, color: "#38bdf8", fontWeight: 700 }}>● Колега</span>
@@ -2918,15 +2988,15 @@ function PricingTab() {
               </tr>
             </thead>
             <tbody>
-              {service.models.map((m, i) => (
+              {serviceModels.map((m, i) => (
                 <tr key={m} style={{ borderTop: "1px solid #0f172a", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,.02)" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#243044"}
                   onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "rgba(255,255,255,.02)"}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{m}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#10b981" }}>€ {service.client[m] || "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.client[m] ? ((service.client[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#38bdf8" }}>€ {service.colleague[m] || "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.colleague[m] ? ((service.colleague[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#10b981" }}>€ {service.client?.[m] || "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.client?.[m] ? ((service.client[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#38bdf8" }}>€ {service.colleague?.[m] || "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.colleague?.[m] ? ((service.colleague[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -2938,7 +3008,7 @@ function PricingTab() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.78)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#1e293b", borderRadius: 16, width: "100%", maxWidth: 700, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 30px 80px rgba(0,0,0,.6)" }}>
             <div style={{ padding: "16px 22px", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>✏️ Редактирай цени — {editData[activeService]?.label}</h2>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>✏️ Редактирай цени — {editData[activeService]?.label || activeLabel}</h2>
               <button onClick={() => setEditMode(false)} style={{ background: "#334155", border: "none", color: "#94a3b8", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 16 }}>×</button>
             </div>
             <div style={{ padding: "10px 20px 0", borderBottom: "1px solid #334155", display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
@@ -2948,7 +3018,7 @@ function PricingTab() {
                     padding: "6px 14px", borderRadius: "7px 0 0 7px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
                     background: activeService === key ? "#38bdf8" : "#0f172a",
                     color: activeService === key ? "#0f172a" : "#64748b",
-                  }}>{svc.label}</button>
+                  }}>{svc.label || key}</button>
                   <button onClick={() => removeService(key)} style={{ padding: "6px 8px", borderRadius: "0 7px 7px 0", fontSize: 11, cursor: "pointer", border: "none", background: activeService === key ? "#0ea5e9" : "#1e293b", color: "#ef4444" }}>✕</button>
                 </div>
               ))}
@@ -2973,13 +3043,13 @@ function PricingTab() {
                         <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>{m}</td>
                         <td style={{ padding: "6px 12px" }}>
                           <input type="number" min="0" step="0.5"
-                            value={editData[activeService].client[m] || ""}
+                            value={editData[activeService].client?.[m] || ""}
                             onChange={e => { const nd = JSON.parse(JSON.stringify(editData)); nd[activeService].client[m] = Number(e.target.value); setEditData(nd); }}
                             style={{ width: "100%" }} />
                         </td>
                         <td style={{ padding: "6px 12px" }}>
                           <input type="number" min="0" step="0.5"
-                            value={editData[activeService].colleague[m] || ""}
+                            value={editData[activeService].colleague?.[m] || ""}
                             onChange={e => { const nd = JSON.parse(JSON.stringify(editData)); nd[activeService].colleague[m] = Number(e.target.value); setEditData(nd); }}
                             style={{ width: "100%" }} />
                         </td>
@@ -3004,7 +3074,7 @@ function PricingTab() {
               </>}
             </div>
             <div style={{ padding: "14px 22px", borderTop: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <span style={{ fontSize: 12, color: "#64748b" }}>Промените се запазват локално на този компютър</span>
+              <span style={{ fontSize: 12, color: "#64748b" }}>Промените се запазват в облака (Supabase) и локално</span>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => { setEditMode(false); setShowNewSvc(false); }} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "9px 18px", cursor: "pointer", fontWeight: 600 }}>Отказ</button>
                 <button onClick={() => saveCustomPrices(editData)} style={{ background: "linear-gradient(135deg,#38bdf8,#0ea5e9)", color: "#fff", border: "none", borderRadius: 8, padding: "9px 22px", cursor: "pointer", fontWeight: 700 }}>💾 Запази цените</button>
