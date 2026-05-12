@@ -166,7 +166,7 @@ export default function App() {
             dbDeleteInv(item.id).catch(() => { });
           }
         });
-        notify(`🧹 Премахнати ${duplicateCount} дублиращи се артикула от склада`, "warn");
+        
         setInventory(uniqueInv);
       } else {
         setInventory(inv);
