@@ -501,7 +501,50 @@ export default function App() {
             buybacks={buybacks} inventory={inventory}
             onSave={async r => { const s = await upsertBuyback(r); if (!r.id) setBuybacks(p => [s, ...p]); else setBuybacks(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Записът е запазен"); }}
             onDelete={async id => { const r = buybacks.find(x => x.id === id); if (r) await moveToTrash("buybacks", r); await deleteBuyback(id); setBuybacks(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "buybacks", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
-            onAddToInventory={async b => { const item = { name: `${b.brand} ${b.model}`, category: "Дънни платки", quantity: 1, min_qty: 0, price: 0, cost: Number(b.price || 0), supplier: "Изкупуване", notes: `IMEI: ${b.imei || "—"}` }; const saved = await upsertInventory(item); setInventory(p => [...p, saved]); await upsertBuyback({ ...b, added_to_stock: true, inventory_id: saved.id }); setBuybacks(p => p.map(x => x.id === b.id ? { ...x, added_to_stock: true } : x)); notify("📦 Заприходен в склада ✓"); }}
+            onAddToInventory={async (b, target) => {
+  if (target === "inventory") {
+    // Заприхождаване в Склад (категория "Телефони")
+    const item = {
+      name: `${b.brand} ${b.model}`,
+      category: "Телефони",
+      quantity: 1, min_qty: 0,
+      price: Number(b.price || 0),
+      cost: Number(b.price || 0),
+      supplier: "Изкупуване",
+      notes: `IMEI: ${b.imei || "—"}`,
+      phone_brand: b.brand,
+      phone_model: b.model,
+      phone_color: b.color || "",
+      phone_imei: b.imei || "",
+    };
+    const saved = await upsertInventory(item);
+    setInventory(p => [...p, saved]);
+    await upsertBuyback({ ...b, added_to_stock: true, inventory_id: saved.id });
+    setBuybacks(p => p.map(x => x.id === b.id ? { ...x, added_to_stock: true } : x));
+    notify("📦 Заприходен в склада ✓");
+  } else if (target === "dismantle") {
+    // Заприхождаване за разглобяване
+    const record = {
+      date: today(),
+      brand: b.brand || "",
+      model: b.model || "",
+      imei: b.imei || "",
+      color: b.color || "",
+      storage: "",
+      purchase_price: Number(b.price || 0),
+      status: "Чака разглобяване",
+      parts_status: {},
+      custom_parts: [],
+      notes: `Изкупен от: ${b.seller_name || ""}`,
+      photos: [],
+    };
+    const saved = await upsertDismantle(record);
+    setDismantleRecs(p => [saved, ...p]);
+    await upsertBuyback({ ...b, added_to_stock: true });
+    setBuybacks(p => p.map(x => x.id === b.id ? { ...x, added_to_stock: true } : x));
+    notify("🔨 Изпратен за разглобяване ✓");
+  }
+}}
             notify={notify}
           />}
           {tab === "dismantle" && <DismantleTab
