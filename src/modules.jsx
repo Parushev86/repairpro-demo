@@ -329,7 +329,18 @@ export function BuybacksTab({ buybacks, inventory, onSave, onDelete, onAddToInve
                   <td style={{ padding: "9px 14px", fontSize: 12, color: "#94a3b8" }}>{b.seller_phone || "—"}</td>
                   <td style={{ padding: "9px 14px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmtM(b.price)}</td>
                   <td style={{ padding: "9px 14px" }}><SBadge text={b.status} /></td>
-                  <td style={{ padding: "9px 14px" }}>{b.added_to_stock ? <span style={{ fontSize: 11, color: "#10b981" }}>✅ Заприходен</span> : b.status === "Изкупен" ? <MBtn color="#8b5cf6" onClick={() => onAddToInventory(b)} style={{ fontSize: 11, padding: "3px 8px" }}>📦 Заприходи</MBtn> : <span style={{ fontSize: 11, color: "#64748b" }}>—</span>}</td>
+                  <td style={{ padding: "9px 14px" }}>
+  {b.added_to_stock ? (
+    <span style={{ fontSize: 11, color: "#10b981" }}>✅ Заприходен</span>
+  ) : b.status === "Изкупен" ? (
+    <div style={{ display: "flex", gap: 4 }}>
+      <MBtn color="#8b5cf6" onClick={() => onAddToInventory(b, "inventory")} style={{ fontSize: 11, padding: "3px 8px" }}>📦 Склад</MBtn>
+      <MBtn color="#f59e0b" onClick={() => onAddToInventory(b, "dismantle")} style={{ fontSize: 11, padding: "3px 8px" }}>🔨 Разглоби</MBtn>
+    </div>
+  ) : (
+    <span style={{ fontSize: 11, color: "#64748b" }}>—</span>
+  )}
+</td>
                   <td style={{ padding: "9px 14px" }}><div style={{ display: "flex", gap: 3 }}>
                     <MBtn color="#3b82f6" onClick={() => setModal(b)}>✏️</MBtn>
                     <MBtn color="#8b5cf6" onClick={() => printProtocol(b)} title="Протокол">📄</MBtn>
