@@ -2227,7 +2227,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const extServiceCost = issuedToday.reduce((s, o) => s + Number(o.external_service_price || 0), 0);
 
   const accRevToday = accSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
-  partsSales.filter(s => s.payment_status === "Платена" && toDate(s.paid_date || s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  const partsRevToday = partsSales.filter(s => s.payment_status === "Платена" && toDate(s.paid_date || s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const phoneRevToday = phoneSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const allExpensesToday = expenses.filter(e => toDate(e.date) === date);
   const expensesToday = allExpensesToday.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -2239,7 +2239,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   // *** Само приходи в брой ***
   const cashRevenue = issuedToday.filter(o => o.payment_method === "В брой").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
   const accCash = accSales.filter(s => toDate(s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
-  partsSales.filter(s => s.payment_status === "Платена" && toDate(s.paid_date || s.date) === date) && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  const partsCash = partsSales.filter(s => s.payment_status === "Платена" && toDate(s.paid_date || s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const phoneCash = phoneSales.filter(s => toDate(s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const totalCashIn = cashRevenue + accCash + partsCash + phoneCash;
 
@@ -2327,7 +2327,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
       techDay,
       expenses: expenses.filter(e => toDate(e.date) === date),
       accSalesDay: accSales.filter(s => toDate(s.date) === date),
-      partsSalesDay: partsSales.filter(s => toDate(s.date) === date),
+      partsSalesDay: partsSales.filter(s => s.payment_status === "Платена" ? toDate(s.paid_date || s.date) === date : toDate(s.date) === date),
       phoneSalesDay: phoneSales.filter(s => toDate(s.date) === date),
     });
   };
@@ -3514,6 +3514,3 @@ export function UsersTab() {
         <br />За да излезеш от акаунта: затвори браузъра или изчисти сесията.
       </div>
     </div>
-  );
-}
-// КРАЙ НА ЧАСТ 4
