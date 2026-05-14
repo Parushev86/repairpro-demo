@@ -479,17 +479,29 @@ export default function App() {
           {tab === "calculator" && <Calculator />}
           {tab === "pricing" && <PricingTab />}
           {tab === "expenses" && <ExpensesTab
-            expenses={expenses} cashRegister={cashReg}
-            onSaveExpense={async r => {
-              const s = await upsertExpense(r);
-              if (!r.id) setExpenses(p => [s, ...p]);
-              else setExpenses(p => p.map(e => e.id === s.id ? s : e));
-              notify("✅ Разходът е запазен");
-            }}
-            onDeleteExpense={async id => { const r = expenses.find(e => e.id === id); if (r) await moveToTrash("expenses", r); await deleteExpense(id); setExpenses(p => p.filter(e => e.id !== id)); setTrash(p => [{ table_name: "expenses", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
-            onSaveCash={async r => { const s = await upsertCashRegister(r); if (!r.id) setCashReg(p => [s, ...p]); else setCashReg(p => p.map(c => c.date === s.date ? s : c)); }}
-            notify={notify}
-          />}
+  expenses={expenses} cashRegister={cashReg}
+  orders={orders} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales}
+  onSaveExpense={async r => {
+    const s = await upsertExpense(r);
+    if (!r.id) setExpenses(p => [s, ...p]);
+    else setExpenses(p => p.map(e => e.id === s.id ? s : e));
+    notify("✅ Разходът е запазен");
+  }}
+  onDeleteExpense={async id => {
+    const r = expenses.find(e => e.id === id);
+    if (r) await moveToTrash("expenses", r);
+    await deleteExpense(id);
+    setExpenses(p => p.filter(e => e.id !== id));
+    setTrash(p => [{ table_name: "expenses", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]);
+    notify("🗑️ В кошчето", "warn");
+  }}
+  onSaveCash={async r => {
+    const s = await upsertCashRegister(r);
+    if (!r.id) setCashReg(p => [s, ...p]);
+    else setCashReg(p => p.map(c => c.date === s.date ? s : c));
+  }}
+  notify={notify}
+/>}
           {tab === "accsales" && <AccessorySalesTab
             sales={accSales} inventory={inventory}
             onSave={async (r, orig) => { const s = await upsertAccessorySale(r); if (!orig?.id) setAccSales(p => [s, ...p]); else setAccSales(p => p.map(x => x.id === s.id ? s : x)); if (!orig?.id && r.inventory_id) { const inv = inventory.find(i => i.id === r.inventory_id); if (inv) { const nq = Number(inv.quantity) - Number(r.quantity || 1); if (nq <= 0) { await dbDeleteInv(inv.id); setInventory(p => p.filter(i => i.id !== inv.id)); } else { const upd = await upsertInventory({ ...inv, quantity: nq }); setInventory(p => p.map(i => i.id === upd.id ? upd : i)); } } } notify("✅ Продажбата е записана"); }}
