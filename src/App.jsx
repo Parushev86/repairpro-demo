@@ -630,9 +630,6 @@ export default function App() {
                   sale_price: Number(r.sale_price || 0),
                   quantity: Number(r.quantity || 1),
                 };
-                if (clean.payment_status === "Платена" && (!clean.paid_date || clean.payment_status !== r.payment_status)) {
-  clean.paid_date = today();
-}
                 const s = await upsertPartsSale(clean);
                 if (!r.id) {
                   setPartsSales(p => [s, ...p]);
@@ -2227,11 +2224,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const extServiceCost = issuedToday.reduce((s, o) => s + Number(o.external_service_price || 0), 0);
 
   const accRevToday = accSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
-  const partsRevToday = partsSales.filter(s => {
-  if (s.payment_status !== "Платена") return false;
-  const effectiveDate = s.paid_date || s.date; // ползвай датата на плащане, ако я има
-  return toDate(effectiveDate) === date;
-}).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  const partsRevToday = partsSales.filter(s => toDate(s.date) === date && s.payment_status === "Платена").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const phoneRevToday = phoneSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const allExpensesToday = expenses.filter(e => toDate(e.date) === date);
   const expensesToday = allExpensesToday.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -2243,11 +2236,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   // *** Само приходи в брой ***
   const cashRevenue = issuedToday.filter(o => o.payment_method === "В брой").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
   const accCash = accSales.filter(s => toDate(s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
-  const partsCash = partsSales.filter(s => {
-  if (s.payment_status !== "Платена" || s.payment_method !== "В брой") return false;
-  const effectiveDate = s.paid_date || s.date;
-  return toDate(effectiveDate) === date;
-}).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  const partsCash = partsSales.filter(s => toDate(s.date) === date && s.payment_status === "Платена" && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const phoneCash = phoneSales.filter(s => toDate(s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const totalCashIn = cashRevenue + accCash + partsCash + phoneCash;
 
