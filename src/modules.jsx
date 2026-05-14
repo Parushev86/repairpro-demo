@@ -56,7 +56,7 @@ function CancelBtn({ onClick }) {
 }
 
 // ══ EXPENSES ══════════════════════════════════════════════════════════════════
-export function ExpensesTab({ expenses, cashRegister, onSaveExpense, onDeleteExpense, onSaveCash, notify }) {
+export function ExpensesTab({ expenses, cashRegister, orders = [], accSales = [], partsSales = [], phoneSales = [], onSaveExpense, onDeleteExpense, onSaveCash, notify }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const [showCash, setShowCash] = useState(false);
@@ -64,6 +64,24 @@ export function ExpensesTab({ expenses, cashRegister, onSaveExpense, onDeleteExp
   const filtered = expenses.filter(e => (e.date || "").slice(0, 10) === date);
   const totalExp = filtered.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalFromCash = filtered.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
+    // Приходи в брой за избраната дата
+  const cashRevenue = orders
+    .filter(o => o.status === "Издаден" && (o.date_out || o.updated_at || o.date_in).slice(0, 10) === date && o.payment_method === "В брой")
+    .reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+
+  const accCash = accSales
+    .filter(s => (s.date || "").slice(0, 10) === date && s.payment_method === "В брой")
+    .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+
+  const partsCash = partsSales
+    .filter(s => (s.date || "").slice(0, 10) === date && s.payment_status === "Платена" && s.payment_method === "В брой")
+    .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+
+  const phoneCash = phoneSales
+    .filter(s => (s.date || "").slice(0, 10) === date && s.payment_method === "В брой")
+    .reduce((s, r) => s + Number(r.sale_price || 0), 0);
+
+  const totalCashIn = cashRevenue + accCash + partsCash + phoneCash;
   const totalNotCash = filtered.filter(e => e.from_cash === false).reduce((s, e) => s + Number(e.amount || 0), 0);
   const cashEntry = cashRegister.find(c => c.date === date);
   const openingCash = Number(cashEntry?.opening_cash || 0);
@@ -84,9 +102,13 @@ export function ExpensesTab({ expenses, cashRegister, onSaveExpense, onDeleteExp
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 1fr", gap: 14, marginBottom: 18, alignItems: "end" }}>
         <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
-        <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #10b981" }}><div style={{ fontSize: 11, color: "#64748b" }}>Начало на деня</div><div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>{fmtM(openingCash)}</div></MCard>
-        <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #ef4444" }}><div style={{ fontSize: 11, color: "#64748b" }}>Разходи</div><div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444" }}>{fmtM(totalExp)}</div></MCard>
-        <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #38bdf8" }}><div style={{ fontSize: 11, color: "#64748b" }}>Баланс (каса)</div><div style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8" }}>{fmtM(openingCash - totalFromCash)}</div><div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>Не от каса: {fmtM(totalNotCash)}</div></MCard>
+       <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #38bdf8" }}>
+  <div style={{ fontSize: 11, color: "#64748b" }}>Баланс (каса)</div>
+  <div style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8" }}>{fmtM(openingCash + totalCashIn - totalFromCash)}</div>
+  <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
+    Начало: {fmtM(openingCash)} + Приходи: {fmtM(totalCashIn)} − Разходи: {fmtM(totalFromCash)}
+  </div>
+</MCard>
       </div>
       <MCard style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-wrap">
