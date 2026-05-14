@@ -842,7 +842,14 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
   const monthlyRev = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
     const m = d.getMonth(), y = d.getFullYear();
-    const rev = orders.filter(o => { const od = new Date(o.date_in); return od.getMonth() === m && od.getFullYear() === y && o.status === "Издаден"; }).reduce((s, o) => s + Number(o.price || 0), 0);
+    const rev = orders.filter(o => {
+  if (o.status !== "Издаден") return false;
+  // Използвай date_out, ако го има, иначе updated_at, иначе date_in
+  const d = o.date_out || o.updated_at || o.date_in;
+  if (!d) return false;
+  const od = new Date(d);
+  return od.getMonth() === m && od.getFullYear() === y;
+}).reduce((s, o) => s + Number(o.price || 0), 0);
     return { label: MONTHS_BG[m] + ' ' + y, rev };
   });
   const maxRev = Math.max(...monthlyRev.map(m => m.rev), 1);
