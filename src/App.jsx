@@ -630,6 +630,9 @@ export default function App() {
                   sale_price: Number(r.sale_price || 0),
                   quantity: Number(r.quantity || 1),
                 };
+                if (clean.payment_status === "Платена" && (!clean.paid_date || clean.payment_status !== r.payment_status)) {
+  clean.paid_date = today();
+}
                 const s = await upsertPartsSale(clean);
                 if (!r.id) {
                   setPartsSales(p => [s, ...p]);
