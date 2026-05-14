@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
-import { CATEGORIES, today } from "./lib/constants.js";
+import { CATEGORIES } from "./lib/constants.js";
 
+const today = () => new Date().toISOString().split("T")[0];
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("bg-BG") : "—";
 const fmtM = (n) => "€ " + Number(n || 0).toFixed(2);
 
@@ -439,7 +440,7 @@ export function PartsSalesTab({ sales, inventory, onSave, onDelete }) {
                   <td style={{ padding: "8px 12px", fontSize: 11, fontFamily: "monospace", color: "#94a3b8" }}>{r.tracking_number || "—"}</td>
                   <td style={{ padding: "8px 12px" }}><div style={{ display: "flex", gap: 3 }}>
                     <MBtn color="#3b82f6" onClick={() => setModal(r)}>✏️</MBtn>
-                    {r.payment_status==="Не е платена" && <MBtn color="#10b981" onClick={()=>onSave({...r, payment_status:"Платена", paid_date: today()})} title="Отбележи платена">✅</MBtn>}
+                    {r.payment_status === "Не е платена" && <MBtn color="#10b981" onClick={() => onSave({ ...r, payment_status: "Платена" })} title="Отбележи платена">✅</MBtn>}
                     <MBtn color="#ef4444" onClick={() => { if (confirm("Изтрий?")) onDelete(r.id); }}>🗑️</MBtn>
                   </div></td>
                 </tr>
