@@ -1624,95 +1624,292 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
 function ReportsTab({ orders, inventory, technicians, onExport }) {
   const [from, setFrom] = useState(today().slice(0, 7) + "-01");
   const [to, setTo] = useState(today());
+  const [viewMode, setViewMode] = useState("period");
+  const [selTech, setSelTech] = useState("Всички");
+
   const filtered = orders.filter(o => o.date_in >= from && o.date_in <= to);
   const revenue = filtered.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   const byDevice = DEVICE_TYPES.map(t => ({ t, c: filtered.filter(o => o.device_type === t).length })).filter(d => d.c > 0);
   const maxD = Math.max(...byDevice.map(d => d.c), 1);
-  const techStats = technicians.map(t => ({
+
+  const techStatsPeriod = technicians.map(t => ({
     name: t.name, color: t.color || "#38bdf8",
-    total: orders.filter(o => o.technician === t.name).length,
-    issued: orders.filter(o => o.technician === t.name && o.status === "Издаден").length,
-    active: orders.filter(o => o.technician === t.name && !["Издаден", "Отказан"].includes(o.status)).length,
-    revenue: orders.filter(o => o.technician === t.name && o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0),
-  })).sort((a, b) => b.revenue - a.revenue);
+    total: filtered.filter(o => o.technician === t.name).length,
+    issued: filtered.filter(o => o.technician === t.name && o.status === "Издаден").length,
+    active: filtered.filter(o => o.technician === t.name && !["Издаден","Отказан"].includes(o.status)).length,
+    revenue: filtered.filter(o => o.technician === t.name && o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0),
+  })).filter(t => t.total > 0).sort((a, b) => b.revenue - a.revenue);
+
+  const allTechNames = [...new Set(orders.map(o => o.technician).filter(Boolean))];
+
+  const months = [];
+  const startD = new Date(from); startD.setDate(1);
+  const endD = new Date(to);
+  let cur = new Date(startD);
+  while (cur <= endD) {
+    months.push({ year: cur.getFullYear(), month: cur.getMonth(), label: MONTHS_BG[cur.getMonth()] + " " + cur.getFullYear() });
+    cur.setMonth(cur.getMonth() + 1);
+  }
+
+  const monthlyTechData = months.map(({ year, month, label }) => {
+    const mo = orders.filter(o => {
+      if (o.status !== "Издаден") return false;
+      const od = new Date(o.date_out || o.updated_at || o.date_in);
+      return od.getFullYear() === year && od.getMonth() === month;
+    });
+    const row = { label, total: mo.reduce((s, o) => s + Number(o.price || 0), 0) };
+    allTechNames.forEach(name => { row[name] = mo.filter(o => o.technician === name).reduce((s, o) => s + Number(o.price || 0), 0); });
+    return row;
+  });
+
+  const techsToShow = selTech === "Всички" ? allTechNames : [selTech];
 
   return (
     <div className="animate-fade">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Справки и отчети</h1>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Btn color="#10b981" bg="#064e3b" onClick={() => onExport("tech")}>📊 Техници Excel</Btn>
-          <Btn color="#8b5cf6" bg="#2e1065" onClick={() => onExport("full")}>📊 Пълен отчет</Btn>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18, flexWrap:"wrap", gap:8 }}>
+        <h1 style={{ margin:0, fontSize:22, fontWeight:800 }}>Справки и отчети</h1>
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          <Btn color="#10b981" bg="#064e3b" onClick={() => onExport("tech")}>Excel Техници</Btn>
+          <Btn color="#8b5cf6" bg="#2e1065" onClick={() => onExport("full")}>Excel Пълен</Btn>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-end" }}>
-        <Field label="От дата"><input type="date" value={from} onChange={e => setFrom(e.target.value)} style={{ width: 160 }} /></Field>
-        <Field label="До дата"><input type="date" value={to} onChange={e => setTo(e.target.value)} style={{ width: 160 }} /></Field>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 16 }}>
+
+      <Card style={{ marginBottom:16, padding:"14px 18px" }}>
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-end" }}>
+          <Field label="От дата"><input type="date" value={from} onChange={e => setFrom(e.target.value)} style={{ width:160 }} /></Field>
+          <Field label="До дата"><input type="date" value={to} onChange={e => setTo(e.target.value)} style={{ width:160 }} /></Field>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:1 }}>
+            {[
+              ["Този месец", () => { const n=new Date(); setFrom(n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-01"); setTo(today()); }],
+              ["Предишен", () => { const n=new Date(); n.setMonth(n.getMonth()-1); const y=n.getFullYear(),m=String(n.getMonth()+1).padStart(2,"0"); setFrom(y+"-"+m+"-01"); const l=new Date(y,n.getMonth()+1,0); setTo(y+"-"+m+"-"+String(l.getDate()).padStart(2,"0")); }],
+              ["3 месеца", () => { const n=new Date(); n.setMonth(n.getMonth()-2); setFrom(n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-01"); setTo(today()); }],
+              ["Тази година", () => { setFrom(new Date().getFullYear()+"-01-01"); setTo(today()); }],
+            ].map(([label, fn]) => (
+              <button key={label} onClick={fn} style={{ padding:"6px 12px", borderRadius:7, fontSize:11, fontWeight:600, cursor:"pointer", border:"1px solid #334155", background:"#0f172a", color:"#64748b" }}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
+          {[["period","Обобщение"],["tech","По техник"],["monthly","Месечна таблица"]].map(([key,label]) => (
+            <button key={key} onClick={() => setViewMode(key)} style={{
+              padding:"7px 16px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", border:"none",
+              background: viewMode===key ? "linear-gradient(135deg,#38bdf8,#0ea5e9)" : "#1e293b",
+              color: viewMode===key ? "#fff" : "#64748b",
+            }}>{label}</button>
+          ))}
+        </div>
+      </Card>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:16 }} className="kpi-grid">
         {[
-          { l: "Поръчки в периода", v: filtered.length, c: "#3b82f6" },
-          { l: "Издадени", v: filtered.filter(o => o.status === "Издаден").length, c: "#10b981" },
-          { l: "Активни", v: filtered.filter(o => !["Издаден", "Отказан"].includes(o.status)).length, c: "#f59e0b" },
-          { l: "Оборот", v: fmtMoney(revenue), c: "#10b981" },
+          { l:"Поръчки", v:filtered.length, c:"#3b82f6" },
+          { l:"Издадени", v:filtered.filter(o=>o.status==="Издаден").length, c:"#10b981" },
+          { l:"Активни", v:filtered.filter(o=>!["Издаден","Отказан"].includes(o.status)).length, c:"#f59e0b" },
+          { l:"Оборот", v:fmtMoney(revenue), c:"#10b981" },
         ].map(({ l, v, c }) => (
-          <Card key={l} style={{ borderLeft: `4px solid ${c}`, padding: "14px 16px" }}>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>{v}</div>
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{l}</div>
+          <Card key={l} style={{ borderLeft:`4px solid ${c}`, padding:"14px 16px" }}>
+            <div style={{ fontSize:22, fontWeight:800 }}>{v}</div>
+            <div style={{ fontSize:11, color:"var(--text3)", marginTop:2 }}>{l}</div>
           </Card>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-        <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Справка по техници (всички)</div>
+
+      {viewMode === "period" && (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }} className="dash-grid">
+          <Card>
+            <div style={{ fontSize:12, color:"var(--text3)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:14 }}>По техник (период)</div>
+            <div className="table-wrap">
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead><tr>{["Техник","Поръчки","Издадени","Оборот"].map(h=><th key={h} style={{ textAlign:"left", fontSize:10, color:"var(--text3)", padding:"6px 4px", borderBottom:"1px solid #334155" }}>{h}</th>)}</tr></thead>
+                <tbody>{techStatsPeriod.length>0 ? techStatsPeriod.map(({name,color,total,issued,revenue},i)=>(
+                  <tr key={name} style={{ borderBottom:"1px solid #1e293b" }}>
+                    <td style={{ padding:"8px 4px", fontSize:13, fontWeight:600 }}><span style={{ color, marginRight:6 }}>●</span>{i===0?"🏆 ":""}{name}</td>
+                    <td style={{ padding:"8px 4px", fontSize:12, color:"var(--text2)" }}>{total}</td>
+                    <td style={{ padding:"8px 4px", fontSize:12, color:"#10b981" }}>{issued}</td>
+                    <td style={{ padding:"8px 4px", fontSize:13, fontWeight:700, color:"#10b981" }}>{fmtMoney(revenue)}</td>
+                  </tr>
+                )) : <tr><td colSpan={4} style={{ padding:20, textAlign:"center", color:"var(--text3)", fontSize:12 }}>Няма данни</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <Card>
+            <div style={{ fontSize:12, color:"var(--text3)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:14 }}>По вид устройство</div>
+            {byDevice.map(({t,c})=>(
+              <div key={t} style={{ marginBottom:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:3 }}><span>{t}</span><span style={{ color:"var(--text3)" }}>{c}</span></div>
+                <div style={{ height:6, background:"#334155", borderRadius:3 }}><div style={{ height:"100%", width:`${(c/maxD)*100}%`, background:"linear-gradient(90deg,#38bdf8,#0ea5e9)", borderRadius:3 }} /></div>
+              </div>
+            ))}
+            {byDevice.length===0 && <p style={{ color:"var(--text3)", fontSize:12 }}>Няма данни</p>}
+          </Card>
+        </div>
+      )}
+
+      {viewMode === "tech" && (
+        <div>
+          <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+            {["Всички",...allTechNames].map(name=>(
+              <button key={name} onClick={()=>setSelTech(name)} style={{
+                padding:"6px 14px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", border:"none",
+                background: selTech===name?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
+                color: selTech===name?"#fff":"#64748b",
+              }}>{name}</button>
+            ))}
+          </div>
+          {(selTech==="Всички"?techStatsPeriod:techStatsPeriod.filter(t=>t.name===selTech)).map((t,i)=>(
+            <Card key={t.name} style={{ marginBottom:14, borderTop:`3px solid ${t.color}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12, flexWrap:"wrap", gap:8 }}>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:800, color:"#f1f5f9" }}>{i===0&&selTech==="Всички"?"🏆 ":""}{t.name}</div>
+                  <div style={{ fontSize:11, color:"var(--text3)", marginTop:2 }}>Период: {fmtDate(from)} — {fmtDate(to)}</div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
+                  {[{l:"Поръчки",v:t.total,c:"#3b82f6"},{l:"Издадени",v:t.issued,c:"#10b981"},{l:"Оборот",v:fmtMoney(t.revenue),c:"#f59e0b"}].map(({l,v,c})=>(
+                    <div key={l} style={{ background:"#0f172a", borderRadius:8, padding:"10px 14px", textAlign:"center" }}>
+                      <div style={{ fontSize:18, fontWeight:800, color:c }}>{v}</div>
+                      <div style={{ fontSize:10, color:"var(--text3)" }}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="table-wrap">
+                <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                  <thead style={{ background:"#0a1628" }}>
+                    <tr>{["№","Клиент","Устройство","Проблем","Статус","Цена","Дата"].map(h=><th key={h} style={{ padding:"8px 12px", textAlign:"left", fontSize:10, color:"var(--text3)", fontWeight:700, textTransform:"uppercase" }}>{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {filtered.filter(o=>o.technician===t.name).map(o=>(
+                      <tr key={o.id} style={{ borderTop:"1px solid #0f172a" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#243044"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <td style={{ padding:"7px 12px", fontSize:11, color:"#38bdf8", fontFamily:"monospace" }}>{o.id}</td>
+                        <td style={{ padding:"7px 12px", fontSize:12, fontWeight:600 }}>{o.client_name}</td>
+                        <td style={{ padding:"7px 12px", fontSize:11, color:"var(--text2)" }}>{o.device_type} {o.brand}</td>
+                        <td style={{ padding:"7px 12px", fontSize:11, color:"var(--text3)", maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.problem}</td>
+                        <td style={{ padding:"7px 12px" }}><Badge status={o.status} /></td>
+                        <td style={{ padding:"7px 12px", fontWeight:700, color:"#10b981" }}>{fmtMoney(o.price)}</td>
+                        <td style={{ padding:"7px 12px", fontSize:11, color:"var(--text3)" }}>{fmtDate(o.date_in)}</td>
+                      </tr>
+                    ))}
+                    {filtered.filter(o=>o.technician===t.name).length===0&&(
+                      <tr><td colSpan={7} style={{ padding:16, textAlign:"center", color:"var(--text3)", fontSize:12 }}>Няма поръчки</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+          {techStatsPeriod.length===0&&<Card style={{ textAlign:"center", padding:40 }}><div style={{ fontSize:32, marginBottom:8 }}>📭</div><div style={{ color:"var(--text3)" }}>Няма данни за избрания период</div></Card>}
+        </div>
+      )}
+
+      {viewMode === "monthly" && (
+        <div>
+          <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+            {["Всички",...allTechNames].map(name=>(
+              <button key={name} onClick={()=>setSelTech(name)} style={{
+                padding:"6px 14px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", border:"none",
+                background: selTech===name?"linear-gradient(135deg,#38bdf8,#0ea5e9)":"#1e293b",
+                color: selTech===name?"#fff":"#64748b",
+              }}>{name}</button>
+            ))}
+          </div>
+          <Card style={{ padding:0, overflow:"hidden", marginBottom:14 }}>
+            <div style={{ padding:"12px 16px", background:"#0a1628", fontSize:12, fontWeight:700, color:"var(--text3)" }}>
+              Оборот по месеци{selTech!=="Всички"?` — ${selTech}`:" — всички техници"}
+            </div>
+            <div className="table-wrap">
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead style={{ background:"#0f172a" }}>
+                  <tr>
+                    <th style={{ padding:"10px 16px", textAlign:"left", fontSize:11, color:"#64748b", fontWeight:700 }}>Месец</th>
+                    {techsToShow.map(name=>{ const tc=technicians.find(t=>t.name===name); return <th key={name} style={{ padding:"10px 16px", textAlign:"right", fontSize:11, color:tc?.color||"#38bdf8", fontWeight:700 }}>{name}</th>; })}
+                    {selTech==="Всички"&&<th style={{ padding:"10px 16px", textAlign:"right", fontSize:11, color:"#10b981", fontWeight:700 }}>ОБЩО</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyTechData.map((row,i)=>{
+                    const rowTotal=techsToShow.reduce((s,n)=>s+(row[n]||0),0);
+                    return (
+                      <tr key={row.label} style={{ borderTop:"1px solid #0f172a", background:i%2===0?"transparent":"rgba(255,255,255,.02)" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#243044"}
+                        onMouseLeave={e=>e.currentTarget.style.background=i%2===0?"transparent":"rgba(255,255,255,.02)"}>
+                        <td style={{ padding:"10px 16px", fontSize:13, fontWeight:600, color:"#f1f5f9" }}>{row.label}</td>
+                        {techsToShow.map(name=>(
+                          <td key={name} style={{ padding:"10px 16px", textAlign:"right", fontSize:13, fontWeight:row[name]>0?700:400, color:row[name]>0?"#10b981":"#334155" }}>
+                            {row[name]>0?fmtMoney(row[name]):"—"}
+                          </td>
+                        ))}
+                        {selTech==="Всички"&&<td style={{ padding:"10px 16px", textAlign:"right", fontSize:14, fontWeight:800, color:"#f59e0b" }}>{rowTotal>0?fmtMoney(rowTotal):"—"}</td>}
+                      </tr>
+                    );
+                  })}
+                  {monthlyTechData.length>1&&(()=>{
+                    const grandTotal=techsToShow.reduce((s,n)=>s+monthlyTechData.reduce((ms,row)=>ms+(row[n]||0),0),0);
+                    return (
+                      <tr style={{ borderTop:"2px solid #334155", background:"#0f172a" }}>
+                        <td style={{ padding:"12px 16px", fontSize:13, fontWeight:800, color:"#f59e0b" }}>ОБЩО</td>
+                        {techsToShow.map(name=>{ const sum=monthlyTechData.reduce((s,row)=>s+(row[name]||0),0); return <td key={name} style={{ padding:"12px 16px", textAlign:"right", fontSize:13, fontWeight:800, color:"#f59e0b" }}>{fmtMoney(sum)}</td>; })}
+                        {selTech==="Всички"&&<td style={{ padding:"12px 16px", textAlign:"right", fontSize:15, fontWeight:900, color:"#10b981" }}>{fmtMoney(grandTotal)}</td>}
+                      </tr>
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <Card>
+            <div style={{ fontSize:12, color:"var(--text3)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:14 }}>Визуализация</div>
+            {monthlyTechData.map(row=>{
+              const rowTotal=techsToShow.reduce((s,n)=>s+(row[n]||0),0);
+              const maxVal=Math.max(...monthlyTechData.map(r=>techsToShow.reduce((s,n)=>s+(r[n]||0),0)),1);
+              return (
+                <div key={row.label} style={{ marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                    <span style={{ color:"#f1f5f9", fontWeight:600 }}>{row.label}</span>
+                    <span style={{ color:"#10b981", fontWeight:700 }}>{rowTotal>0?fmtMoney(rowTotal):"—"}</span>
+                  </div>
+                  <div style={{ height:8, background:"#334155", borderRadius:4, overflow:"hidden", display:"flex" }}>
+                    {techsToShow.map(name=>{ const tc=technicians.find(t=>t.name===name); const w=rowTotal>0?(row[name]||0)/maxVal*100:0; return w>0?<div key={name} style={{ height:"100%", width:`${w}%`, background:tc?.color||"#38bdf8", transition:"width .4s" }} title={`${name}: ${fmtMoney(row[name]||0)}`}/>:null; })}
+                  </div>
+                </div>
+              );
+            })}
+            {selTech==="Всички"&&(
+              <div style={{ display:"flex", gap:12, marginTop:10, flexWrap:"wrap" }}>
+                {allTechNames.map(name=>{ const tc=technicians.find(t=>t.name===name); return <div key={name} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:10, height:10, borderRadius:"50%", background:tc?.color||"#38bdf8" }}/><span style={{ fontSize:11, color:"var(--text3)" }}>{name}</span></div>; })}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {viewMode==="period" && filtered.length>0 && (
+        <Card style={{ padding:0, overflow:"hidden", marginTop:14 }}>
+          <div style={{ padding:"12px 16px", borderBottom:"1px solid #0f172a", fontSize:12, fontWeight:600, color:"var(--text3)" }}>Поръчки ({filtered.length})</div>
           <div className="table-wrap">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Техник", "Общо", "Издадени", "Активни", "Оборот"].map(h => <th key={h} style={{ textAlign: "left", fontSize: 10, color: "var(--text3)", padding: "6px 4px", borderBottom: "1px solid #334155" }}>{h}</th>)}</tr></thead>
-              <tbody>{techStats.map(({ name, color, total, issued, active, revenue }, i) => (
-                <tr key={name}>
-                  <td style={{ padding: "8px 4px", fontSize: 13, fontWeight: 600 }}><span style={{ color, marginRight: 6 }}>●</span>{i === 0 ? "🏆 " : ""}{name}</td>
-                  <td style={{ padding: "8px 4px", fontSize: 12, color: "var(--text2)" }}>{total}</td>
-                  <td style={{ padding: "8px 4px", fontSize: 12, color: "#10b981" }}>{issued}</td>
-                  <td style={{ padding: "8px 4px", fontSize: 12, color: "#f59e0b" }}>{active}</td>
-                  <td style={{ padding: "8px 4px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmtMoney(revenue)}</td>
+            <table>
+              <thead style={{ background:"#0a1628" }}><tr>{["№","Клиент","Устройство","Техник","Статус","Цена","Дата"].map(h=><th key={h} style={{ padding:"9px 13px", textAlign:"left", fontSize:10, color:"var(--text3)", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>{h}</th>)}</tr></thead>
+              <tbody>{filtered.slice(0,100).map(o=>(
+                <tr key={o.id} style={{ borderTop:"1px solid #0f172a" }}>
+                  <td style={{ padding:"8px 13px", fontSize:11, color:"#38bdf8", fontFamily:"monospace" }}>{o.id}</td>
+                  <td style={{ padding:"8px 13px", fontSize:12, fontWeight:600 }}>{o.client_name}</td>
+                  <td style={{ padding:"8px 13px", fontSize:11, color:"var(--text2)" }}>{o.device_type} {o.brand}</td>
+                  <td style={{ padding:"8px 13px", fontSize:12 }}>{o.technician||"—"}</td>
+                  <td style={{ padding:"8px 13px" }}><Badge status={o.status}/></td>
+                  <td style={{ padding:"8px 13px", fontSize:13, fontWeight:700, color:"#10b981" }}>{fmtMoney(o.price)}</td>
+                  <td style={{ padding:"8px 13px", fontSize:11, color:"var(--text3)" }}>{fmtDate(o.date_in)}</td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
         </Card>
-        <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>По вид устройство (период)</div>
-          {byDevice.map(({ t, c }) => (
-            <div key={t} style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}><span>{t}</span><span style={{ color: "var(--text3)" }}>{c}</span></div>
-              <div style={{ height: 6, background: "#334155", borderRadius: 3 }}><div style={{ height: "100%", width: `${(c / maxD) * 100}%`, background: "linear-gradient(90deg,#38bdf8,#0ea5e9)", borderRadius: 3 }} /></div>
-            </div>
-          ))}
-          {byDevice.length === 0 && <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни за периода</p>}
-        </Card>
-      </div>
-      {filtered.length > 0 && <Card style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid #0f172a", fontSize: 12, fontWeight: 600, color: "var(--text3)" }}>Поръчки в периода ({filtered.length})</div>
-        <div className="table-wrap">
-          <table>
-            <thead style={{ background: "#0a1628" }}><tr>{["№", "Клиент", "Устройство", "Техник", "Статус", "Цена", "Дата"].map(h => <th key={h} style={{ padding: "9px 13px", textAlign: "left", fontSize: 10, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>)}</tr></thead>
-            <tbody>{filtered.slice(0, 100).map(o => (
-              <tr key={o.id} style={{ borderTop: "1px solid #0f172a" }}>
-                <td style={{ padding: "8px 13px", fontSize: 11, color: "#38bdf8", fontFamily: "monospace" }}>{o.id}</td>
-                <td style={{ padding: "8px 13px", fontSize: 12, fontWeight: 600 }}>{o.client_name}</td>
-                <td style={{ padding: "8px 13px", fontSize: 11, color: "var(--text2)" }}>{o.device_type} {o.brand}</td>
-                <td style={{ padding: "8px 13px", fontSize: 12 }}>{o.technician || "—"}</td>
-                <td style={{ padding: "8px 13px" }}><Badge status={o.status} /></td>
-                <td style={{ padding: "8px 13px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmtMoney(o.price)}</td>
-                <td style={{ padding: "8px 13px", fontSize: 11, color: "var(--text3)" }}>{fmtDate(o.date_in)}</td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      </Card>}
+      )}
     </div>
   );
 }
+
 
 // ═══════════════════════════════ TECHNICIANS TAB ══════════════════════════════
 function TechniciansTab({ technicians, orders, onSave, onDelete, onExport }) {
