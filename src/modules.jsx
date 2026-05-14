@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import { CATEGORIES, today } from "./lib/constants.js";
 
-const today = () => new Date().toISOString().split("T")[0];
+//const today = () => new Date().toISOString().split("T")[0];
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("bg-BG") : "—";
 const fmtM = (n) => "€ " + Number(n || 0).toFixed(2);
 
