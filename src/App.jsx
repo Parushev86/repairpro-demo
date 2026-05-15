@@ -473,7 +473,7 @@ export default function App() {
           {tab === "dashboard" && !isAdmin && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", flexDirection: "column", gap: 16 }}><div style={{ fontSize: 48 }}>🔒</div><div style={{ fontSize: 18, color: "#64748b" }}>Нямаш достъп до тази страница</div></div>}
           {tab === "orders" && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={() => setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={() => exportOrders(orders)} onImport={() => setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder} />}
           {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={() => exportInventory(inventory)} onImport={() => setImportModal("inventory")} />}
-          {tab === "reports" && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }} />}
+          {tab === "reports" && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} accSales={accSales} onExport=
           {tab === "technicians" && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={() => exportTechReport(technicians, orders)} />}
           {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} />}
           {tab === "calculator" && <Calculator />}
@@ -1621,7 +1621,7 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
 // КРАЙ НА ЧАСТ 2
 // ЧАСТ 3
 // ═══════════════════════════════ REPORTS TAB ══════════════════════════════════
-function ReportsTab({ orders, inventory, technicians, onExport }) {
+function ReportsTab({ orders, inventory, technicians, accSales = [], onExport }) {
   const [from, setFrom] = useState(today().slice(0, 7) + "-01");
   const [to, setTo] = useState(today());
   const [viewMode, setViewMode] = useState("period");
@@ -1632,13 +1632,17 @@ function ReportsTab({ orders, inventory, technicians, onExport }) {
   const byDevice = DEVICE_TYPES.map(t => ({ t, c: filtered.filter(o => o.device_type === t).length })).filter(d => d.c > 0);
   const maxD = Math.max(...byDevice.map(d => d.c), 1);
 
+  const filteredAcc = accSales.filter(s => (s.date || "") >= from && (s.date || "") <= to);
+
   const techStatsPeriod = technicians.map(t => ({
     name: t.name, color: t.color || "#38bdf8",
     total: filtered.filter(o => o.technician === t.name).length,
     issued: filtered.filter(o => o.technician === t.name && o.status === "Издаден").length,
     active: filtered.filter(o => o.technician === t.name && !["Издаден","Отказан"].includes(o.status)).length,
     revenue: filtered.filter(o => o.technician === t.name && o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0),
-  })).filter(t => t.total > 0).sort((a, b) => b.revenue - a.revenue);
+    accCount: filteredAcc.filter(s => s.technician === t.name).length,
+    accRevenue: filteredAcc.filter(s => s.technician === t.name).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0),
+  })).filter(t => t.total > 0 || t.accCount > 0).sort((a, b) => (b.revenue + b.accRevenue) - (a.revenue + a.accRevenue));
 
   const allTechNames = [...new Set(orders.map(o => o.technician).filter(Boolean))];
 
@@ -1720,13 +1724,15 @@ function ReportsTab({ orders, inventory, technicians, onExport }) {
             <div style={{ fontSize:12, color:"var(--text3)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:14 }}>По техник (период)</div>
             <div className="table-wrap">
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
-                <thead><tr>{["Техник","Поръчки","Издадени","Оборот"].map(h=><th key={h} style={{ textAlign:"left", fontSize:10, color:"var(--text3)", padding:"6px 4px", borderBottom:"1px solid #334155" }}>{h}</th>)}</tr></thead>
+                <thead><tr>{["Техник","Поръчки","Издадени","Оборот","Акс.","Акс. приход"].map(h=><th key={h} style={{ textAlign:"left", fontSize:10, color:"var(--text3)", padding:"6px 4px", borderBottom:"1px solid #334155" }}>{h}</th>)}</tr></thead>
                 <tbody>{techStatsPeriod.length>0 ? techStatsPeriod.map(({name,color,total,issued,revenue},i)=>(
                   <tr key={name} style={{ borderBottom:"1px solid #1e293b" }}>
                     <td style={{ padding:"8px 4px", fontSize:13, fontWeight:600 }}><span style={{ color, marginRight:6 }}>●</span>{i===0?"🏆 ":""}{name}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, color:"var(--text2)" }}>{total}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, color:"#10b981" }}>{issued}</td>
                     <td style={{ padding:"8px 4px", fontSize:13, fontWeight:700, color:"#10b981" }}>{fmtMoney(revenue)}</td>
+                    <td style={{ padding:"8px 4px", fontSize:12, color:"#38bdf8" }}>{accCount}</td>
+                    <td style={{ padding:"8px 4px", fontSize:12, fontWeight:700, color:"#38bdf8" }}>{fmtMoney(accRevenue)}</td>
                   </tr>
                 )) : <tr><td colSpan={4} style={{ padding:20, textAlign:"center", color:"var(--text3)", fontSize:12 }}>Няма данни</td></tr>}
                 </tbody>
