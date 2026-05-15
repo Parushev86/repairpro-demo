@@ -173,7 +173,7 @@ function ExpenseModal({ expense, onSave, onClose }) {
 }
 
 // ══ ACCESSORY SALES ════════════════════════════════════════════════════════════
-export function AccessorySalesTab({ sales, inventory, onSave, onDelete, notify }) {
+export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, onDelete, notify }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const filtered = sales.filter(s => (s.date || "").slice(0, 10) === date);
@@ -194,7 +194,7 @@ export function AccessorySalesTab({ sales, inventory, onSave, onDelete, notify }
       <MCard style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-wrap">
           <table>
-            <thead style={{ background: "#0a1628" }}><tr>{["Дата", "Артикул", "Бр.", "Продажна", "Общо", "Плащане", "Купувач", ""].map(h => <th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>)}</tr></thead>
+            <thead style={{ background: "#0a1628" }}><tr>{["Дата", "Артикул", "Бр.", "Продажна", "Общо", "Плащане", "Техник", "Купувач", ""].map(h => <th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>)}</tr></thead>
             <tbody>
               {filtered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: 32, color: "#475569" }}>Няма продажби за {fmtDate(date)}</td></tr>}
               {filtered.map(r => (
@@ -205,6 +205,7 @@ export function AccessorySalesTab({ sales, inventory, onSave, onDelete, notify }
                   <td style={{ padding: "9px 14px", fontWeight: 700, color: "#10b981" }}>{fmtM(r.sale_price)}</td>
                   <td style={{ padding: "9px 14px", fontWeight: 800, color: "#10b981" }}>{fmtM(Number(r.sale_price) * Number(r.quantity || 1))}</td>
                   <td style={{ padding: "9px 14px" }}><SBadge text={r.payment_method} /></td>
+                  <td style={{ padding: "9px 14px", fontSize: 12, color: "#94a3b8" }}>{r.technician || "—"}</td>
                   <td style={{ padding: "9px 14px", fontSize: 12, color: "#94a3b8" }}>{r.buyer_name || "—"}</td>
                   <td style={{ padding: "9px 14px" }}><div style={{ display: "flex", gap: 4 }}><MBtn color="#3b82f6" onClick={() => setModal(r)}>✏️</MBtn>
                     <MBtn color="#fbbf24" title="Гаранционна карта" onClick={() => onWarranty && onWarranty({ id: r.id, client_name: r.buyer_name, phone: r.buyer_phone, device_type: r.brand, brand: r.brand, model: r.model, serial_number: r.serial_number || r.imei, problem: "Продажба на телефон", technician: "", warranty_days: r.warranty_days || 30, warranty_amount: r.warranty_amount || 1, warranty_unit: r.warranty_unit || "месеца", date_out: r.date })}>🛡️</MBtn>
@@ -215,13 +216,13 @@ export function AccessorySalesTab({ sales, inventory, onSave, onDelete, notify }
           </table>
         </div>
       </MCard>
-      {modal !== null && <AccSaleModal sale={modal} inventory={inventory} onSave={r => { onSave(r, modal); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal !== null && <AccSaleModal sale={modal} inventory={inventory} technicians={technicians} onSave={r => { onSave(r, modal); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
 }
 
-function AccSaleModal({ sale, inventory, onSave, onClose }) {
-  const [f, sf] = useState({ date: today(), item_name: "", inventory_id: null, quantity: 1, cost_price: "", sale_price: "", payment_method: "В брой", buyer_name: "", notes: "", ...sale });
+function AccSaleModal({ sale, inventory, technicians = [], onSave, onClose }) {
+  const [f, sf] = useState({ date: today(), item_name: "", inventory_id: null, quantity: 1, cost_price: "", sale_price: "", payment_method: "В брой", buyer_name: "", technician: "", notes: "", ...sale });
   const [invSearch, setInvSearch] = useState("");
   const [invCat, setInvCat] = useState("Всички");
   const s = (k, v) => sf(x => ({ ...x, [k]: v }));
@@ -281,6 +282,14 @@ function AccSaleModal({ sale, inventory, onSave, onClose }) {
           <MField label="Доставна (€)"><input type="number" min="0" step="0.01" value={f.cost_price || ""} onChange={e => s("cost_price", e.target.value)} placeholder="0.00" /></MField>
           <MField label="Продажна (€)"><input type="number" min="0" step="0.01" value={f.sale_price || ""} onChange={e => s("sale_price", e.target.value)} placeholder="0.00" /></MField>
           <MField label="Купувач" style={{ gridColumn: "1/-1" }}><input value={f.buyer_name || ""} onChange={e => s("buyer_name", e.target.value)} placeholder="Имена..." /></MField>
+          <MField label="Техник" style={{ gridColumn: "1/-1" }}>
+            <select value={f.technician || ""} onChange={e => s("technician", e.target.value)}>
+              <option value="">— Без техник —</option>
+              {technicians.filter(t => t.active !== false).map(t => (
+                <option key={t.id} value={t.name}>{t.name}</option>
+              ))}
+            </select>
+          </MField>
         </div>
       </div>
     </MModal>
