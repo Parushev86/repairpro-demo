@@ -1725,7 +1725,7 @@ function ReportsTab({ orders, inventory, technicians, accSales = [], onExport })
             <div className="table-wrap">
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead><tr>{["Техник","Поръчки","Издадени","Оборот","Акс.","Акс. приход"].map(h=><th key={h} style={{ textAlign:"left", fontSize:10, color:"var(--text3)", padding:"6px 4px", borderBottom:"1px solid #334155" }}>{h}</th>)}</tr></thead>
-                <tbody>{techStatsPeriod.length>0 ? techStatsPeriod.map(({name,color,total,issued,revenue},i)=>(
+                <tbody>{techStatsPeriod.length > 0 ? techStatsPeriod.map(({ name, color, total, issued, revenue, accCount, accRevenue }, i) => (
                   <tr key={name} style={{ borderBottom:"1px solid #1e293b" }}>
                     <td style={{ padding:"8px 4px", fontSize:13, fontWeight:600 }}><span style={{ color, marginRight:6 }}>●</span>{i===0?"🏆 ":""}{name}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, color:"var(--text2)" }}>{total}</td>
