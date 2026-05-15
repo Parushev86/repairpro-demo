@@ -503,7 +503,7 @@ export default function App() {
   notify={notify}
 />}
           {tab === "accsales" && <AccessorySalesTab
-            sales={accSales} inventory={inventory}
+            sales={accSales} inventory={inventory} technicians={technicians}
             onSave={async (r, orig) => { const s = await upsertAccessorySale(r); if (!orig?.id) setAccSales(p => [s, ...p]); else setAccSales(p => p.map(x => x.id === s.id ? s : x)); if (!orig?.id && r.inventory_id) { const inv = inventory.find(i => i.id === r.inventory_id); if (inv) { const nq = Number(inv.quantity) - Number(r.quantity || 1); if (nq <= 0) { await dbDeleteInv(inv.id); setInventory(p => p.filter(i => i.id !== inv.id)); } else { const upd = await upsertInventory({ ...inv, quantity: nq }); setInventory(p => p.map(i => i.id === upd.id ? upd : i)); } } } notify("✅ Продажбата е записана"); }}
             onDelete={async id => { const r = accSales.find(x => x.id === id); if (r) await moveToTrash("accessory_sales", r); await deleteAccessorySale(id); setAccSales(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "accessory_sales", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             onUpdateInventory={setInventory}
