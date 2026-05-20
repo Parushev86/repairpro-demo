@@ -6,34 +6,34 @@ export async function generateQR(text) {
 }
 
 export function downloadProtocolTXT(order) {
-  const parts = (order.parts||[]).map(p=>p.name+'('+p.price+' €)').join(', ') || '—';
+  const parts = (order.parts || []).map(p => p.name + '(' + p.price + ' €)').join(', ') || '—';
   const lines = [
     'ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ',
     '='.repeat(44),
     '',
     'Номер: ' + order.id,
-    'Дата приемане: ' + (order.date_in||'—'),
-    'Дата издаване: ' + (order.date_out||'—'),
-    'Клиент: ' + (order.client_name||'—'),
-    'Телефон: ' + (order.phone||'—'),
-    'Имейл: ' + (order.email||'—'),
-    'Техник: ' + (order.technician||'—'),
-    'Устройство: ' + [order.device_type,order.brand,order.model].filter(Boolean).join(' '),
-    'Сериен №: ' + (order.serial_number||'—'),
-    'Парола/PIN: ' + (order.device_password||'—'),
-    'Проблем: ' + (order.problem||'—'),
-    'Статус: ' + (order.status||'—'),
+    'Дата приемане: ' + (order.date_in || '—'),
+    'Дата издаване: ' + (order.date_out || '—'),
+    'Клиент: ' + (order.client_name || '—'),
+    'Телефон: ' + (order.phone || '—'),
+    'Имейл: ' + (order.email || '—'),
+    'Техник: ' + (order.technician || '—'),
+    'Устройство: ' + [order.device_type, order.brand, order.model].filter(Boolean).join(' '),
+    'Сериен №: ' + (order.serial_number || '—'),
+    'Парола/PIN: ' + (order.device_password || '—'),
+    'Проблем: ' + (order.problem || '—'),
+    'Статус: ' + (order.status || '—'),
     'Вложени части: ' + parts,
-    'Цена труд: € ' + (order.labor_price||'0.00'),
-    'Крайна цена: € ' + (order.total_price||order.price||'0.00'),
-    'Аванс: € ' + (order.deposit||'0.00'),
-    'Плащане: ' + (order.payment_method||'—'),
+    'Цена труд: € ' + (order.labor_price || '0.00'),
+    'Крайна цена: € ' + (order.total_price || order.price || '0.00'),
+    'Аванс: € ' + (order.deposit || '0.00'),
+    'Плащане: ' + (order.payment_method || '—'),
     '',
     '='.repeat(44),
     'Генериран: ' + new Date().toLocaleString('bg-BG'),
   ];
   const text = lines.join('\n');
-  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -41,14 +41,172 @@ export function downloadProtocolTXT(order) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── ПРЕВОДИ ────────────────────────────────────────────────────────────────────
+const LANG = {
+  bg: {
+    title: "🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ",
+    subtitle: "Документ за приемане на устройство за ремонт",
+    qrHint: "Сканирай за бърз достъп",
+    dateIn: "Дата приемане",
+    dateOut: "Дата издаване",
+    client: "Клиент",
+    phone: "Телефон",
+    email: "Имейл",
+    technician: "Техник",
+    device: "Устройство",
+    serial: "Сериен №",
+    password: "Парола/PIN",
+    problem: "Проблем",
+    description: "Описание",
+    partsUsed: "Вложени части",
+    status: "Статус",
+    warranty: "Гаранция",
+    warrantyDays: "дни след ремонт",
+    deposit: "Аванс",
+    totalDue: "Сума за плащане",
+    notes: "Забележки",
+    notesTitle: "Забележки:",
+    warning: "⚠️ Сервизът не носи отговорност за данни на устройството. Препоръчва се предварително архивиране.",
+    warrantyText: (d) => `Гаранцията е ${d} дни и важи само за извършения ремонт.`,
+    handedBy: "Предал",
+    receivedBy: "Приел",
+    footer: (time) => `RepairPro — Сервизна система | Протокол генериран на ${time}`,
+    printBtn: "🖨️ Принтирай",
+    jpegBtn: "⬇️ JPEG",
+    txtBtn: "📄 TXT",
+  },
+  ru: {
+    title: "🔧 ПРИЁМО-СДАТОЧНЫЙ ПРОТОКОЛ",
+    subtitle: "Документ о приёме устройства в ремонт",
+    qrHint: "Сканируйте для быстрого доступа",
+    dateIn: "Дата приёма",
+    dateOut: "Дата выдачи",
+    client: "Клиент",
+    phone: "Телефон",
+    email: "Эл. почта",
+    technician: "Техник",
+    device: "Устройство",
+    serial: "Серийный №",
+    password: "Пароль/PIN",
+    problem: "Неисправность",
+    description: "Описание",
+    partsUsed: "Использованные запчасти",
+    status: "Статус",
+    warranty: "Гарантия",
+    warrantyDays: "дней после ремонта",
+    deposit: "Аванс",
+    totalDue: "Сумма к оплате",
+    notes: "Заметки",
+    notesTitle: "Заметки:",
+    warning: "⚠️ Сервис не несёт ответственности за данные на устройстве. Рекомендуется предварительное резервное копирование.",
+    warrantyText: (d) => `Гарантия составляет ${d} дней и распространяется только на выполненный ремонт.`,
+    handedBy: "Сдал",
+    receivedBy: "Принял",
+    footer: (time) => `RepairPro — Сервисная система | Протокол создан ${time}`,
+    printBtn: "🖨️ Печать",
+    jpegBtn: "⬇️ JPEG",
+    txtBtn: "📄 TXT",
+  },
+  en: {
+    title: "🔧 REPAIR SERVICE PROTOCOL",
+    subtitle: "Device acceptance document for repair",
+    qrHint: "Scan for quick access",
+    dateIn: "Date received",
+    dateOut: "Date returned",
+    client: "Client",
+    phone: "Phone",
+    email: "Email",
+    technician: "Technician",
+    device: "Device",
+    serial: "Serial №",
+    password: "Password/PIN",
+    problem: "Problem",
+    description: "Description",
+    partsUsed: "Parts used",
+    status: "Status",
+    warranty: "Warranty",
+    warrantyDays: "days after repair",
+    deposit: "Deposit",
+    totalDue: "Amount due",
+    notes: "Notes",
+    notesTitle: "Notes:",
+    warning: "⚠️ The service is not responsible for data on the device. Backup is recommended beforehand.",
+    warrantyText: (d) => `Warranty is ${d} days and covers only the performed repair.`,
+    handedBy: "Handed over by",
+    receivedBy: "Received by",
+    footer: (time) => `RepairPro — Service System | Protocol generated on ${time}`,
+    printBtn: "🖨️ Print",
+    jpegBtn: "⬇️ JPEG",
+    txtBtn: "📄 TXT",
+  },
+  de: {
+    title: "🔧 REPARATUR-ÜBERGABEPROTOKOLL",
+    subtitle: "Dokument zur Geräteannahme für Reparatur",
+    qrHint: "Scannen für schnellen Zugriff",
+    dateIn: "Eingangsdatum",
+    dateOut: "Ausgabedatum",
+    client: "Kunde",
+    phone: "Telefon",
+    email: "E-Mail",
+    technician: "Techniker",
+    device: "Gerät",
+    serial: "Seriennummer",
+    password: "Passwort/PIN",
+    problem: "Problem",
+    description: "Beschreibung",
+    partsUsed: "Verbaute Teile",
+    status: "Status",
+    warranty: "Garantie",
+    warrantyDays: "Tage nach Reparatur",
+    deposit: "Anzahlung",
+    totalDue: "Zahlbetrag",
+    notes: "Bemerkungen",
+    notesTitle: "Bemerkungen:",
+    warning: "⚠️ Der Service übernimmt keine Haftung für Daten auf dem Gerät. Vorherige Sicherung wird empfohlen.",
+    warrantyText: (d) => `Die Garantie beträgt ${d} Tage und gilt nur für die durchgeführte Reparatur.`,
+    handedBy: "Übergeben von",
+    receivedBy: "Angenommen von",
+    footer: (time) => `RepairPro — Servicesystem | Protokoll erstellt am ${time}`,
+    printBtn: "🖨️ Drucken",
+    jpegBtn: "⬇️ JPEG",
+    txtBtn: "📄 TXT",
+  },
+};
+
+// ── TXT за различни езици ─────────────────────────────────────────────────────
+function txtLang(order, l) {
+  const parts = (order.parts || []).map(p => p.name + '(' + p.price + ' €)').join(', ') || '—';
+  const T = LANG[l] || LANG.bg;
+  const lines = [
+    T.title.replace(/[🔧 ]/g, '').trim().toUpperCase(),
+    '='.repeat(44),
+    '',
+    T.dateIn + ': ' + (order.date_in || '—'),
+    T.dateOut + ': ' + (order.date_out || '—'),
+    T.client + ': ' + (order.client_name || '—'),
+    T.phone + ': ' + (order.phone || '—'),
+    T.email + ': ' + (order.email || '—'),
+    T.technician + ': ' + (order.technician || '—'),
+    T.device + ': ' + [order.device_type, order.brand, order.model].filter(Boolean).join(' '),
+    T.serial + ': ' + (order.serial_number || '—'),
+    T.password + ': ' + (order.device_password || '—'),
+    T.problem + ': ' + (order.problem || '—'),
+    T.status + ': ' + (order.status || '—'),
+    T.partsUsed + ': ' + parts,
+    T.deposit + ': € ' + (order.deposit || '0.00'),
+    T.totalDue + ': € ' + (order.total_price || order.price || '0.00'),
+    '',
+    '='.repeat(44),
+    T.footer(new Date().toLocaleString(l === 'bg' ? 'bg-BG' : l === 'ru' ? 'ru-RU' : l === 'de' ? 'de-DE' : 'en-US')),
+  ];
+  return lines.join('\n');
 }
 
 export async function printProtocol(order) {
   const qr = await generateQR(order.id);
-  const partsHtml = (order.parts || []).length
-    ? `<tr><th>Вложени части</th><td colspan="3">${order.parts.map(p => `${p.name} — ${fmtMoney(p.price)}`).join(", ")}</td></tr>`
-    : "";
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Протокол ${order.id}</title>
@@ -69,51 +227,85 @@ export async function printProtocol(order) {
   .sig-box p { font-size: 12px; color: #555; margin: 0; }
   .warranty { margin-top: 16px; padding: 10px 14px; background: #fefce8; border: 1px solid #fde047; border-radius: 6px; font-size: 12px; color: #713f12; }
   .footer { margin-top: 20px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
-  @media print { body { padding: 16px; } .no-print { display: none !important; } }
+  .lang-bar { text-align: center; margin-bottom: 16px; display: flex; gap: 8px; justify-content: center; }
+  .lang-btn { background: #e2e8f0; border: 2px solid #cbd5e1; border-radius: 8px; padding: 6px 14px; font-size: 14px; cursor: pointer; font-weight: 600; transition: all .15s; }
+  .lang-btn:hover { background: #cbd5e1; }
+  .lang-btn.active { background: #1a56db; color: #fff; border-color: #1a56db; }
+  .lang-section { display: none; }
+  .lang-section.active { display: block; }
+  @media print {
+    body { padding: 16px; }
+    .no-print { display: none !important; }
+  }
 </style></head><body>
+
+<div class="lang-bar no-print">
+  <button class="lang-btn active" onclick="setLang('bg')">🇧🇬 Български</button>
+  <button class="lang-btn" onclick="setLang('ru')">🇷🇺 Русский</button>
+  <button class="lang-btn" onclick="setLang('en')">🇬🇧 English</button>
+  <button class="lang-btn" onclick="setLang('de')">🇩🇪 Deutsch</button>
+</div>
+
+${['bg', 'ru', 'en', 'de'].map(lang => {
+  const T = LANG[lang];
+  const timeStr = new Date().toLocaleString(lang === 'bg' ? 'bg-BG' : lang === 'ru' ? 'ru-RU' : lang === 'de' ? 'de-DE' : 'en-US');
+  return `
+<div class="lang-section ${lang === 'bg' ? 'active' : ''}" id="lang-${lang}">
 <div class="header">
   <div>
-    <h1>🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ</h1>
-    <p>Документ за приемане на устройство за ремонт</p>
+    <h1>${T.title}</h1>
+    <p>${T.subtitle}</p>
     <div class="order-id">${order.id}</div>
   </div>
   <div style="text-align:right">
     <img src="${qr}" width="110" height="110" alt="QR" style="border:1px solid #ddd;padding:4px;border-radius:4px"/>
-    <p style="font-size:10px;color:#999;margin:4px 0 0">Сканирай за бърз достъп</p>
+    <p style="font-size:10px;color:#999;margin:4px 0 0">${T.qrHint}</p>
   </div>
 </div>
 <table>
-  <tr><th>Дата приемане</th><td>${fmtDate(order.date_in)}</td><th>Дата издаване</th><td>${order.date_out ? fmtDate(order.date_out) : "—"}</td></tr>
-  <tr><th>Клиент</th><td>${order.client_name}</td><th>Телефон</th><td>${order.phone}</td></tr>
-  <tr><th>Имейл</th><td>${order.email || "—"}</td><th>Техник</th><td>${order.technician || "—"}</td></tr>
-  <tr><th>Устройство</th><td>${order.device_type || ""} ${order.brand || ""} ${order.model || ""}</td><th>Сериен №</th><td>${order.serial_number || "—"}</td></tr>
-  <tr><th>Проблем</th><td colspan="3">${order.problem}</td></tr>
-  <tr><th>Описание</th><td colspan="3">${order.description || "—"}</td></tr>
-  ${partsHtml}
-  <tr><th>Статус</th><td><span class="status">${order.status}</span></td><th>Гаранция</th><td>${order.warranty_days || 90} дни след ремонт</td></tr>
-  <tr><th>Аванс</th><td>${fmtMoney(order.deposit)}</td><th style="background:#f0fdf4">Сума за плащане</th><td style="font-size:18px;font-weight:800;color:#065f46">${fmtMoney(order.price)}</td></tr>
+  <tr><th>${T.dateIn}</th><td>${fmtDate(order.date_in)}</td><th>${T.dateOut}</th><td>${order.date_out ? fmtDate(order.date_out) : "—"}</td></tr>
+  <tr><th>${T.client}</th><td>${order.client_name}</td><th>${T.phone}</th><td>${order.phone}</td></tr>
+  <tr><th>${T.email}</th><td>${order.email || "—"}</td><th>${T.technician}</th><td>${order.technician || "—"}</td></tr>
+  <tr><th>${T.device}</th><td>${order.device_type || ""} ${order.brand || ""} ${order.model || ""}</td><th>${T.serial}</th><td>${order.serial_number || "—"}</td></tr>
+  <tr><th>${T.password}</th><td colspan="3">${order.device_password || "—"}</td></tr>
+  <tr><th>${T.problem}</th><td colspan="3">${order.problem}</td></tr>
+  <tr><th>${T.description}</th><td colspan="3">${order.description || "—"}</td></tr>
+  <tr><th>${T.partsUsed}</th><td colspan="3">${(order.parts || []).map(p => `${p.name} — ${fmtMoney(p.price)}`).join(", ") || "—"}</td></tr>
+  <tr><th>${T.status}</th><td><span class="status">${order.status}</span></td><th>${T.warranty}</th><td>${order.warranty_days || 90} ${T.warrantyDays}</td></tr>
+  <tr><th>${T.deposit}</th><td>${fmtMoney(order.deposit)}</td><th style="background:#f0fdf4">${T.totalDue}</th><td style="font-size:18px;font-weight:800;color:#065f46">${fmtMoney(order.price)}</td></tr>
 </table>
-${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:12px;color:#555;margin-bottom:16px"><strong>Забележки:</strong> ${order.notes}</div>` : ""}
+${order.notes ? `<div style="padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:12px;color:#555;margin-bottom:16px"><strong>${T.notesTitle}</strong> ${order.notes}</div>` : ""}
 <div class="warranty">
-  ⚠️ Сервизът не носи отговорност за данни на устройството. Препоръчва се предварително архивиране.
-  Гаранцията е ${order.warranty_days || 90} дни и важи само за извършения ремонт.
+  ${T.warning}<br/>
+  ${T.warrantyText(order.warranty_days || 90)}
 </div>
 <div class="sig-row">
-  <div class="sig-box"><hr><p>Предал: <strong>${order.client_name}</strong></p></div>
-  <div class="sig-box"><hr><p>Приел: <strong>${order.technician || "Техник"}</strong></p></div>
+  <div class="sig-box"><hr><p>${T.handedBy}: <strong>${order.client_name}</strong></p></div>
+  <div class="sig-box"><hr><p>${T.receivedBy}: <strong>${order.technician || "Техник"}</strong></p></div>
 </div>
-<div class="footer">RepairPro — Сервизна система | Протокол генериран на ${new Date().toLocaleString("bg-BG")}</div>
-<div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
-  <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
-  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
+<div class="footer">${T.footer(timeStr)}</div>
+</div>`;
+}).join('')}
 
+<div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
+  <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ <span id="print-lbl">Принтирай</span></button>
+  <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
+  <button onclick="downloadTXT()" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">📄 TXT</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
+function setLang(l) {
+  document.querySelectorAll('.lang-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('lang-' + l).classList.add('active');
+  event.target.classList.add('active');
+  const labels = { bg: "Принтирай", ru: "Печать", en: "Print", de: "Drucken" };
+  document.getElementById('print-lbl').textContent = labels[l] || "Принтирай";
+}
 function downloadJPEG() {
   const btn = document.querySelector('.no-print');
   btn.style.display = 'none';
-  html2canvas(document.body, {
+  html2canvas(document.querySelector('.lang-section.active'), {
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
@@ -125,15 +317,53 @@ function downloadJPEG() {
     link.click();
   });
 }
-// downloadTXT handled via data URL in button
+function downloadTXT() {
+  const activeLang = document.querySelector('.lang-section.active').id.replace('lang-', '');
+  const T = ${JSON.stringify(LANG)}[activeLang] || ${JSON.stringify(LANG)}.bg;
+  const order = ${JSON.stringify(order)};
+  const text = (function() {
+    const parts = (order.parts || []).map(p => p.name + '(' + p.price + ' €)').join(', ') || '—';
+    const lines = [
+      T.title.replace(/[🔧 ]/g, '').trim().toUpperCase(),
+      '='.repeat(44),
+      '',
+      T.dateIn + ': ' + (order.date_in || '—'),
+      T.dateOut + ': ' + (order.date_out || '—'),
+      T.client + ': ' + (order.client_name || '—'),
+      T.phone + ': ' + (order.phone || '—'),
+      T.email + ': ' + (order.email || '—'),
+      T.technician + ': ' + (order.technician || '—'),
+      T.device + ': ' + [order.device_type, order.brand, order.model].filter(Boolean).join(' '),
+      T.serial + ': ' + (order.serial_number || '—'),
+      T.password + ': ' + (order.device_password || '—'),
+      T.problem + ': ' + (order.problem || '—'),
+      T.status + ': ' + (order.status || '—'),
+      T.partsUsed + ': ' + parts,
+      T.deposit + ': € ' + (order.deposit || '0.00'),
+      T.totalDue + ': € ' + (order.total_price || order.price || '0.00'),
+      '',
+      '='.repeat(44),
+      T.footer(new Date().toLocaleString(activeLang === 'bg' ? 'bg-BG' : activeLang === 'ru' ? 'ru-RU' : activeLang === 'de' ? 'de-DE' : 'en-US')),
+    ];
+    return lines.join('\\n');
+  })();
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'protokol_' + Date.now() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 </script>
 </body></html>`;
 
-  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   window.open(url, "_blank", "width=800,height=700");
 }
 
+// printLabel и printWarranty остават същите
 export async function printLabel(order) {
   const qr = await generateQR(order.id);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -167,7 +397,6 @@ export async function printLabel(order) {
 <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center" class="no-print">
   <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Принтирай</button>
   <button onclick="downloadJPEG()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">⬇️ JPEG</button>
-
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -186,7 +415,6 @@ function downloadJPEG() {
     link.click();
   });
 }
-// downloadTXT handled via data URL in button
 </script>
 </body></html>`;
   const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
@@ -195,7 +423,6 @@ function downloadJPEG() {
 }
 
 export function printWarranty(order) {
-  const parts = (order.parts||[]).map(p=>p.name).join(', ') || 'Ремонт';
   const issueDate = order.date_out || new Date().toISOString().split('T')[0];
   const warrantyDays = order.warranty_days || 30;
   const warrantyAmount = order.warranty_amount || 1;
@@ -254,7 +481,6 @@ export function printWarranty(order) {
     </div>
     <div class="conditions">
       <b>Условия на гаранцията:</b><br>
-      
       • Гаранцията покрива фабрични дефекти и хардуерни неизправности.<br>
       <b>Гаранцията не важи при:</b><br>
       • Механични повреди, влага/вода, самостоятелен ремонт.<br>
