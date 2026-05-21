@@ -1053,7 +1053,7 @@ const PSC = { "Работи": "#10b981", "Не работи": "#ef4444", "Не �
 const DISMANTLE_STATUSES = ["Чака разглобяване", "В процес", "Разглобен", "Продаден за части"];
 const DSC = { "Чака разглобяване": "#f59e0b", "В процес": "#3b82f6", "Разглобен": "#10b981", "Продаден за части": "#8b5cf6" };
 
-export function DismantleTab({ records, onSave, onDelete, onAddPartToInventory, notify }) {
+export function DismantleTab({ records, onSave, onDelete, onAddPartToInventory, onExport, onImport, notify }) {
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Всички");
@@ -1081,7 +1081,14 @@ export function DismantleTab({ records, onSave, onDelete, onAddPartToInventory, 
           </p>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>
+          <MBtn color="#10b981" bg="#064e3b" onClick={onExport || exportAll}>📊 Експорт</MBtn>
+          <MBtn color="#f59e0b" bg="#451a03" onClick={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".xlsx,.xls";
+            input.onchange = e => { if (e.target.files[0] && onImport) onImport(e.target.files[0]); };
+            input.click();
+          }}>📥 Импорт</MBtn>
           <MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn>
         </div>
       </div>
