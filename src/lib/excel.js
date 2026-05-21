@@ -290,3 +290,89 @@ export function exportDailyReport(date, receivedToday, issuedToday, revenue, par
   }
   XLSX.writeFile(wb, `Дневен_отчет_${date}.xlsx`);
 }
+// ── ЕКСПОРТ / ИМПОРТ НА РАЗГЛОБЯВАНЕ ─────────────────────────────────────────
+export function exportDismantle(records) {
+  // Подготвяме записите така, че да се запишат в Excel без загуба
+  const flat = (records || []).map(r => ({
+    "Дата":            r.date || "",
+    "Марка":           r.brand || "",
+    "Модел":           r.model || "",
+    "IMEI":            r.imei || "",
+    "Цвят":            r.color || "",
+    "Памет":           r.storage || "",
+    "Цена (€)":       Number(r.purchase_price || 0),
+    "Статус":          r.status || "",
+    "Части (JSON)":    JSON.stringify(r.parts_status || {}),
+    "Доп. части":      (r.custom_parts || []).join("|"),
+    "Бележки":         r.notes || "",
+    "Снимки (base64)": (r.photos || []).map(p => p.data || p).join(";;"),
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(flat);
+  // Малко ширина за по-добър изглед
+  ws["!cols"] = [
+    {wch:12}, {wch:16}, {wch:16}, {wch:18}, {wch:12}, {wch:10},
+    {wch:10}, {wch:18}, {wch:40}, {wch:20}, {wch:20}, {wch:40}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, "Разглобяване");
+  XLSX.writeFile(wb, `Разглобяване_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+export async function parseDismantleExcel(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        if (rows.length < 2) return resolve([]);
+
+        const headers = rows[0].map(h => String(h || "").trim());
+        const records = rows.slice(1).map(row => {
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = row[i] !== undefined ? row[i] : "";
+          });
+
+          // Възстановяване на обекти/масиви
+          let parts_status = {};
+          try {
+            parts_status = JSON.parse(obj["Части (JSON)"] || "{}");
+          } catch (e) {}
+
+          const custom_parts = (obj["Доп. части"] || "")
+            .split("|")
+            .map(s => s.trim())
+            .filter(Boolean);
+
+          const photos = (obj["Снимки (base64)"] || "")
+            .split(";;")
+            .filter(Boolean)
+            .map(data => ({ name: "photo", data }));
+
+          return {
+            date:            obj["Дата"] || new Date().toISOString().split("T")[0],
+            brand:           obj["Марка"] || "",
+            model:           obj["Модел"] || "",
+            imei:            obj["IMEI"] || "",
+            color:           obj["Цвят"] || "",
+            storage:         obj["Памет"] || "",
+            purchase_price:  Number(obj["Цена (€)"] || 0),
+            status:          obj["Статус"] || "Чака разглобяване",
+            parts_status,
+            custom_parts,
+            notes:           obj["Бележки"] || "",
+            photos,
+          };
+        });
+
+        resolve(records);
+      } catch (err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
