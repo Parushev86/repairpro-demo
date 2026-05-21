@@ -49,7 +49,7 @@ const LANG = {
   bg: {
     title: "🔧 ПРИЕМНО-ПРЕДАВАТЕЛЕН ПРОТОКОЛ",
     subtitle: "Документ за приемане на устройство за ремонт",
-    qrHint: "Сканирай за бърз достъп",
+    qrHint: "Сканирай за упътване",
     dateIn: "Дата приемане",
     dateOut: "Дата издаване",
     client: "Клиент",
@@ -81,7 +81,7 @@ const LANG = {
   ru: {
     title: "🔧 ПРИЁМО-СДАТОЧНЫЙ ПРОТОКОЛ",
     subtitle: "Документ о приёме устройства в ремонт",
-    qrHint: "Сканируйте для быстрого доступа",
+    qrHint: "Сканируйте для навигации",
     dateIn: "Дата приёма",
     dateOut: "Дата выдачи",
     client: "Клиент",
@@ -113,7 +113,7 @@ const LANG = {
   en: {
     title: "🔧 REPAIR SERVICE PROTOCOL",
     subtitle: "Device acceptance document for repair",
-    qrHint: "Scan for quick access",
+    qrHint: "Scan for directions",
     dateIn: "Date received",
     dateOut: "Date returned",
     client: "Client",
@@ -145,7 +145,7 @@ const LANG = {
   de: {
     title: "🔧 REPARATUR-ÜBERGABEPROTOKOLL",
     subtitle: "Dokument zur Geräteannahme für Reparatur",
-    qrHint: "Scannen für schnellen Zugriff",
+    qrHint: "Scannen für Navigation",
     dateIn: "Eingangsdatum",
     dateOut: "Ausgabedatum",
     client: "Kunde",
@@ -206,7 +206,7 @@ function txtLang(order, l) {
 }
 
 export async function printProtocol(order) {
-  const qr = await generateQR(order.id);
+  const qr = "https://i.ibb.co/4gCWF1Y5/Screenshot-20260521-112509-Chrome.jpg";
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Протокол ${order.id}</title>
