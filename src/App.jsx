@@ -5,7 +5,7 @@ import { genId, today, STATUSES, STATUS_COLOR, STATUS_BG, DEVICE_TYPES, PROBLEMS
 import { printProtocol, printLabel, downloadProtocolTXT, printWarranty } from "./lib/print.js";
 import MonthlyReport from "./MonthlyReport.jsx";
 import { sendReadyEmail } from "./lib/email.js";
-import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory } from "./lib/excel.js";
+import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory, exportDismantle, parseDismantleExcel } from "./lib/excel.js";
 import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
@@ -560,8 +560,21 @@ export default function App() {
             notify={notify}
           />}
           {tab === "dismantle" && <DismantleTab
-            records={dismantleRecs}
-            onSave={async r => {
+  records={dismantleRecs}
+  onExport={() => exportDismantle(dismantleRecs)}
+  onImport={async (file) => {
+    try {
+      const records = await parseDismantleExcel(file);
+      let ok = 0;
+      for (const r of records) {
+        const saved = await upsertDismantle(r);
+        setDismantleRecs(p => [...p, saved]);
+        ok++;
+      }
+      notify("✅ Импортирани " + ok + " записа");
+    } catch (e) { notify("❌ " + e.message, "error"); }
+  }}
+  onSave={async r => {
               try {
                 const { id, date, brand, model, imei, color, storage, purchase_price, status, parts_status, custom_parts, notes } = r;
                 const toSave = {
