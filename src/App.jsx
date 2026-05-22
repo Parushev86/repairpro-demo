@@ -2508,11 +2508,26 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const cashNow = openingCash + totalCashIn - expensesToday;
   const totalAllCash = cashNow + Number(bankAmount || 0) + Number(externalCash || 0);
 
-  const paymentBreakdown = ["В брой", "С карта", "Банка", "Еконт", "Спиди", "Не е платен"].map(pm => ({
-    method: pm,
-    count: issuedToday.filter(o => o.payment_method === pm).length,
-    total: issuedToday.filter(o => o.payment_method === pm).reduce((s, o) => s + Number(o.price || 0), 0),
-  })).filter(p => p.count > 0);
+  const partsToday = partsSales.filter(s => {
+  const pd = s.paid_date || s.date;
+  return toDate(pd) === date && s.payment_status === "Платена";
+});
+const accToday = accSales.filter(s => toDate(s.date) === date);
+const phoneToday = phoneSales.filter(s => toDate(s.date) === date);
+
+const paymentBreakdown = ["В брой", "С карта", "Банка", "Еконт", "Спиди", "Не е платен"].map(pm => {
+  const repairCount = issuedToday.filter(o => o.payment_method === pm).length;
+  const repairTotal = issuedToday.filter(o => o.payment_method === pm).reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+  const partsCount = partsToday.filter(o => o.payment_method === pm).length;
+  const partsTotal = partsToday.filter(o => o.payment_method === pm).reduce((s, o) => s + Number(o.sale_price || 0) * Number(o.quantity || 1), 0);
+  const accCount = accToday.filter(o => o.payment_method === pm).length;
+  const accTotal = accToday.filter(o => o.payment_method === pm).reduce((s, o) => s + Number(o.sale_price || 0) * Number(o.quantity || 1), 0);
+  const phoneCount = phoneToday.filter(o => o.payment_method === pm).length;
+  const phoneTotal = phoneToday.filter(o => o.payment_method === pm).reduce((s, o) => s + Number(o.sale_price || 0), 0);
+  const count = repairCount + partsCount + accCount + phoneCount;
+  const total = repairTotal + partsTotal + accTotal + phoneTotal;
+  return { method: pm, count, total, repairTotal, partsTotal, accTotal, phoneTotal };
+}).filter(p => p.count > 0);
   const unpaid = issuedToday.filter(o => !o.payment_method || o.payment_method === "Не е платен").reduce((s, o) => s + Number(o.price || 0), 0);
 
   const partsCost = receivedToday.reduce((s, o) => {
@@ -2735,8 +2750,14 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
                 borderLeft: `3px solid ${method === "Не е платен" ? "#ef4444" : method === "В брой" ? "#10b981" : method === "С карта" ? "#3b82f6" : method === "Банка" ? "#8b5cf6" : "#f59e0b"}`,
               }}>
                 <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{method}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>€ {total.toFixed(2)}</div>
-                <div style={{ fontSize: 11, color: "var(--text3)" }}>{count} поръчки</div>
+<div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>€ {total.toFixed(2)}</div>
+<div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3, lineHeight: 1.7 }}>
+  {repairTotal > 0 && <div>🔧 Ремонти: € {repairTotal.toFixed(2)}</div>}
+  {partsTotal > 0 && <div>🔩 Части: € {partsTotal.toFixed(2)}</div>}
+  {accTotal > 0 && <div>🎧 Аксесоари: € {accTotal.toFixed(2)}</div>}
+  {phoneTotal > 0 && <div>📲 Телефони: € {phoneTotal.toFixed(2)}</div>}
+  <div style={{ color: "#64748b" }}>{count} записа</div>
+</div>
               </div>
             ))}
           </div>
