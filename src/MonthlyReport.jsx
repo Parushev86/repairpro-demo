@@ -54,7 +54,7 @@ const monthPhones = (phoneSales||[]).filter(s => {
   const pd = s.paid_date || s.date;
   return s.payment_status === "Платена" && (pd||"").slice(0,7) === monthKey;
 });
-  const monthPhones = (phoneSales||[]).filter(s => (s.date||"").slice(0,7) === monthKey);
+  
 
   // Revenue by day
   const daysInMonth = new Date(year, month+1, 0).getDate();
