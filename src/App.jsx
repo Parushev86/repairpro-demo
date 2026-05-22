@@ -504,7 +504,58 @@ export default function App() {
 />}
           {tab === "accsales" && <AccessorySalesTab
             sales={accSales} inventory={inventory} technicians={technicians}
-            onSave={async (r, orig) => { const s = await upsertAccessorySale(r); if (!orig?.id) setAccSales(p => [s, ...p]); else setAccSales(p => p.map(x => x.id === s.id ? s : x)); if (!orig?.id && r.inventory_id) { const inv = inventory.find(i => i.id === r.inventory_id); if (inv) { const nq = Number(inv.quantity) - Number(r.quantity || 1); if (nq <= 0) { await dbDeleteInv(inv.id); setInventory(p => p.filter(i => i.id !== inv.id)); } else { const upd = await upsertInventory({ ...inv, quantity: nq }); setInventory(p => p.map(i => i.id === upd.id ? upd : i)); } } } notify("✅ Продажбата е записана"); }}
+            onSave={async (r, orig) => {
+  const isNew = !orig?.id;
+  const wasUnpaid = orig?.payment_status === "Не е платена";
+  const isNowPaid = r.payment_status !== "Не е платена";
+  const clean = {
+    ...r,
+    paid_date: isNowPaid && wasUnpaid
+      ? new Date().toISOString().split("T")[0]
+      : (r.paid_date || null),
+  };
+  const s = await upsertAccessorySale(clean);
+  if (isNew) {
+    setAccSales(p => [s, ...p]);
+    // Намали склада само ако е ПЛАТЕНА веднага
+    if (r.payment_status !== "Не е платена" && r.inventory_id) {
+      const inv = inventory.find(i => i.id === r.inventory_id);
+      if (inv) {
+        const nq = Number(inv.quantity) - Number(r.quantity || 1);
+        if (nq <= 0) {
+          await dbDeleteInv(inv.id);
+          setInventory(p => p.filter(i => i.id !== inv.id));
+        } else {
+          const upd = await upsertInventory({ ...inv, quantity: nq });
+          setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+        }
+      }
+    }
+    if (r.payment_status === "Не е платена") {
+      notify("✅ Записана (неплатена) — складът ще се обнови при плащане", "warn");
+      return;
+    }
+  } else {
+    setAccSales(p => p.map(x => x.id === s.id ? s : x));
+    // Ако сега се плаща — намали склада
+    if (wasUnpaid && isNowPaid && r.inventory_id) {
+      const inv = inventory.find(i => i.id === r.inventory_id);
+      if (inv) {
+        const nq = Number(inv.quantity) - Number(r.quantity || 1);
+        if (nq <= 0) {
+          await dbDeleteInv(inv.id);
+          setInventory(p => p.filter(i => i.id !== inv.id));
+        } else {
+          const upd = await upsertInventory({ ...inv, quantity: nq });
+          setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+        }
+      }
+      notify("✅ Платена! Складът е обновен за " + (s.paid_date || "днес"), "info");
+      return;
+    }
+  }
+  notify("✅ Продажбата е записана");
+}}
             onDelete={async id => { const r = accSales.find(x => x.id === id); if (r) await moveToTrash("accessory_sales", r); await deleteAccessorySale(id); setAccSales(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "accessory_sales", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             onUpdateInventory={setInventory}
             notify={notify}
@@ -778,10 +829,21 @@ export default function App() {
                   sale_price: Number(r.sale_price || 0),
                   warranty_days: Number(r.warranty_days || 30),
                 };
+                const isNew = !r.id;
+                const oldRecord = isNew ? null : phoneSales.find(x => x.id === r.id);
+                const wasUnpaid = oldRecord?.payment_method === "Не е платена";
+                const isNowPaid = r.payment_method !== "Не е платена";
+
+                clean.paid_date = isNowPaid && wasUnpaid
+                  ? new Date().toISOString().split("T")[0]
+                  : (r.paid_date || null);
+
                 const s = await upsertPhoneSale(clean);
-                if (!r.id) {
+
+                if (isNew) {
                   setPhoneSales(p => [s, ...p]);
-                  if (_inv_id) {
+                  // Намали склада само ако е ПЛАТЕНА веднага
+                  if (r.payment_method !== "Не е платена" && _inv_id) {
                     const invItem = inventory.find(i => i.id === _inv_id);
                     if (invItem) {
                       const newQty = Number(invItem.quantity) - 1;
@@ -794,8 +856,28 @@ export default function App() {
                       }
                     }
                   }
+                  if (r.payment_method === "Не е платена") {
+                    notify("✅ Записана (неплатена) — складът ще се обнови при плащане", "warn");
+                    return;
+                  }
                 } else {
                   setPhoneSales(p => p.map(x => x.id === s.id ? s : x));
+                  // Ако сега се плаща — намали склада
+                  if (wasUnpaid && isNowPaid && _inv_id) {
+                    const invItem = inventory.find(i => i.id === _inv_id);
+                    if (invItem) {
+                      const newQty = Number(invItem.quantity) - 1;
+                      if (newQty <= 0) {
+                        await dbDeleteInv(invItem.id);
+                        setInventory(p => p.filter(i => i.id !== invItem.id));
+                      } else {
+                        const upd = await upsertInventory({ ...invItem, quantity: newQty });
+                        setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+                      }
+                    }
+                    notify("✅ Платена! Складът е обновен за " + (s.paid_date || "днес"), "info");
+                    return;
+                  }
                 }
                 notify("✅ Продажбата е записана");
               } catch (e) { notify("❌ Грешка: " + e.message, "error"); }
