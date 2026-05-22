@@ -74,8 +74,11 @@ export function ExpensesTab({ expenses, cashRegister, orders = [], accSales = []
     .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
 
   const partsCash = partsSales
-    .filter(s => (s.date || "").slice(0, 10) === date && s.payment_status === "Платена" && s.payment_method === "В брой")
-    .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  .filter(s => {
+    const pd = s.paid_date || s.date;
+    return (pd || "").slice(0, 10) === date && s.payment_status === "Платена" && s.payment_method === "В брой";
+  })
+  .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
 
   const phoneCash = phoneSales
     .filter(s => (s.date || "").slice(0, 10) === date && s.payment_method === "В брой")
