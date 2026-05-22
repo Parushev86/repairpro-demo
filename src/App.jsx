@@ -628,6 +628,11 @@ export default function App() {
             onSave={async r => {
               try {
                 const { items: _items, ...rest } = r;
+                const isNew = !r.id;
+                const oldRecord = isNew ? null : partsSales.find(x => x.id === r.id);
+                const wasUnpaid = oldRecord?.payment_status === "Не е платена";
+                const isNowPaid = r.payment_status === "Платена";
+
                 const clean = {
                   ...rest,
                   date_arrived: r.date_arrived || null,
@@ -642,31 +647,72 @@ export default function App() {
                   cost_price: Number(r.cost_price || 0),
                   sale_price: Number(r.sale_price || 0),
                   quantity: Number(r.quantity || 1),
+                  // При промяна на статут на "Платена" — запиши датата на плащане
+                  paid_date: isNowPaid && wasUnpaid
+                    ? new Date().toISOString().split("T")[0]
+                    : (r.paid_date || null),
                 };
+
                 const s = await upsertPartsSale(clean);
-                if (!r.id) {
+
+                if (isNew) {
                   setPartsSales(p => [s, ...p]);
-                  const itemsToDeduct = r.items && r.items.length > 0
-                    ? r.items
-                    : r.inventory_id ? [{ inv_id: r.inventory_id, qty: Number(r.quantity || 1) }] : [];
-                  for (const item of itemsToDeduct) {
-                    const invId = item.inv_id || item.inventory_id;
-                    if (!invId) continue;
-                    const inv = inventory.find(i => i.id === invId);
-                    if (inv) {
-                      const nq = Number(inv.quantity) - Number(item.qty || item.quantity || 1);
-                      if (nq <= 0) {
-                        await dbDeleteInv(inv.id);
-                        setInventory(p => p.filter(i => i.id !== inv.id));
-                      } else {
-                        const upd = await upsertInventory({ ...inv, quantity: nq });
-                        setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+
+                  // Намали склада само ако е ПЛАТЕНА веднага
+                  if (r.payment_status === "Платена") {
+                    const itemsToDeduct = r.items && r.items.length > 0
+                      ? r.items
+                      : r.inventory_id ? [{ inv_id: r.inventory_id, qty: Number(r.quantity || 1) }] : [];
+                    for (const item of itemsToDeduct) {
+                      const invId = item.inv_id || item.inventory_id;
+                      if (!invId) continue;
+                      const inv = inventory.find(i => i.id === invId);
+                      if (inv) {
+                        const nq = Number(inv.quantity) - Number(item.qty || item.quantity || 1);
+                        if (nq <= 0) {
+                          await dbDeleteInv(inv.id);
+                          setInventory(p => p.filter(i => i.id !== inv.id));
+                        } else {
+                          const upd = await upsertInventory({ ...inv, quantity: nq });
+                          setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+                        }
                       }
                     }
                   }
+                  // Ако е НЕ ПЛАТЕНА — не пипаме склада, само записваме
+                  if (r.payment_status === "Не е платена") {
+                    notify("✅ Записана (неплатена) — складът ще се обнови при плащане", "warn");
+                    return;
+                  }
+
                 } else {
                   setPartsSales(p => p.map(x => x.id === s.id ? s : x));
+
+                  // Ако СЕГА се плаща (беше неплатена, сега е платена) — намали склада
+                  if (wasUnpaid && isNowPaid) {
+                    const itemsToDeduct = oldRecord.items && oldRecord.items.length > 0
+                      ? oldRecord.items
+                      : oldRecord.inventory_id ? [{ inv_id: oldRecord.inventory_id, qty: Number(oldRecord.quantity || 1) }] : [];
+                    for (const item of itemsToDeduct) {
+                      const invId = item.inv_id || item.inventory_id;
+                      if (!invId) continue;
+                      const inv = inventory.find(i => i.id === invId);
+                      if (inv) {
+                        const nq = Number(inv.quantity) - Number(item.qty || item.quantity || 1);
+                        if (nq <= 0) {
+                          await dbDeleteInv(inv.id);
+                          setInventory(p => p.filter(i => i.id !== inv.id));
+                        } else {
+                          const upd = await upsertInventory({ ...inv, quantity: nq });
+                          setInventory(p => p.map(i => i.id === upd.id ? upd : i));
+                        }
+                      }
+                    }
+                    notify("✅ Платена! Складът е обновен за " + (s.paid_date || "днес"), "info");
+                    return;
+                  }
                 }
+
                 notify("✅ Продажбата е записана");
               } catch (e) { notify("❌ Грешка: " + e.message, "error"); }
             }}
@@ -2440,7 +2486,10 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const extServiceCost = issuedToday.reduce((s, o) => s + Number(o.external_service_price || 0), 0);
 
   const accRevToday = accSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
-  const partsRevToday = partsSales.filter(s => toDate(s.date) === date && s.payment_status === "Платена").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  const partsRevToday = partsSales.filter(s => {
+  const pd = s.paid_date || s.date;
+  return toDate(pd) === date && s.payment_status === "Платена";
+}).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const phoneRevToday = phoneSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const allExpensesToday = expenses.filter(e => toDate(e.date) === date);
   const expensesToday = allExpensesToday.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
