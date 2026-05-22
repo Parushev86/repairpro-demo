@@ -44,7 +44,7 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
   const monthExpenses = (expenses||[]).filter(e => (e.date||"").slice(0,7) === monthKey);
   const monthAcc = (accSales||[]).filter(s => {
   const pd = s.paid_date || s.date;
-  return s.payment_status !== "Не е платена" && (pd||"").slice(0,7) === monthKey;
+  return s.payment_method !== "Не е платена" && (pd||"").slice(0,7) === monthKey;
 });
 const monthPhones = (phoneSales||[]).filter(s => {
   const pd = s.paid_date || s.date;
