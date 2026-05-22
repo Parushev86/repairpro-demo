@@ -43,7 +43,10 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
   });
   const monthExpenses = (expenses||[]).filter(e => (e.date||"").slice(0,7) === monthKey);
   const monthAcc = (accSales||[]).filter(s => (s.date||"").slice(0,7) === monthKey);
-  const monthParts = (partsSales||[]).filter(s => (s.date||"").slice(0,7) === monthKey);
+  const monthParts = (partsSales||[]).filter(s => {
+  const pd = s.paid_date || s.date;
+  return s.payment_status === "Платена" && (pd||"").slice(0,7) === monthKey;
+});
   const monthPhones = (phoneSales||[]).filter(s => (s.date||"").slice(0,7) === monthKey);
 
   // Revenue by day
@@ -51,12 +54,19 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
   const dailyData = Array.from({length:daysInMonth}, (_,i) => {
     const day = String(i+1).padStart(2,"0");
     const dayStr = `${monthKey}-${day}`;
-    const rev = [...monthOrders, ...monthAcc, ...monthParts, ...monthPhones]
-      .filter(r => {
-        const d = (r.updated_at||r.date_out||r.date||"").slice(0,10);
-        return d === dayStr;
-      })
-      .reduce((s,r) => s + Number(r.total_price||r.price||r.sale_price||0), 0);
+    const revOrders = monthOrders
+  .filter(r => (r.updated_at||r.date_out||r.date||"").slice(0,10) === dayStr)
+  .reduce((s,r) => s + Number(r.total_price||r.price||0), 0);
+const revAcc = monthAcc
+  .filter(r => (r.date||"").slice(0,10) === dayStr)
+  .reduce((s,r) => s + Number(r.sale_price||0)*Number(r.quantity||1), 0);
+const revParts = monthParts
+  .filter(r => (r.paid_date||r.date||"").slice(0,10) === dayStr)
+  .reduce((s,r) => s + Number(r.sale_price||0)*Number(r.quantity||1), 0);
+const revPhones = monthPhones
+  .filter(r => (r.date||"").slice(0,10) === dayStr)
+  .reduce((s,r) => s + Number(r.sale_price||0), 0);
+const rev = revOrders + revAcc + revParts + revPhones;
     const exp = monthExpenses
       .filter(e => (e.date||"").slice(0,10) === dayStr)
       .reduce((s,e) => s + Number(e.amount||0), 0);
@@ -65,9 +75,9 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
 
   // Totals
   const totalRev   = monthOrders.reduce((s,o)=>s+Number(o.total_price||o.price||0),0)
-                   + monthAcc.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)
-                   + monthParts.reduce((s,r)=>s+Number(r.sale_price||0),0)
-                   + monthPhones.reduce((s,r)=>s+Number(r.sale_price||0),0);
+                 + monthAcc.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)
+                 + monthParts.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)
+                 + monthPhones.reduce((s,r)=>s+Number(r.sale_price||0),0);
   const totalExpOp = monthExpenses.reduce((s,e)=>s+Number(e.amount||0),0);
   const totalFixed = items.reduce((s,i)=>s+Number(i.amount||0),0);
   const totalFixedPaid = items.filter(i=>i.is_paid).reduce((s,i)=>s+Number(i.amount||0),0);
