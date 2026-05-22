@@ -2567,7 +2567,15 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   const revenue = issuedToday.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
   const extServiceCost = issuedToday.reduce((s, o) => s + Number(o.external_service_price || 0), 0);
 
-  const accRevToday = accSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+  const accRevToday = accSales.filter(s => {
+  const pd = s.paid_date || s.date;
+  return toDate(pd) === date && s.payment_status !== "Не е платена";
+}).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+
+const phoneRevToday = phoneSales.filter(s => {
+  const pd = s.paid_date || s.date;
+  return toDate(pd) === date && s.payment_method !== "Не е платена";
+}).reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const partsRevToday = partsSales.filter(s => {
   const pd = s.paid_date || s.date;
   return toDate(pd) === date && s.payment_status === "Платена";
