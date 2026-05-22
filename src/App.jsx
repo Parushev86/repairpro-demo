@@ -2580,7 +2580,7 @@ const phoneRevToday = phoneSales.filter(s => {
   const pd = s.paid_date || s.date;
   return toDate(pd) === date && s.payment_status === "Платена";
 }).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
-  const phoneRevToday = phoneSales.filter(s => toDate(s.date) === date).reduce((s, r) => s + Number(r.sale_price || 0), 0);
+  
   const allExpensesToday = expenses.filter(e => toDate(e.date) === date);
   const expensesToday = allExpensesToday.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
   const expensesNotCash = allExpensesToday.filter(e => e.from_cash === false).reduce((s, e) => s + Number(e.amount || 0), 0);
