@@ -2744,7 +2744,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
         <Card style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>💳 По начин на плащане</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {paymentBreakdown.map(({ method, count, total }) => (
+            {paymentBreakdown.map(({ method, count, total, repairTotal, partsTotal, accTotal, phoneTotal }) => (
               <div key={method} style={{
                 background: "#0f172a", borderRadius: 10, padding: "12px 18px", flex: "1", minWidth: 140,
                 borderLeft: `3px solid ${method === "Не е платен" ? "#ef4444" : method === "В брой" ? "#10b981" : method === "С карта" ? "#3b82f6" : method === "Банка" ? "#8b5cf6" : "#f59e0b"}`,
