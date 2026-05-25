@@ -473,8 +473,8 @@ export default function App() {
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
           {tab === "dashboard" && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={() => setOrderModal("new")} onExport={() => exportFullReport(orders, inventory, technicians)} notify={notify} />}
           {tab === "dashboard" && !isAdmin && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", flexDirection: "column", gap: 16 }}><div style={{ fontSize: 48 }}>🔒</div><div style={{ fontSize: 18, color: "#64748b" }}>Нямаш достъп до тази страница</div></div>}
-          {tab === "orders" && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={() => setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={() => exportOrders(orders)} onImport={() => setImportModal("orders")} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder} />}
-          {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={() => exportInventory(inventory)} onImport={() => setImportModal("inventory")} />}
+          {tab === "orders" && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={() => setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={isAdmin ? () => exportOrders(orders) : null} onImport={isAdmin ? () => setImportModal("orders") : null} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder} />}
+          {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={isAdmin ? () => exportInventory(inventory) : null} onImport={isAdmin ? () => setImportModal("inventory") : null} />}
           {tab === "reports" && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} accSales={accSales} onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }} />}
           {tab === "technicians" && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={() => exportTechReport(technicians, orders)} />}
           {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} />}
@@ -1139,8 +1139,8 @@ function OrdersTab({ orders, allOrders, search, setSearch, filterStatus, setFilt
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Сервиз <span style={{ fontSize: 12, color: "var(--text3)", fontWeight: 400 }}>({allOrders.length} общо)</span></h1>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span className="hide-mobile" style={{ display: "contents" }}><Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn></span>
-          <span className="hide-mobile" style={{ display: "contents" }}><Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn></span>
+          {onImport && <Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn>}
+{onExport && <Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn>}
           <PrimaryBtn onClick={onNew} style={{ fontSize: 12, padding: "7px 12px" }}>+ Нов сервиз</PrimaryBtn>
         </div>
       </div>
