@@ -348,7 +348,7 @@ export function BuybacksTab({ buybacks, inventory, onSave, onDelete, onAddToInve
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>📱 Изкупуване на телефони</h1>
-        <div style={{ display: "flex", gap: 8 }}>{isAdmin && {isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}}<MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="🔍  Търси..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
