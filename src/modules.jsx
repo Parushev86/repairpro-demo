@@ -176,7 +176,7 @@ function ExpenseModal({ expense, onSave, onClose }) {
 }
 
 // ══ ACCESSORY SALES ════════════════════════════════════════════════════════════
-export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, onDelete, notify }) {
+export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, onDelete, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const filtered = sales.filter(s => (s.date || "").slice(0, 10) === date);
@@ -219,12 +219,12 @@ export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, 
           </table>
         </div>
       </MCard>
-      {modal !== null && <AccSaleModal sale={modal} inventory={inventory} technicians={technicians} onSave={r => { onSave(r, modal); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal !== null && <AccSaleModal sale={modal} inventory={inventory} technicians={technicians} isAdmin={isAdmin} onSave={r => { onSave(r, modal); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
 }
 
-function AccSaleModal({ sale, inventory, technicians = [], onSave, onClose }) {
+function AccSaleModal({ sale, inventory, technicians = [], onSave, onClose, isAdmin = false }) {
   const [f, sf] = useState({ date: today(), item_name: "", inventory_id: null, quantity: 1, cost_price: "", sale_price: "", payment_method: "В брой", buyer_name: "", technician: "", notes: "", ...sale });
   const [invSearch, setInvSearch] = useState("");
   const [invCat, setInvCat] = useState("Всички");
@@ -279,7 +279,15 @@ function AccSaleModal({ sale, inventory, technicians = [], onSave, onClose }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <MField label="Наименование *"><input value={f.item_name} onChange={e => s("item_name", e.target.value)} placeholder="Артикул..." /></MField>
-          <MField label="Дата"><input type="date" value={f.date} onChange={e => s("date", e.target.value)} /></MField>
+          <MField label="Дата">
+  <input type="date" value={f.date}
+    onChange={e => s("date", e.target.value)}
+    max={isAdmin ? undefined : today()}
+    min={isAdmin ? undefined : today()}
+    readOnly={!isAdmin}
+    style={!isAdmin ? { background: "#0f172a", color: "#64748b", cursor: "not-allowed" } : {}}
+  />
+</MField>
           <MField label="Бройки"><input type="number" min="1" value={f.quantity} onChange={e => s("quantity", Number(e.target.value))} /></MField>
           <MField label="Плащане"><select value={f.payment_method} onChange={e => s("payment_method", e.target.value)}>{PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}</select></MField>
           <MField label="Доставна (€)"><input type="number" min="0" step="0.01" value={f.cost_price || ""} onChange={e => s("cost_price", e.target.value)} placeholder="0.00" /></MField>
@@ -414,7 +422,7 @@ function BuybackModal({ buyback, onSave, onClose }) {
 }
 
 // ══ PARTS SALES ════════════════════════════════════════════════════════════════
-export function PartsSalesTab({ sales, inventory, onSave, onDelete }) {
+export function PartsSalesTab({ sales, inventory, onSave, onDelete, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const [search, setSearch] = useState("");
@@ -461,7 +469,7 @@ export function PartsSalesTab({ sales, inventory, onSave, onDelete }) {
           </table>
         </div>
       </MCard>
-      {modal !== null && <PartsSaleModal sale={modal} inventory={inventory} onSave={r => { onSave(r); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal !== null && <PartsSaleModal sale={modal} inventory={inventory} isAdmin={isAdmin} onSave={r => { onSave(r); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
 }
@@ -512,7 +520,7 @@ function printStockReceipt(sale) {
   w.document.close();
 }
 
-function PartsSaleModal({ sale, inventory, onSave, onClose }) {
+function PartsSaleModal({ sale, inventory, onSave, onClose, isAdmin = false }) {
   const emptyForm = { date: today(), part_name: "", inventory_id: null, category: "", quantity: 1, cost_price: "", sale_price: "", payment_method: "В брой", payment_status: "Платена", delivery_method: "На място", delivery_type: "", buyer_name: "", buyer_phone: "", buyer_city: "", buyer_address: "", tracking_number: "", notes: "" };
   const [f, sf] = useState({ ...emptyForm, ...sale });
   const [items, setItems] = useState(sale?.items || []);
@@ -655,7 +663,15 @@ function PartsSaleModal({ sale, inventory, onSave, onClose }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: .4 }}>Детайли на продажбата</div>
-          <MField label="Дата"><input type="date" value={f.date} onChange={e => sv("date", e.target.value)} /></MField>
+          <MField label="Дата">
+  <input type="date" value={f.date}
+    onChange={e => sv("date", e.target.value)}
+    max={isAdmin ? undefined : today()}
+    min={isAdmin ? undefined : today()}
+    readOnly={!isAdmin}
+    style={!isAdmin ? { background: "#0f172a", color: "#64748b", cursor: "not-allowed" } : {}}
+  />
+</MField>
           <MField label="Плащане"><select value={f.payment_method} onChange={e => sv("payment_method", e.target.value)}>{PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}</select></MField>
           <MField label="Статус плащане"><select value={f.payment_status} onChange={e => sv("payment_status", e.target.value)}><option>Платена</option><option>Не е платена</option></select></MField>
           <MField label="Доставка"><select value={f.delivery_method} onChange={e => sv("delivery_method", e.target.value)}>{DELIVERY_METHODS.map(d => <option key={d}>{d}</option>)}</select></MField>
@@ -688,7 +704,7 @@ function PartsSaleModal({ sale, inventory, onSave, onClose }) {
 }
 
 // ══ PHONE SALES ════════════════════════════════════════════════════════════════
-export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarranty }) {
+export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarranty, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
@@ -761,18 +777,26 @@ export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarra
           </table>
         </div>
       </MCard>
-      {modal !== null && <PhoneSaleModal sale={modal} onSave={r => { onSave(r); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal !== null && <PhoneSaleModal sale={modal} isAdmin={isAdmin} onSave={r => { onSave(r); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
 }
 
-function PhoneSaleModal({ sale, onSave, onClose }) {
+function PhoneSaleModal({ sale, onSave, onClose, isAdmin = false }) {
   const [f, sf] = useState({ date: today(), brand: "", model: "", color: "", imei: "", serial_number: "", storage: "", warranty_days: 30, warranty_amount: 1, warranty_unit: "месеца", cost_price: "", sale_price: "", payment_method: "В брой", buyer_name: "", buyer_phone: "", notes: "", ...sale });
   const s = (k, v) => sf(x => ({ ...x, [k]: v }));
   return (
     <MModal title={sale?.id ? "Редактирай" : "Нова продажба телефон"} onClose={onClose} maxWidth={700} footer={<><CancelBtn onClick={onClose} /><MPrimaryBtn onClick={() => { if (!f.brand || !f.model) { alert("Въведи марка и модел!"); return; } onSave(f); }}>💾 Запази</MPrimaryBtn></>}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <MField label="Дата"><input type="date" value={f.date} onChange={e => s("date", e.target.value)} /></MField>
+        <MField label="Дата">
+  <input type="date" value={f.date}
+    onChange={e => s("date", e.target.value)}
+    max={isAdmin ? undefined : today()}
+    min={isAdmin ? undefined : today()}
+    readOnly={!isAdmin}
+    style={!isAdmin ? { background: "#0f172a", color: "#64748b", cursor: "not-allowed" } : {}}
+  />
+</MField>
         <MField label="Плащане"><select value={f.payment_method} onChange={e => s("payment_method", e.target.value)}>{PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}</select></MField>
         <MField label="Марка *"><input value={f.brand || ""} onChange={e => s("brand", e.target.value)} placeholder="Apple / Samsung..." /></MField>
         <MField label="Модел *"><input value={f.model || ""} onChange={e => s("model", e.target.value)} placeholder="iPhone 14..." /></MField>
