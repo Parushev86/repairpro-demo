@@ -308,7 +308,7 @@ function AccSaleModal({ sale, inventory, technicians = [], onSave, onClose, isAd
 }
 
 // ══ BUYBACKS ════════════════════════════════════════════════════════════════════
-export function BuybacksTab({ buybacks, inventory, onSave, onDelete, onAddToInventory, notify }) {
+export function BuybacksTab({ buybacks, inventory, onSave, onDelete, onAddToInventory, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Всички");
@@ -838,7 +838,7 @@ function PhoneSaleModal({ sale, onSave, onClose, isAdmin = false }) {
 }
 
 // ══ STOCK ORDERS ════════════════════════════════════════════════════════════════
-export function StockOrdersTab({ orders, onSave, onDelete, notify }) {
+export function StockOrdersTab({ orders, onSave, onDelete, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Всички");
@@ -908,7 +908,7 @@ function StockOrderModal({ order, onSave, onClose }) {
 }
 
 // ══ SUPPLIER DEBTS ════════════════════════════════════════════════════════════
-export function SupplierDebtsTab({ debts, onSave, onDelete, notify }) {
+export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [search, setSearch] = useState("");
