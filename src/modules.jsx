@@ -56,7 +56,7 @@ function CancelBtn({ onClick }) {
 }
 
 // ══ EXPENSES ══════════════════════════════════════════════════════════════════
-export function ExpensesTab({ expenses, cashRegister, orders = [], accSales = [], partsSales = [], phoneSales = [], onSaveExpense, onDeleteExpense, onSaveCash, notify }) {
+export function ExpensesTab({ expenses, cashRegister, orders = [], accSales = [], partsSales = [], phoneSales = [], onSaveExpense, onDeleteExpense, onSaveCash, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const [showCash, setShowCash] = useState(false);
