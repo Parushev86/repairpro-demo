@@ -425,14 +425,16 @@ export default function App() {
   const readyOrders = orders.filter(o => o.status === "Готов");
   const activeOrders = orders.filter(o => !["Издаден", "Отказан"].includes(o.status));
 
-  const filteredOrders = orders.filter(o => {
-    const q = search.toLowerCase();
-    const ok = !q || [o.id, o.client_name, o.phone, o.email, o.problem, o.brand, o.model, o.technician, o.serial_number]
-      .some(f => (f || "").toLowerCase().includes(q));
-    return ok
-      && (filterStatus === "Всички" || o.status === filterStatus)
-      && (filterDevice === "Всички" || o.device_type === filterDevice);
-  });
+ const filteredOrders = orders.filter(o => {
+  const q = search.toLowerCase();
+  const ok = !q || [o.id, o.client_name, o.phone, o.email, o.problem, o.brand, o.model, o.technician, o.serial_number]
+    .some(f => (f || "").toLowerCase().includes(q));
+  // Техниците не виждат издадените поръчки освен ако не търсят
+  if (!isAdmin && !q && o.status === "Издаден") return false;
+  return ok
+    && (filterStatus === "Всички" || o.status === filterStatus)
+    && (filterDevice === "Всички" || o.device_type === filterDevice);
+});
 
   // ── Render ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -503,7 +505,7 @@ export default function App() {
   notify={notify}
 />}
           {tab === "accsales" && <AccessorySalesTab
-            sales={accSales} inventory={inventory} technicians={technicians}
+  sales={accSales} inventory={inventory} technicians={technicians} isAdmin={isAdmin}
             onSave={async (r, orig) => {
   const isNew = !orig?.id;
   const wasUnpaid = orig?.payment_status === "Не е платена";
@@ -675,7 +677,7 @@ export default function App() {
             notify={notify}
           />}
           {tab === "partssales" && <PartsSalesTab
-            sales={partsSales} inventory={inventory}
+  sales={partsSales} inventory={inventory} isAdmin={isAdmin}
             onSave={async r => {
               try {
                 const { items: _items, ...rest } = r;
@@ -810,7 +812,7 @@ export default function App() {
             notify={notify}
           />}
           {tab === "phonesales" && <PhoneSalesTab
-            sales={phoneSales} inventory={inventory}
+  sales={phoneSales} inventory={inventory} isAdmin={isAdmin}
             onSave={async r => {
               try {
                 const { _inv_id, ...rClean } = r;
