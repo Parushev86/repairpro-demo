@@ -98,7 +98,7 @@ export function ExpensesTab({ expenses, cashRegister, orders = [], accSales = []
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>💸 Разходи</h1>
         <div style={{ display: "flex", gap: 8 }}>
-          <MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn>
+          {isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn>}
           <MBtn color="#f59e0b" bg="#451a03" onClick={() => { setCashInput(cashEntry?.opening_cash || ""); setShowCash(true); }}>💰 Начало на деня</MBtn>
           <MPrimaryBtn onClick={() => setModal({})} color="linear-gradient(135deg,#ef4444,#dc2626)">+ Нов разход</MPrimaryBtn>
         </div>
@@ -348,7 +348,7 @@ export function BuybacksTab({ buybacks, inventory, onSave, onDelete, onAddToInve
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>📱 Изкупуване на телефони</h1>
-        <div style={{ display: "flex", gap: 8 }}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>{isAdmin && {isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}}<MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="🔍  Търси..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
@@ -433,7 +433,7 @@ export function PartsSalesTab({ sales, inventory, onSave, onDelete, isAdmin = fa
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>🔩 Продажба резервни части</h1>
-        <div style={{ display: "flex", gap: 8 }}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={() => setModal({})}>+ Нова продажба</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "flex-end" }}>
         <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
@@ -717,7 +717,7 @@ export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarra
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>📲 Продажба на телефони</h1>
-        <div style={{ display: "flex", gap: 8 }}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={() => setModal({})}>+ Нова продажба</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "flex-end" }}>
         <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
@@ -848,7 +848,7 @@ export function StockOrdersTab({ orders, onSave, onDelete, notify }) {
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>📋 Поръчки към доставчици</h1>
-        <div style={{ display: "flex", gap: 8 }}><MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn><MPrimaryBtn onClick={() => setModal({})}>+ Нова поръчка</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нова поръчка</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="🔍  Търси по артикул, клиент, доставчик..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
@@ -948,7 +948,7 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify }) {
           <p style={{ margin: "3px 0 0", fontSize: 12, color: "#64748b" }}>Неплатено: <b style={{ color: "#ef4444" }}>{fmtM(totalUnpaid)}</b> &nbsp;|&nbsp; Платено общо: <b style={{ color: "#10b981" }}>{fmtM(totalPaid)}</b></p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>
+          {isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}
           {selected.size > 0 && <MBtn color="#10b981" bg="#064e3b" onClick={() => setPayModal(true)}>✅ Плати ({selected.size})</MBtn>}
           <MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn>
         </div>
