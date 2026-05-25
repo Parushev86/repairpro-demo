@@ -179,7 +179,10 @@ function ExpenseModal({ expense, onSave, onClose }) {
 export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, onDelete, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
-  const filtered = sales.filter(s => (s.date || "").slice(0, 10) === date);
+  const filtered = sales.filter(s => {
+  if (!isAdmin && s.payment_method !== "Не е платена") return false;
+  return (s.date || "").slice(0, 10) === date;
+});
   const totalRev = filtered.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const totalCost = filtered.reduce((s, r) => s + Number(r.cost_price || 0) * Number(r.quantity || 1), 0);
   const exportDay = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r => ({ Дата: r.date, Артикул: r.item_name, "Бр.": r.quantity, "Доставна €": r.cost_price, "Продажна €": r.sale_price, "Общо €": Number(r.sale_price || 0) * Number(r.quantity || 1), Плащане: r.payment_method, Купувач: r.buyer_name || "" }))), "Аксесоари"); XLSX.writeFile(wb, `Аксесоари_${date}.xlsx`); };
@@ -426,7 +429,12 @@ export function PartsSalesTab({ sales, inventory, onSave, onDelete, isAdmin = fa
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const [search, setSearch] = useState("");
-  const filtered = sales.filter(s => { const q = search.toLowerCase(); return (!q || [s.part_name, s.buyer_name, s.buyer_city, s.tracking_number].some(f => (f || "").toLowerCase().includes(q))) && (!date || (s.date || "").slice(0, 10) === date); });
+  const filtered = sales.filter(s => {
+  const q = search.toLowerCase();
+  if (!isAdmin && s.payment_status === "Платена") return false;
+  return (!q || [s.part_name, s.buyer_name, s.buyer_city, s.tracking_number].some(f => (f || "").toLowerCase().includes(q)))
+    && (!date || (s.date || "").slice(0, 10) === date);
+});
   const totalRev = filtered.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const exportAll = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r => ({ Дата: r.date, Артикул: r.part_name, "Бр.": r.quantity, "Продажна €": r.sale_price, Плащане: r.payment_method, Статус: r.payment_status, Доставка: r.delivery_method, Купувач: r.buyer_name || "", Телефон: r.buyer_phone || "", Град: r.buyer_city || "", "Товарителница": r.tracking_number || "" }))), "Продажби части"); XLSX.writeFile(wb, `Продажби_части_${today()}.xlsx`); };
   return (
@@ -708,7 +716,12 @@ export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarra
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
-  const filtered = sales.filter(s => { const q = search.toLowerCase(); return (!q || [s.brand, s.model, s.imei, s.buyer_name].some(f => (f || "").toLowerCase().includes(q))) && (!date || (s.date || "").slice(0, 10) === date); });
+  const filtered = sales.filter(s => {
+  const q = search.toLowerCase();
+  if (!isAdmin && s.payment_method !== "Не е платена") return false;
+  return (!q || [s.brand, s.model, s.imei, s.buyer_name].some(f => (f || "").toLowerCase().includes(q)))
+    && (!date || (s.date || "").slice(0, 10) === date);
+});
   const phoneStock = inventory.filter(i => i.category === "Телефони" && Number(i.quantity) > 0);
   const totalRev = filtered.reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const totalCost = filtered.reduce((s, r) => s + Number(r.cost_price || 0), 0);
