@@ -481,7 +481,7 @@ export default function App() {
           {tab === "calculator" && <Calculator />}
           {tab === "pricing" && <PricingTab />}
           {tab === "expenses" && <ExpensesTab
-  expenses={expenses} cashRegister={cashReg}
+  expenses={expenses} cashRegister={cashReg} isAdmin={isAdmin}
   orders={orders} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales}
   onSaveExpense={async r => {
     const s = await upsertExpense(r);
