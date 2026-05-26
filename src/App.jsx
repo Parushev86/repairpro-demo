@@ -3242,6 +3242,18 @@ function PricingTab() {
     setEditData(null);
     setNewModelName("");
   };
+  const updateModelName = (oldName, newName) => {
+  const nd = JSON.parse(JSON.stringify(editData));
+  if (!nd[activeService]) return;
+  const idx = nd[activeService].models.indexOf(oldName);
+  if (idx === -1) return;
+  nd[activeService].models[idx] = newName;
+  nd[activeService].client[newName] = nd[activeService].client[oldName] || 0;
+  nd[activeService].colleague[newName] = nd[activeService].colleague[oldName] || 0;
+  delete nd[activeService].client[oldName];
+  delete nd[activeService].colleague[oldName];
+  setEditData(nd);
+};
 
   const addModel = () => {
     if (!newModelName.trim()) return;
@@ -3437,10 +3449,11 @@ const serviceModels = service.models || [];
                     {["Модел", "Цена клиент (€)", "Цена колега (€)", ""].map(h => <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>)}
                   </tr></thead>
                   <tbody>
-                    {editData[activeService].models.map(m => (
-                      <tr key={m} style={{ borderTop: "1px solid #0f172a" }}>
-                        <td style={{ padding: "6px 12px" }}>
+                    {editData[activeService].models.map((m, idx) => (
+  <tr key={m + idx} style={{ borderTop: "1px solid #0f172a" }}>
+    <td style={{ padding: "6px 12px" }}>
   <input
+    key={m}
     defaultValue={m}
     onBlur={e => { if (e.target.value.trim() && e.target.value !== m) updateModelName(m, e.target.value.trim()); }}
     style={{width:"100%",fontSize:13,fontWeight:600,background:"#0f172a",color:"#e2e8f0",border:"1px solid #334155",borderRadius:6,padding:"4px 8px"}}
