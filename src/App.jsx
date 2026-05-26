@@ -3242,6 +3242,18 @@ function PricingTab() {
     setEditData(null);
     setNewModelName("");
   };
+  const updateModelName = (oldName, newName) => {
+    const nd = JSON.parse(JSON.stringify(editData));
+    if (!nd[activeService]) return;
+    const idx = nd[activeService].models.indexOf(oldName);
+    if (idx === -1) return;
+    nd[activeService].models[idx] = newName;
+    nd[activeService].client[newName] = nd[activeService].client[oldName] || 0;
+    nd[activeService].colleague[newName] = nd[activeService].colleague[oldName] || 0;
+    delete nd[activeService].client[oldName];
+    delete nd[activeService].colleague[oldName];
+    setEditData(nd);
+  };
 
   const addModel = () => {
     if (!newModelName.trim()) return;
