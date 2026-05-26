@@ -3424,10 +3424,10 @@ const serviceModels = service.models || [];
               {!showNewSvc
                 ? <button onClick={() => setShowNewSvc(true)} style={{ padding: "6px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px dashed #334155", background: "transparent", color: "#64748b" }}>+ Нова услуга</button>
                 : <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <input value={newSvcLabel} onChange={e => setNewSvcLabel(e.target.value)} placeholder="Наименование..." style={{ width: 180, fontSize: 12 }} />
-                  <button onClick={addNewService} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#10b981", color: "#fff", fontWeight: 700 }}>Добави</button>
-                  <button onClick={() => setShowNewSvc(false)} style={{ padding: "5px 8px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#334155", color: "#94a3b8" }}>✕</button>
-                </div>
+  <input value={newSvcLabel} onChange={e => { setNewSvcLabel(e.target.value); setNewSvcKey(e.target.value); }} placeholder="Наименование..." style={{ width: 180, fontSize: 12 }} />
+  <button onClick={addNewService} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#10b981", color: "#fff", fontWeight: 700 }}>Добави</button>
+  <button onClick={() => setShowNewSvc(false)} style={{ padding: "5px 8px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#334155", color: "#94a3b8" }}>✕</button>
+</div>
               }
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
