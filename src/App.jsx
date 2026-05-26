@@ -3439,7 +3439,20 @@ const serviceModels = service.models || [];
                   <tbody>
                     {editData[activeService].models.map(m => (
                       <tr key={m} style={{ borderTop: "1px solid #0f172a" }}>
-                        <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>{m}</td>
+                        <td style={{ padding: "6px 12px" }}>
+  <input value={m} onChange={e => {
+    const nd = JSON.parse(JSON.stringify(editData));
+    const oldName = m;
+    const newName = e.target.value;
+    const idx = nd[activeService].models.indexOf(oldName);
+    if (idx !== -1) nd[activeService].models[idx] = newName;
+    nd[activeService].client[newName] = nd[activeService].client[oldName];
+    nd[activeService].colleague[newName] = nd[activeService].colleague[oldName];
+    delete nd[activeService].client[oldName];
+    delete nd[activeService].colleague[oldName];
+    setEditData(nd);
+  }} style={{ width: "100%", fontSize: 13, fontWeight: 600 }} />
+</td>
                         <td style={{ padding: "6px 12px" }}>
                           <input type="number" min="0" step="0.5"
                             value={editData[activeService].client?.[m] || ""}
