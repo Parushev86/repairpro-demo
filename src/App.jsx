@@ -58,6 +58,34 @@ const Notif = ({ notif }) => notif ? (
     animation: "slideIn .25s ease", maxWidth: 380,
   }}>{notif.msg}</div>
 ) : null;
+function printInvLabel(item) {
+  const rate = 1.95583;
+  const priceEur = Number(item.price || 0);
+  const priceBgn = (priceEur * rate).toFixed(2);
+  const w = window.open("", "_blank");
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Етикет</title>
+  <style>
+    @page { size: 62mm 40mm; margin: 0; }
+    body { font-family: Arial, sans-serif; width: 62mm; height: 40mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3mm; box-sizing: border-box; margin: 0; }
+    .company { font-size: 9px; color: #555; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 3px; }
+    .name { font-size: 11px; font-weight: 800; color: #111; margin-bottom: 6px; line-height: 1.3; }
+    .price-label { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .prices { display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: center; }
+    .price-eur { font-size: 18px; font-weight: 900; color: #111; }
+    .price-bgn { font-size: 18px; font-weight: 900; color: #111; }
+  </style></head><body>
+  <div class="company">Сънификс ЕООД</div>
+  <div class="name">${item.name}</div>
+  <div class="price-label">ЦЕНА:</div>
+  <div class="prices">
+    <span class="price-eur">€ ${priceEur.toFixed(2)}</span>
+    <span class="price-bgn">${priceBgn} лв</span>
+  </div>
+  <script>window.onload=()=>{ window.print(); }</script>
+  </body></html>`);
+  w.document.close();
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
@@ -1623,6 +1651,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text3)" }}>{highlight(i.supplier || "—")}</td>
                     <td style={{ padding: "9px 13px" }}><div style={{ display: "flex", gap: 4 }}>
                       <Btn color="#3b82f6" onClick={() => onEdit(i)} title="Редактирай">✏️</Btn>
+                      <Btn color="#8b5cf6" onClick={() => printInvLabel(i)} title="Принт етикет">🏷️</Btn>
                       <Btn color="#ef4444" onClick={() => { if (confirm("Изтрий?")) onDelete(i.id); }} title="Изтрий">🗑️</Btn>
                     </div></td>
                   </tr>
