@@ -718,7 +718,9 @@ export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarra
   const [date, setDate] = useState("");
   const filtered = sales.filter(s => {
   const q = search.toLowerCase();
-  if (!isAdmin && s.payment_method !== "Не е платена") return false;
+  // Ако е техник и има търсене — показвай всички резултати
+  // Ако е техник и няма търсене — скрий платените
+  if (!isAdmin && !q && s.payment_method !== "Не е платена") return false;
   return (!q || [s.brand, s.model, s.imei, s.buyer_name].some(f => (f || "").toLowerCase().includes(q)))
     && (!date || (s.date || "").slice(0, 10) === date);
 });
