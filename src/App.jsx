@@ -3120,10 +3120,8 @@ function Calculator() {
                 <h1>🔧 ОФЕРТА ЗА РЕМОНТ</h1>
                 <div class="row"><span>Вид ремонт:</span><b>${repairLabel}</b></div>
                 <div class="row"><span>Тип клиент:</span><b>${typeLabel}</b></div>
-                <div class="row"><span>Цена на частта:</span><b>€ ${Number(amount).toFixed(2)}</b></div>
-                <div class="row"><span>Цена труд:</span><b>€ ${laborEur.toFixed(2)}</b></div>
                 <div class="total"><span>КРАЙНА ЦЕНА:</span><span>€ ${result.eur} / ${result.bgn} лв</span></div>
-                <div class="notice">⚠️ Цената е ориентировъчна и може да се промени след оглед на устройството. Гаранция 90 дни за извършения ремонт.</div>
+                <div class="notice">⚠️ Цената е ориентировъчна и може да се промени след оглед на устройството. Гаранция 30 дни за извършения ремонт.</div>
                 <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
                 <script>window.onload=()=>{window.print();}</script>
                 </body></html>`);
