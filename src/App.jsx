@@ -3101,6 +3101,40 @@ function Calculator() {
             <div style={{ fontSize: 14, color: "rgba(255,255,255,.6)", marginTop: 4 }}>
               {amount && result.bgn > 0 ? `${result.bgn} лв` : "0 лв"}
             </div>
+            {amount && result.eur > 0 && (
+              <button onClick={() => {
+                const accessoryLabels = { display: "Дисплей", battery: "Батерия", back_cover: "Заден капак", power_board: "Блок захранване", camera: "Камери", flex_cable: "Лентови кабели", ear_speaker: "Слушалки", polyphony: "Полифония", camera_glass: "Стъкло камера" };
+                const typeLabel = type === "client" ? "Клиент" : "Колега";
+                const repairLabel = accessoryLabels[accessory] || accessory;
+                const w = window.open("", "_blank");
+                w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Оферта за ремонт</title>
+                <style>
+                  body{font-family:Arial,sans-serif;padding:40px;color:#111;max-width:500px;margin:auto}
+                  h1{font-size:18px;border-bottom:3px solid #1a56db;padding-bottom:8px;color:#1a56db;margin-bottom:20px}
+                  .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px}
+                  .row b{color:#111}
+                  .total{display:flex;justify-content:space-between;padding:14px 0;font-size:18px;font-weight:800;color:#065f46;border-top:2px solid #10b981;margin-top:8px}
+                  .notice{margin-top:24px;padding:12px;background:#fef9c3;border:1px solid #fde047;border-radius:6px;font-size:12px;color:#713f12}
+                  @media print{body{padding:20px}}
+                </style></head><body>
+                <h1>🔧 ОФЕРТА ЗА РЕМОНТ</h1>
+                <div class="row"><span>Вид ремонт:</span><b>${repairLabel}</b></div>
+                <div class="row"><span>Тип клиент:</span><b>${typeLabel}</b></div>
+                <div class="row"><span>Цена на частта:</span><b>€ ${Number(amount).toFixed(2)}</b></div>
+                <div class="row"><span>Цена труд:</span><b>€ ${laborEur.toFixed(2)}</b></div>
+                <div class="total"><span>КРАЙНА ЦЕНА:</span><span>€ ${result.eur} / ${result.bgn} лв</span></div>
+                <div class="notice">⚠️ Цената е ориентировъчна и може да се промени след оглед на устройството. Гаранция 90 дни за извършения ремонт.</div>
+                <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
+                <script>window.onload=()=>{window.print();}</script>
+                </body></html>`);
+                w.document.close();
+              }} style={{
+                marginTop: 12, background: "rgba(255,255,255,.2)", color: "#fff",
+                border: "1px solid rgba(255,255,255,.4)", borderRadius: 8,
+                padding: "8px 20px", cursor: "pointer", fontSize: 13, fontWeight: 700,
+                width: "100%",
+              }}>🖨️ Принтирай оферта за клиента</button>
+            )}
           </div>
 
           {amount && result.eur > 0 && (
