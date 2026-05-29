@@ -3106,25 +3106,55 @@ function Calculator() {
                 const accessoryLabels = { display: "Дисплей", battery: "Батерия", back_cover: "Заден капак", power_board: "Блок захранване", camera: "Камери", flex_cable: "Лентови кабели", ear_speaker: "Слушалки", polyphony: "Полифония", camera_glass: "Стъкло камера" };
                 const typeLabel = type === "client" ? "Клиент" : "Колега";
                 const repairLabel = accessoryLabels[accessory] || accessory;
+                const LANGS = {
+                  bg: { title: "ОФЕРТА ЗА РЕМОНТ", repair: "Вид ремонт", total: "КРАЙНА ЦЕНА", notice: "⚠️ Цената е ориентировъчна и може да се промени след оглед на устройството. Гаранция 30 дни за извършения ремонт.", print: "🖨️ Принтирай" },
+                  en: { title: "REPAIR QUOTE", repair: "Repair type", total: "TOTAL PRICE", notice: "⚠️ The price is approximate and may change after device inspection. 30-day warranty on the repair performed.", print: "🖨️ Print" },
+                  ru: { title: "СМЕТА НА РЕМОНТ", repair: "Вид ремонта", total: "ИТОГОВАЯ ЦЕНА", notice: "⚠️ Цена является ориентировочной и может измениться после осмотра устройства. Гарантия 30 дней на выполненный ремонт.", print: "🖨️ Печать" },
+                  de: { title: "REPARATURANGEBOT", repair: "Reparaturart", total: "GESAMTPREIS", notice: "⚠️ Der Preis ist unverbindlich und kann sich nach der Geräteinspektion ändern. 30 Tage Garantie auf die durchgeführte Reparatur.", print: "🖨️ Drucken" },
+                };
+                const buildHtml = (lang) => {
+                  const T = LANGS[lang];
+                  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${T.title}</title>
+                  <style>
+                    body{font-family:Arial,sans-serif;padding:40px;color:#111;max-width:500px;margin:auto}
+                    h1{font-size:18px;border-bottom:3px solid #1a56db;padding-bottom:8px;color:#1a56db;margin-bottom:20px}
+                    .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px}
+                    .row b{color:#111}
+                    .total{display:flex;justify-content:space-between;padding:14px 0;font-size:22px;font-weight:800;color:#065f46;border-top:2px solid #10b981;margin-top:8px}
+                    .notice{margin-top:24px;padding:12px;background:#fef9c3;border:1px solid #fde047;border-radius:6px;font-size:12px;color:#713f12}
+                    .lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:20px;flex-wrap:wrap}
+                    .lang-bar button{padding:7px 16px;border:2px solid #1a56db;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1a56db}
+                    .lang-bar button.active{background:#1a56db;color:#fff}
+                    @media print{body{padding:20px}.no-print{display:none!important}}
+                  </style></head><body>
+                  <div class="lang-bar no-print">
+                    <button class="${lang==='bg'?'active':''}" onclick="switchLang('bg')">🇧🇬 Български</button>
+                    <button class="${lang==='en'?'active':''}" onclick="switchLang('en')">🇬🇧 English</button>
+                    <button class="${lang==='ru'?'active':''}" onclick="switchLang('ru')">🇷🇺 Русский</button>
+                    <button class="${lang==='de'?'active':''}" onclick="switchLang('de')">🇩🇪 Deutsch</button>
+                  </div>
+                  <h1>🔧 ${T.title}</h1>
+                  <div class="row"><span>${T.repair}:</span><b>${repairLabel}</b></div>
+                  <div class="total"><span>${T.total}:</span><span>€ ${result.eur} / ${result.bgn} лв</span></div>
+                  <div class="notice">${T.notice}</div>
+                  <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
+                  <div class="no-print" style="text-align:center;margin-top:16px">
+                    <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">${T.print}</button>
+                  </div>
+                  </body></html>`;
+                };
+                const htmls = { bg: buildHtml('bg'), en: buildHtml('en'), ru: buildHtml('ru'), de: buildHtml('de') };
+                const switchScript = `<script>
+                  window._htmls = ${JSON.stringify(htmls)};
+                  function switchLang(l) {
+                    var h = window._htmls;
+                    document.open(); document.write(h[l]); document.close();
+                    window._htmls = h;
+                  }
+                <\/script>`;
+                const finalHtml = htmls['bg'].replace('</body>', switchScript + '</body>');
                 const w = window.open("", "_blank");
-                w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Оферта за ремонт</title>
-                <style>
-                  body{font-family:Arial,sans-serif;padding:40px;color:#111;max-width:500px;margin:auto}
-                  h1{font-size:18px;border-bottom:3px solid #1a56db;padding-bottom:8px;color:#1a56db;margin-bottom:20px}
-                  .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px}
-                  .row b{color:#111}
-                  .total{display:flex;justify-content:space-between;padding:14px 0;font-size:18px;font-weight:800;color:#065f46;border-top:2px solid #10b981;margin-top:8px}
-                  .notice{margin-top:24px;padding:12px;background:#fef9c3;border:1px solid #fde047;border-radius:6px;font-size:12px;color:#713f12}
-                  @media print{body{padding:20px}}
-                </style></head><body>
-                <h1>🔧 ОФЕРТА ЗА РЕМОНТ</h1>
-                <div class="row"><span>Вид ремонт:</span><b>${repairLabel}</b></div>
-                <div class="row"><span>Тип клиент:</span><b>${typeLabel}</b></div>
-                <div class="total"><span>КРАЙНА ЦЕНА:</span><span>€ ${result.eur} / ${result.bgn} лв</span></div>
-                <div class="notice">⚠️ Цената е ориентировъчна и може да се промени след оглед на устройството. Гаранция 30 дни за извършения ремонт.</div>
-                <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
-                <script>window.onload=()=>{window.print();}</script>
-                </body></html>`);
+                w.document.write(finalHtml);
                 w.document.close();
               }} style={{
                 marginTop: 12, background: "rgba(255,255,255,.2)", color: "#fff",
