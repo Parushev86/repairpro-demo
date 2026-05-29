@@ -179,10 +179,16 @@ function ExpenseModal({ expense, onSave, onClose }) {
 export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, onDelete, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
+  const [search, setSearch] = useState("");
+  const today_str = new Date().toISOString().split("T")[0];
   const filtered = sales.filter(s => {
-  if (!isAdmin && s.payment_method !== "Не е платена") return false;
-  return (s.date || "").slice(0, 10) === date;
-});
+    const q = search.toLowerCase();
+    if (!isAdmin) {
+      if (!q && (s.date || "").slice(0, 10) !== today_str) return false;
+    }
+    return (!q || [s.item_name, s.buyer_name].some(f => (f || "").toLowerCase().includes(q)))
+      && (q ? true : (s.date || "").slice(0, 10) === date);
+  });
   const totalRev = filtered.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const totalCost = filtered.reduce((s, r) => s + Number(r.cost_price || 0) * Number(r.quantity || 1), 0);
   const exportDay = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r => ({ Дата: r.date, Артикул: r.item_name, "Бр.": r.quantity, "Доставна €": r.cost_price, "Продажна €": r.sale_price, "Общо €": Number(r.sale_price || 0) * Number(r.quantity || 1), Плащане: r.payment_method, Купувач: r.buyer_name || "" }))), "Аксесоари"); XLSX.writeFile(wb, `Аксесоари_${date}.xlsx`); };
@@ -192,8 +198,9 @@ export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, 
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>🎧 Продажби аксесоари</h1>
         <div style={{ display: "flex", gap: 8 }}><MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn><MPrimaryBtn onClick={() => setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-end" }}>
-        <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
+  <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
+  <MField label="Търси" style={{ flex: 1 }}><input placeholder="🔍  Артикул, купувач..." value={search} onChange={e => setSearch(e.target.value)} /></MField>
         <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #10b981", flex: 1 }}><div style={{ fontSize: 11, color: "#64748b" }}>Приход</div><div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #f59e0b", flex: 1 }}><div style={{ fontSize: 11, color: "#64748b" }}>Печалба</div><div style={{ fontSize: 20, fontWeight: 800, color: "#f59e0b" }}>{fmtM(totalRev - totalCost)}</div></MCard>
       </div>
@@ -429,11 +436,14 @@ export function PartsSalesTab({ sales, inventory, onSave, onDelete, isAdmin = fa
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const [search, setSearch] = useState("");
-  const filtered = sales.filter(s => {
+  const today_str = new Date().toISOString().split("T")[0];
+const filtered = sales.filter(s => {
   const q = search.toLowerCase();
-  if (!isAdmin && s.payment_status === "Платена") return false;
+  if (!isAdmin) {
+    if (!q && (s.date || "").slice(0, 10) !== today_str) return false;
+  }
   return (!q || [s.part_name, s.buyer_name, s.buyer_city, s.tracking_number].some(f => (f || "").toLowerCase().includes(q)))
-    && (!date || (s.date || "").slice(0, 10) === date);
+    && (q ? true : (!date || (s.date || "").slice(0, 10) === date));
 });
   const totalRev = filtered.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const exportAll = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r => ({ Дата: r.date, Артикул: r.part_name, "Бр.": r.quantity, "Продажна €": r.sale_price, Плащане: r.payment_method, Статус: r.payment_status, Доставка: r.delivery_method, Купувач: r.buyer_name || "", Телефон: r.buyer_phone || "", Град: r.buyer_city || "", "Товарителница": r.tracking_number || "" }))), "Продажби части"); XLSX.writeFile(wb, `Продажби_части_${today()}.xlsx`); };
