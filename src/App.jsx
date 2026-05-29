@@ -3103,9 +3103,12 @@ function Calculator() {
             </div>
             {amount && result.eur > 0 && (
               <button onClick={() => {
-                const accessoryLabels = { display: "Дисплей", battery: "Батерия", back_cover: "Заден капак", power_board: "Блок захранване", camera: "Камери", flex_cable: "Лентови кабели", ear_speaker: "Слушалки", polyphony: "Полифония", camera_glass: "Стъкло камера" };
-                const typeLabel = type === "client" ? "Клиент" : "Колега";
-                const repairLabel = accessoryLabels[accessory] || accessory;
+                const accessoryLabels = {
+                  bg: { display: "Дисплей", battery: "Батерия", back_cover: "Заден капак", power_board: "Блок захранване", camera: "Камери", flex_cable: "Лентови кабели", ear_speaker: "Слушалки", polyphony: "Полифония", camera_glass: "Стъкло камера" },
+                  en: { display: "Display", battery: "Battery", back_cover: "Back cover", power_board: "Charging port", camera: "Cameras", flex_cable: "Flex cables", ear_speaker: "Earpiece", polyphony: "Loudspeaker", camera_glass: "Camera glass" },
+                  ru: { display: "Дисплей", battery: "Батарея", back_cover: "Задняя крышка", power_board: "Блок питания", camera: "Камеры", flex_cable: "Шлейфы", ear_speaker: "Слуховой динамик", polyphony: "Полифония", camera_glass: "Стекло камеры" },
+                  de: { display: "Display", battery: "Akku", back_cover: "Rückseite", power_board: "Ladebuchse", camera: "Kameras", flex_cable: "Flexkabel", ear_speaker: "Hörmuschel", polyphony: "Lautsprecher", camera_glass: "Kameraglas" },
+                };
                 const LANGS = {
                   bg: { title: "ОФЕРТА ЗА РЕМОНТ", repair: "Вид ремонт", total: "КРАЙНА ЦЕНА", notice: "⚠️ Цената е ориентировъчна и може да се промени след оглед на устройството. Гаранция 30 дни за извършения ремонт.", print: "🖨️ Принтирай" },
                   en: { title: "REPAIR QUOTE", repair: "Repair type", total: "TOTAL PRICE", notice: "⚠️ The price is approximate and may change after device inspection. 30-day warranty on the repair performed.", print: "🖨️ Print" },
@@ -3134,7 +3137,7 @@ function Calculator() {
                     <button class="${lang==='de'?'active':''}" onclick="switchLang('de')">🇩🇪 Deutsch</button>
                   </div>
                   <h1>🔧 ${T.title}</h1>
-                  <div class="row"><span>${T.repair}:</span><b>${repairLabel}</b></div>
+                  <div class="row"><span>${T.repair}:</span><b>${accessoryLabels[lang][accessory] || accessoryLabels.bg[accessory]}</b></div>
                   <div class="total"><span>${T.total}:</span><span>€ ${result.eur} / ${result.bgn} лв</span></div>
                   <div class="notice">${T.notice}</div>
                   <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
