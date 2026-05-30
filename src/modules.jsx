@@ -975,17 +975,8 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
       Платено: d.is_paid ? "Да" : "Не", "Дата плащане": d.paid_date || "", "Начин плащане": d.payment_method || "",
     }))), "Задължения"); XLSX.writeFile(wb, `Задължения_${supplierFilter !== "Всички" ? supplierFilter + "_" : ""}${today()}.xlsx`);
   };
-  const exportSelected = () => {
-    const toExport = selected.size > 0 ? filtered.filter(d => selected.has(d.id)) : filtered;
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toExport.map(d => ({
-      "Дата поръчка": d.date_ordered, "Дата пристигане": d.date_arrived || "", Доставчик: d.supplier,
-      Артикул: d.part_name, Модел: d.model || "", Категория: d.category || "", "Бр.": d.quantity,
-      "Доставна €": d.cost_price, "Общо €": d.total_amount || d.cost_price,
-      Платено: d.is_paid ? "Да" : "Не", "Дата плащане": d.paid_date || "", "Начин плащане": d.payment_method || "",
-    }))), "Задължения");
-    XLSX.writeFile(wb, `Задължения_${supplierFilter !== "Всички" ? supplierFilter + "_" : ""}${today()}.xlsx`);
-  };
+ 
+    
 
   const exportAll = () => {
 
