@@ -358,7 +358,9 @@ export function BuybacksTab({ buybacks, inventory, onSave, onDelete, onAddToInve
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>📱 Изкупуване на телефони</h1>
-        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportSelected}>
+            📊 {selected.size > 0 ? `Excel (${selected.size} избрани)` : "Excel"}
+          </MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="🔍  Търси..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
@@ -939,10 +941,16 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
   const [search, setSearch] = useState("");
   const [showPaid, setShowPaid] = useState(false);
   const [payModal, setPayModal] = useState(false);
+  const [supplierFilter, setSupplierFilter] = useState("Всички");
+
+  const suppliers = ["Всички", ...new Set(debts.map(d => d.supplier).filter(Boolean))].sort();
 
   const filtered = debts.filter(d => {
     const q = search.toLowerCase();
-    return (!q || [d.supplier, d.part_name, d.model, d.category].some(f => (f || "").toLowerCase().includes(q))) && (showPaid ? true : !d.is_paid);
+    const matchSearch = !q || [d.supplier, d.part_name, d.model, d.category].some(f => (f || "").toLowerCase().includes(q));
+    const matchSupplier = supplierFilter === "Всички" || d.supplier === supplierFilter;
+    const matchPaid = showPaid ? true : !d.is_paid;
+    return matchSearch && matchSupplier && matchPaid;
   });
 
   const toggleSel = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -955,6 +963,31 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
 
   const totalUnpaid = debts.filter(d => !d.is_paid).reduce((s, d) => s + Number(d.total_amount || d.cost_price || 0), 0);
   const totalPaid = debts.filter(d => d.is_paid).reduce((s, d) => s + Number(d.total_amount || d.cost_price || 0), 0);
+
+  const exportSelected = () => {
+    const toExport = selected.size > 0
+      ? filtered.filter(d => selected.has(d.id))
+      : filtered;
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toExport.map(d => ({
+      "Дата поръчка": d.date_ordered, "Дата пристигане": d.date_arrived || "", Доставчик: d.supplier,
+      Артикул: d.part_name, Модел: d.model || "", Категория: d.category || "", "Бр.": d.quantity,
+      "Доставна €": d.cost_price, "Общо €": d.total_amount || d.cost_price,
+      Платено: d.is_paid ? "Да" : "Не", "Дата плащане": d.paid_date || "", "Начин плащане": d.payment_method || "",
+    }))), "Задължения"); XLSX.writeFile(wb, `Задължения_${supplierFilter !== "Всички" ? supplierFilter + "_" : ""}${today()}.xlsx`);
+  };
+  const exportSelected = () => {
+    const toExport = selected.size > 0 ? filtered.filter(d => selected.has(d.id)) : filtered;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toExport.map(d => ({
+      "Дата поръчка": d.date_ordered, "Дата пристигане": d.date_arrived || "", Доставчик: d.supplier,
+      Артикул: d.part_name, Модел: d.model || "", Категория: d.category || "", "Бр.": d.quantity,
+      "Доставна €": d.cost_price, "Общо €": d.total_amount || d.cost_price,
+      Платено: d.is_paid ? "Да" : "Не", "Дата плащане": d.paid_date || "", "Начин плащане": d.payment_method || "",
+    }))), "Задължения");
+    XLSX.writeFile(wb, `Задължения_${supplierFilter !== "Всички" ? supplierFilter + "_" : ""}${today()}.xlsx`);
+  };
+
+  const exportAll = () => {
 
   const exportAll = () => {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(d => ({
@@ -973,15 +1006,27 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
           <p style={{ margin: "3px 0 0", fontSize: 12, color: "#64748b" }}>Неплатено: <b style={{ color: "#ef4444" }}>{fmtM(totalUnpaid)}</b> &nbsp;|&nbsp; Платено общо: <b style={{ color: "#10b981" }}>{fmtM(totalPaid)}</b></p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}
+          <MBtn color="#10b981" bg="#064e3b" onClick={exportSelected}>
+            📊 {selected.size > 0 ? `Excel (${selected.size} избрани)` : "Excel"}
+          </MBtn>
           {selected.size > 0 && <MBtn color="#10b981" bg="#064e3b" onClick={() => setPayModal(true)}>✅ Плати ({selected.size})</MBtn>}
           <MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
-        <input placeholder="🔍  Търси по доставчик, артикул, модел..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
+      <div style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <input placeholder="🔍  Търси по доставчик, артикул, модел..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
+        <select value={supplierFilter} onChange={e => setSupplierFilter(e.target.value)} style={{ minWidth: 160 }}>
+          {suppliers.map(s => <option key={s}>{s}</option>)}
+        </select>
         <button onClick={() => setShowPaid(p => !p)} style={{ background: showPaid ? "#334155" : "#1e293b", color: showPaid ? "#94a3b8" : "#64748b", border: "1px solid #334155", borderRadius: 7, padding: "7px 14px", cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>{showPaid ? "Скрий платените" : "Покажи всички"}</button>
       </div>
+      {supplierFilter !== "Всички" && (
+        <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#38bdf8", fontWeight: 700 }}>🏢 {supplierFilter}</span>
+          <span style={{ fontSize: 12, color: "#64748b" }}>— Неплатено: <b style={{ color: "#ef4444" }}>{fmtM(filtered.filter(d => !d.is_paid).reduce((s, d) => s + Number(d.total_amount || d.cost_price || 0), 0))}</b></span>
+          <button onClick={() => setSupplierFilter("Всички")} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 11 }}>✕</button>
+        </div>
+      )}
       <MCard style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-wrap">
           <table>
