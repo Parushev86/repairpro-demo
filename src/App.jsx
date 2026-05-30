@@ -1599,6 +1599,13 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
           onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, minWidth: 200, boxSizing: "border-box" }}
         />
+       <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <input
+          placeholder="🔍  Търси по наименование, категория, доставчик, SKU, локация..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, minWidth: 200, boxSizing: "border-box" }}
+        />
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600, whiteSpace: "nowrap" }}>📅 Заприходено на:</label>
           <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ width: 160 }} />
@@ -1609,12 +1616,11 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
         </div>
       </div>
       {(search || dateFilter) && (
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
-            Намерени: <b style={{ color: "#38bdf8" }}>{filtered.length}</b> артикула
-            {dateFilter && <span style={{ marginLeft: 8, color: "#f59e0b" }}>за {new Date(dateFilter).toLocaleDateString("bg-BG")}</span>}
-          </div>
-        )}
-      </div>
+        <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>
+          Намерени: <b style={{ color: "#38bdf8" }}>{filtered.length}</b> артикула
+          {dateFilter && <span style={{ marginLeft: 8, color: "#f59e0b" }}>за {new Date(dateFilter).toLocaleDateString("bg-BG")}</span>}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 5, marginBottom: 14, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
         {cats.map(c => (
           <button key={c} onClick={() => setCatFilter(c)} style={{
