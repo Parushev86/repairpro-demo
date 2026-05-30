@@ -978,7 +978,7 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
  
     
 
-  const exportAll = () => {
+  
 
   const exportAll = () => {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(d => ({
