@@ -1599,13 +1599,6 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
           onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, minWidth: 200, boxSizing: "border-box" }}
         />
-       <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          placeholder="🔍  Търси по наименование, категория, доставчик, SKU, локация..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 200, boxSizing: "border-box" }}
-        />
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600, whiteSpace: "nowrap" }}>📅 Заприходено на:</label>
           <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ width: 160 }} />
