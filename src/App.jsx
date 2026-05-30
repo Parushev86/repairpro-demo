@@ -1553,11 +1553,16 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
 function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, onImport }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("Всички");
+  const [dateFilter, setDateFilter] = useState("");
 
   const filtered = inventory.filter(i => {
     const q = search.toLowerCase().trim();
     const matchCat = catFilter === "Всички" || i.category === catFilter;
     if (!matchCat) return false;
+    if (dateFilter) {
+      const itemDate = (i.created_at || "").slice(0, 10);
+      if (itemDate !== dateFilter) return false;
+    }
     if (!q) return true;
     return (
       (i.name || "").toLowerCase().includes(q) ||
@@ -1587,16 +1592,26 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
         </div>
       </div>
       {lowStock.length > 0 && <div style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 12, color: "#fca5a5" }}>⚠️ <b>{lowStock.length} артикула</b> са под минималната наличност!</div>}
-      <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
         <input
           placeholder="🔍  Търси по наименование, категория, доставчик, SKU, локация..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: "100%", boxSizing: "border-box" }}
+          style={{ flex: 1, minWidth: 200, boxSizing: "border-box" }}
         />
-        {search && (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+          <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600, whiteSpace: "nowrap" }}>📅 Заприходено на:</label>
+          <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ width: 160 }} />
+          {dateFilter && (
+            <button onClick={() => setDateFilter("")} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontSize: 12 }}>✕ Изчисти</button>
+          )}
+          <button onClick={() => setDateFilter(new Date().toISOString().split("T")[0])} style={{ background: "#1e293b", color: "#64748b", border: "1px solid #334155", borderRadius: 7, padding: "6px 10px", cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>Днес</button>
+        </div>
+      </div>
+      {(search || dateFilter) && (
           <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
             Намерени: <b style={{ color: "#38bdf8" }}>{filtered.length}</b> артикула
+            {dateFilter && <span style={{ marginLeft: 8, color: "#f59e0b" }}>за {new Date(dateFilter).toLocaleDateString("bg-BG")}</span>}
           </div>
         )}
       </div>
