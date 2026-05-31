@@ -1583,7 +1583,12 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Складова наличност</h1>
-          <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>Обща стойност: <b style={{ color: "#10b981" }}>{fmtMoney(totalValue)}</b> | {inventory.length} артикула</p>
+          <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>
+            Продажна: <b style={{ color: "#10b981" }}>{fmtMoney(totalValue)}</b> &nbsp;|&nbsp;
+            Доставна: <b style={{ color: "#f59e0b" }}>{fmtMoney(totalCost)}</b> &nbsp;|&nbsp;
+            Печалба: <b style={{ color: "#38bdf8" }}>{fmtMoney(totalValue - totalCost)}</b> &nbsp;|&nbsp;
+            {inventory.length} артикула
+          </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn>
