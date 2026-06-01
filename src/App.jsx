@@ -1308,8 +1308,7 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
       const newParts = [...(f.parts || []), { id: inv.id, name: inv.name, price: Number(inv.price), category: inv.category || "" }];
       const partsSum = newParts.reduce((s, p) => s + Number(p.price || 0), 0);
       const labor = Number(f.labor_price || 0);
-      const ext = Number(f.external_service_price || 0);
-      const total = (labor + partsSum + ext).toFixed(2);
+      const total = (labor + partsSum).toFixed(2);
       return { ...f, parts: newParts, total_price: total, price: total };
     });
     setTimeout(() => {
@@ -1442,31 +1441,14 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
                     onChange={e => {
                       const labor = Number(e.target.value) || 0;
                       const parts = (form.parts || []).reduce((s, p) => s + Number(p.price || 0), 0);
-                      const ext = Number(form.external_service_price || 0);
-                      const total = (labor + parts + ext).toFixed(2);
+                      const total = (labor + parts).toFixed(2);
                       set("labor_price", e.target.value);
                       set("total_price", total);
                       set("price", total);
                     }}
                     placeholder="0.00" />
                 </Field>
-                <Field label="🔧 Външна услуга (€)">
-                  <input type="number" min="0" step="0.01"
-                    value={form.external_service_price || ""}
-                    onChange={e => {
-                      const ext = Number(e.target.value) || 0;
-                      const labor = Number(form.labor_price || 0);
-                      const parts = (form.parts || []).reduce((s, p) => s + Number(p.price || 0), 0);
-                      const total = (labor + parts + ext).toFixed(2);
-                      set("external_service_price", e.target.value);
-                      set("total_price", total);
-                      set("price", total);
-                    }}
-                    placeholder="0.00" />
-                </Field>
-                <Field label="📝 Описание на външната услуга" style={{ gridColumn: "1/-1" }}>
-                  <input value={form.external_service_note || ""} onChange={e => set("external_service_note", e.target.value)} placeholder="Смяна на дисплей от външен сервиз, запояване..." />
-                </Field>
+                
                 <Field label="🔩 Цена части (€) — авт.">
                   <input type="number"
                     value={(form.parts || []).reduce((s, p) => s + Number(p.price || 0), 0).toFixed(2)}
@@ -2615,7 +2597,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   );
 
   const revenue = issuedToday.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
-  const extServiceCost = issuedToday.reduce((s, o) => s + Number(o.external_service_price || 0), 0);
+ 
 
   const accRevToday = accSales.filter(s => {
   const pd = s.paid_date || s.date;
@@ -2675,7 +2657,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
     return s + parts.reduce((ps, p) => ps + Number(p.price || 0), 0);
   }, 0);
 
-  const profit = totalRevenue - partsCost - extServiceCost - expensesToday;
+  const profit = totalRevenue - partsCost - expensesToday;
 
   const techDay = [...new Set(dayOrders.map(o => o.technician).filter(Boolean))].map(t => ({
     name: t,
@@ -2738,7 +2720,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
       date,
       receivedToday, issuedToday,
       revenue, accRevToday, partsRevToday, phoneRevToday,
-      totalRevenue, expensesToday, extServiceCost, partsCost, profit,
+      totalRevenue, expensesToday, partsCost, profit,
       openingCash, cashNow,
       paymentBreakdown,
       techDay,
@@ -2781,16 +2763,16 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
             Аксесоари: € {accRevToday.toFixed(2)}<br />
             Части: € {partsRevToday.toFixed(2)}<br />
             Телефони: € {phoneRevToday.toFixed(2)}<br />
-            {extServiceCost > 0 && <span style={{ color: "#f59e0b" }}>Вкл. вън. услуги: € {extServiceCost.toFixed(2)}</span>}
+            
           </div>
         </Card>
         <Card style={{ borderLeft: "4px solid #ef4444", padding: "14px 16px" }}>
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>💸 ОБЩО РАЗХОДИ</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#ef4444" }}>€ {(expensesToday + extServiceCost + partsCost).toFixed(2)}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: "#ef4444" }}>€ {(expensesToday + partsCost).toFixed(2)}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4, lineHeight: 1.8 }}>
             От каса: € {expensesToday.toFixed(2)}<br />
             Не от каса: € {expensesNotCash.toFixed(2)}<br />
-            Вън. услуги: € {extServiceCost.toFixed(2)}<br />
+          
             Части: € {partsCost.toFixed(2)}
           </div>
         </Card>
@@ -2798,7 +2780,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>📈 НЕТНА ПЕЧАЛБА</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-            {totalRevenue.toFixed(2)} − {(expensesToday + extServiceCost + partsCost).toFixed(2)} = <b style={{ color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</b>
+            {totalRevenue.toFixed(2)} − {(expensesToday + partsCost).toFixed(2)} = <b style={{ color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</b>
           </div>
         </Card>
         <Card style={{ borderLeft: "4px solid #f59e0b", padding: "14px 16px" }}>
