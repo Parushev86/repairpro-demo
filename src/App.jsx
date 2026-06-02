@@ -1307,9 +1307,10 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
     setForm(f => {
       const newParts = [...(f.parts || []), { id: inv.id, name: inv.name, price: Number(inv.price), category: inv.category || "" }];
       const partsSum = newParts.reduce((s, p) => s + Number(p.price || 0), 0);
-      const labor = Number(f.labor_price || 0);
-      const total = (labor + partsSum).toFixed(2);
-      return { ...f, parts: newParts, total_price: total, price: total };
+      const currentTotal = Number(f.total_price || f.price || 0);
+      // Ако има въведена крайна цена — изчисли труда автоматично
+      const newLabor = currentTotal > 0 ? Math.max(0, currentTotal - partsSum) : Number(f.labor_price || 0);
+      return { ...f, parts: newParts, labor_price: newLabor.toFixed(2) };
     });
     setTimeout(() => {
       if (newQty === 0) {
@@ -1338,9 +1339,9 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
     setForm(f => {
       const newParts = f.parts.filter((_, j) => j !== idx);
       const partsSum = newParts.reduce((s, p) => s + Number(p.price || 0), 0);
-      const labor = Number(f.labor_price || 0);
-      const total = (labor + partsSum).toFixed(2);
-      return { ...f, parts: newParts, total_price: total, price: total };
+      const currentTotal = Number(f.total_price || f.price || 0);
+      const newLabor = currentTotal > 0 ? Math.max(0, currentTotal - partsSum) : Number(f.labor_price || 0);
+      return { ...f, parts: newParts, labor_price: newLabor.toFixed(2) };
     });
   };
   const partsTotal = (form.parts || []).reduce((s, p) => s + Number(p.price || 0), 0);
@@ -1434,7 +1435,12 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
                     {technicians.filter(t => t.active !== false).map(t => <option key={t.id}>{t.name}</option>)}
                   </select>
                 </Field>
-                <Field label="Статус"><select value={form.status} onChange={e => set("status", e.target.value)}>{STATUSES.map(s => <option key={s}>{s}</option>)}</select></Field>
+                <Field label="Статус"><select value={form.status} onChange={e => {
+                  set("status", e.target.value);
+                  if (e.target.value === "Издаден" && !form.date_out) {
+                    set("date_out", today());
+                  }
+                }}>{STATUSES.map(s => <option key={s}>{s}</option>)}</select></Field>
                 <Field label="💪 Цена труд (€)">
                   <input type="number" min="0" step="0.01"
                     value={form.labor_price || ""}
