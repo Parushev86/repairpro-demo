@@ -2627,7 +2627,7 @@ const phoneRevToday = phoneSales.filter(s => {
   const phoneCash = phoneSales.filter(s => toDate(s.date) === date && s.payment_method === "В брой").reduce((s, r) => s + Number(r.sale_price || 0), 0);
   const totalCashIn = cashRevenue + accCash + partsCash + phoneCash;
 
-  const cashNow = openingCash + totalCashIn - expensesToday;
+  const cashNow = openingCash + totalCashIn - totalFromCash;
   const totalAllCash = cashNow + Number(bankAmount || 0) + Number(externalCash || 0);
 
   const partsToday = partsSales.filter(s => {
