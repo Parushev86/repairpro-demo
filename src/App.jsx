@@ -2614,7 +2614,7 @@ const phoneRevToday = phoneSales.filter(s => {
 }).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   
   const allExpensesToday = expenses.filter(e => toDate(e.date) === date);
-  const expensesToday = allExpensesToday.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const expensesToday = allExpensesToday.reduce((s, e) => s + Number(e.amount || 0), 0);
   const expensesNotCash = allExpensesToday.filter(e => e.from_cash === false).reduce((s, e) => s + Number(e.amount || 0), 0);
   const cashEntry = cashReg.find(c => c.date === date);
   const openingCash = Number(cashEntry?.opening_cash || 0);
