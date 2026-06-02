@@ -38,7 +38,7 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
 
   // Daily profit for selected month
   const monthOrders = (orders||[]).filter(o => {
-    const d = (o.updated_at||o.date_in||"").slice(0,7);
+    const d = (o.date_out||o.updated_at||o.date_in||"").slice(0,7);
     return d === monthKey && o.status === "Издаден";
   });
   const monthExpenses = (expenses||[]).filter(e => (e.date||"").slice(0,7) === monthKey);
@@ -62,7 +62,7 @@ const monthPhones = (phoneSales||[]).filter(s => {
     const day = String(i+1).padStart(2,"0");
     const dayStr = `${monthKey}-${day}`;
     const revOrders = monthOrders
-  .filter(r => (r.updated_at||r.date_out||r.date||"").slice(0,10) === dayStr)
+  .filter(r => (r.date_out||r.updated_at||"").slice(0,10) === dayStr)
   .reduce((s,r) => s + Number(r.total_price||r.price||0), 0);
 const revAcc = monthAcc
   .filter(r => (r.date||"").slice(0,10) === dayStr)
