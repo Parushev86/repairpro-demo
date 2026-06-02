@@ -2652,12 +2652,8 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
 }).filter(p => p.count > 0);
   const unpaid = issuedToday.filter(o => !o.payment_method || o.payment_method === "Не е платен").reduce((s, o) => s + Number(o.price || 0), 0);
 
-  const partsCost = issuedToday.reduce((s, o) => {
-    const parts = o.parts || [];
-    return s + parts.reduce((ps, p) => ps + Number(p.price || 0), 0);
-  }, 0);
-
-  const profit = totalRevenue - partsCost - expensesToday;
+ 
+ const profit = totalRevenue - expensesToday;
 
   const techDay = [...new Set(dayOrders.map(o => o.technician).filter(Boolean))].map(t => ({
     name: t,
@@ -2773,7 +2769,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
             От каса: € {expensesToday.toFixed(2)}<br />
             Не от каса: € {expensesNotCash.toFixed(2)}<br />
           
-            Части: € {partsCost.toFixed(2)}
+            
           </div>
         </Card>
         <Card style={{ borderLeft: "4px solid #38bdf8", padding: "14px 16px" }}>
