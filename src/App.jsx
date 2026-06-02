@@ -2764,7 +2764,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4, lineHeight: 1.8 }}>
             Ремонти: € {revenue.toFixed(2)}<br />
             Аксесоари: € {accRevToday.toFixed(2)}<br />
-            
+            Части: € {partsRevToday.toFixed(2)}<br />
             Телефони: € {phoneRevToday.toFixed(2)}<br />
             
           </div>
