@@ -2767,9 +2767,9 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>💸 ОБЩО РАЗХОДИ</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "#ef4444" }}>€ {expensesToday.toFixed(2)}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4, lineHeight: 1.8 }}>
-            От каса: € {expensesToday.toFixed(2)}<br />
-            Не от каса: € {expensesNotCash.toFixed(2)}<br />
-          
+            От каса: € {totalFromCash.toFixed(2)}<br />
+            Не от каса: € {expensesNotCash.toFixed(2)}
+         
             
           </div>
         </Card>
