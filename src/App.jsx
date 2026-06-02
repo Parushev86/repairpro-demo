@@ -1551,6 +1551,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
       const itemDate = (i.created_at || "").slice(0, 10);
       if (itemDate !== dateFilter) return false;
     }
+    if (q === "__lowstock__") return Number(i.quantity) <= Number(i.min_qty);
     if (!q) return true;
     return (
       (i.name || "").toLowerCase().includes(q) ||
@@ -1584,7 +1585,14 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
           <PrimaryBtn onClick={onNew} color="linear-gradient(135deg,#10b981,#059669)">+ Нов артикул</PrimaryBtn>
         </div>
       </div>
-      {lowStock.length > 0 && <div style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 12, color: "#fca5a5" }}>⚠️ <b>{lowStock.length} артикула</b> са под минималната наличност!</div>}
+      {lowStock.length > 0 && (
+        <div style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 12, color: "#fca5a5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>⚠️ <b>{lowStock.length} артикула</b> са под минималната наличност!</span>
+          <button onClick={() => { setCatFilter("Всички"); setSearch("__lowstock__"); }} style={{ background: "#7f1d1d", color: "#fca5a5", border: "1px solid #ef4444", borderRadius: 7, padding: "4px 12px", cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", marginLeft: 10 }}>
+            🔍 Покажи всички
+          </button>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
         <input
           placeholder="🔍  Търси по наименование, категория, доставчик, SKU, локация..."
