@@ -2685,7 +2685,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
     <h1>🧾 ДНЕВЕН ОТЧЕТ — ${fmtD(date)}</h1>
     <div class="kpi">
       <div class="kpi-box green"><div class="val">€ ${revenue.toFixed(2)}</div><div class="lbl">Приходи (издадени)</div></div>
-      <div class="kpi-box red"><div class="val">€ ${partsCost.toFixed(2)}</div><div class="lbl">Разходи (части)</div></div>
+      <div class="kpi-box red"><div class="val">€ ${(expensesToday + 0).toFixed(2)}</div><div class="lbl">Разходи</div></div>
       <div class="kpi-box blue"><div class="val">€ ${profit.toFixed(2)}</div><div class="lbl">Нетна печалба</div></div>
     </div>
     <div class="kpi">
@@ -2716,7 +2716,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
       date,
       receivedToday, issuedToday,
       revenue, accRevToday, partsRevToday, phoneRevToday,
-      totalRevenue, expensesToday, partsCost, profit,
+      totalRevenue, expensesToday, profit,
       openingCash, cashNow,
       paymentBreakdown,
       techDay,
@@ -2757,14 +2757,14 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4, lineHeight: 1.8 }}>
             Ремонти: € {revenue.toFixed(2)}<br />
             Аксесоари: € {accRevToday.toFixed(2)}<br />
-            Части: € {partsRevToday.toFixed(2)}<br />
+            
             Телефони: € {phoneRevToday.toFixed(2)}<br />
             
           </div>
         </Card>
         <Card style={{ borderLeft: "4px solid #ef4444", padding: "14px 16px" }}>
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>💸 ОБЩО РАЗХОДИ</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#ef4444" }}>€ {(expensesToday + partsCost).toFixed(2)}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: "#ef4444" }}>€ {expensesToday.toFixed(2)}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4, lineHeight: 1.8 }}>
             От каса: € {expensesToday.toFixed(2)}<br />
             Не от каса: € {expensesNotCash.toFixed(2)}<br />
@@ -2776,7 +2776,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>📈 НЕТНА ПЕЧАЛБА</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-            {totalRevenue.toFixed(2)} − {(expensesToday + partsCost).toFixed(2)} = <b style={{ color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</b>
+            {totalRevenue.toFixed(2)} − {(expensesToday ).toFixed(2)} = <b style={{ color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</b>
           </div>
         </Card>
         <Card style={{ borderLeft: "4px solid #f59e0b", padding: "14px 16px" }}>
