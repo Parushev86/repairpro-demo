@@ -1723,6 +1723,17 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Категория"><select value={form.category || "Дисплеи"} onChange={e => set("category", e.target.value)}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></Field>
             <Field label="SKU / Код"><input value={form.sku || ""} onChange={e => set("sku", e.target.value)} placeholder="SAM-S22-LCD" /></Field>
+            {form.category === "Телефони" && <>
+              <Field label="IMEI / Сериен №" style={{ gridColumn: "1/-1" }}>
+                <input value={form.phone_imei || ""} onChange={e => set("phone_imei", e.target.value)} placeholder="358XXXXXXXXXXXX" />
+              </Field>
+              <Field label="Цвят">
+                <input value={form.phone_color || ""} onChange={e => set("phone_color", e.target.value)} placeholder="Черен / Бял..." />
+              </Field>
+              <Field label="Памет">
+                <input value={form.phone_storage || ""} onChange={e => set("phone_storage", e.target.value)} placeholder="128GB..." />
+              </Field>
+            </>}
             <Field label="Наличност (бр.)"><input type="number" min="0" value={form.quantity} onChange={e => set("quantity", Number(e.target.value))} /></Field>
             <Field label="Минимална наличност"><input type="number" min="0" value={form.min_qty} onChange={e => set("min_qty", Number(e.target.value))} /></Field>
             <Field label="Продажна цена (€)"><input type="number" min="0" step="0.01" value={form.price} onChange={e => set("price", Number(e.target.value))} /></Field>
