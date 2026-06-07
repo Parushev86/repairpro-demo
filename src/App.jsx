@@ -2820,19 +2820,39 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#3b82f6" }}>💳 С карта:</span>
-                <span style={{ color: "#93c5fd", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "С карта").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+                <span style={{ color: "#93c5fd", fontWeight: 700 }}>€ {(
+                  issuedToday.filter(o => o.payment_method === "С карта").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0) +
+                  accSales.filter(s => toDate(s.date) === date && s.payment_method === "С карта").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  partsSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_status === "Платена" && s.payment_method === "С карта").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  phoneSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_method === "С карта").reduce((s, r) => s + Number(r.sale_price || 0), 0)
+                ).toFixed(2)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#8b5cf6" }}>🏦 Банка:</span>
-                <span style={{ color: "#a78bfa", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "Банка").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+                <span style={{ color: "#a78bfa", fontWeight: 700 }}>€ {(
+                  issuedToday.filter(o => o.payment_method === "Банка").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0) +
+                  accSales.filter(s => toDate(s.date) === date && s.payment_method === "Банка").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  partsSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_status === "Платена" && s.payment_method === "Банка").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  phoneSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_method === "Банка").reduce((s, r) => s + Number(r.sale_price || 0), 0)
+                ).toFixed(2)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#f59e0b" }}>📦 Еконт:</span>
-                <span style={{ color: "#fcd34d", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "Еконт").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+                <span style={{ color: "#fcd34d", fontWeight: 700 }}>€ {(
+                  issuedToday.filter(o => o.payment_method === "Еконт").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0) +
+                  accSales.filter(s => toDate(s.date) === date && s.payment_method === "Еконт").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  partsSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_status === "Платена" && s.payment_method === "Еконт").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  phoneSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_method === "Еконт").reduce((s, r) => s + Number(r.sale_price || 0), 0)
+                ).toFixed(2)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#06b6d4" }}>🚚 Спиди:</span>
-                <span style={{ color: "#67e8f9", fontWeight: 700 }}>€ {issuedToday.filter(o => o.payment_method === "Спиди").reduce((s, o) => s + Number(o.price || 0), 0).toFixed(2)}</span>
+                <span style={{ color: "#67e8f9", fontWeight: 700 }}>€ {(
+                  issuedToday.filter(o => o.payment_method === "Спиди").reduce((s, o) => s + Number(o.total_price || o.price || 0), 0) +
+                  accSales.filter(s => toDate(s.date) === date && s.payment_method === "Спиди").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  partsSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_status === "Платена" && s.payment_method === "Спиди").reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+                  phoneSales.filter(s => toDate(s.paid_date || s.date) === date && s.payment_method === "Спиди").reduce((s, r) => s + Number(r.sale_price || 0), 0)
+                ).toFixed(2)}</span>
               </div>
               {unpaid > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
