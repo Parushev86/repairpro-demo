@@ -941,7 +941,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
-          <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>Сервизна CRM система</div>
+          <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>RepairPro Бургас</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
             <span style={{ fontSize: 10, color: connected ? "#64748b" : "#ef4444" }}>
@@ -3821,7 +3821,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>RepairPro</div>
-          <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Сервизна CRM система</div>
+          <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>RepairPro Бургас</div>
         </div>
 
         {mode === "login" ? (
@@ -3894,7 +3894,7 @@ function LoginScreen({ onLogin }) {
         )}
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
-          RepairPro v2.0 — Сервизна система
+          RepairPro Бургас v2.0
         </div>
       </div>
     </div>
