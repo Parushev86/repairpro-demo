@@ -506,7 +506,7 @@ export default function App() {
           {tab === "reports" && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} accSales={accSales} onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }} />}
           {tab === "technicians" && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={() => exportTechReport(technicians, orders)} />}
           {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} />}
-          {tab === "calculator" && <Calculator />}
+          {tab === "calculator" && <Calculator getSupabase={getSupabase} />}
           {tab === "pricing" && <PricingTab />}
           {tab === "expenses" && <ExpensesTab
   expenses={expenses} cashRegister={cashReg} isAdmin={isAdmin}
@@ -940,8 +940,8 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
         position: "sticky", top: 0,
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
-          <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>Burgas</div>
+       <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>SunnyBeach</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
             <span style={{ fontSize: 10, color: connected ? "#64748b" : "#ef4444" }}>
@@ -3022,13 +3022,78 @@ function CalcField({ label, children }) {
   );
 }
 
-function Calculator() {
+function Calculator({ getSupabase }) {
   const rate = 1.95583;
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("client");
   const [accessory, setAccessory] = useState("display");
   const [convertAmount, setConvertAmount] = useState("");
   const [convertType, setConvertType] = useState("bgnToEur");
+  const [laborRates, setLaborRates] = useState(null);
+  const [laborRatesColleague, setLaborRatesColleague] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const sb = getSupabase();
+        if (!sb) return;
+        const { data: d1 } = await sb.from("global_settings").select("value").eq("key", "labor_rates").maybeSingle();
+        if (d1?.value) setLaborRates(typeof d1.value === "string" ? JSON.parse(d1.value) : d1.value);
+        const { data: d2 } = await sb.from("global_settings").select("value").eq("key", "labor_rates_colleague").maybeSingle();
+        if (d2?.value) setLaborRatesColleague(typeof d2.value === "string" ? JSON.parse(d2.value) : d2.value);
+      } catch (e) {}
+    };
+    load();
+  }, []);
+  const [editRates, setEditRates] = useState(false);
+
+  const DEFAULT_RATES = [
+    { label: "Дисплей ≤26€", eur: 50 },
+    { label: "Дисплей ≤51€", eur: 50 },
+    { label: "Дисплей ≤77€", eur: 50 },
+    { label: "Дисплей ≤102€", eur: 51 },
+    { label: "Дисплей ≤128€", eur: 56 },
+    { label: "Дисплей >128€", eur: 77 },
+    { label: "Батерия", eur: 28 },
+    { label: "Заден капак", eur: 28 },
+    { label: "Блок захранване", eur: 31 },
+    { label: "Камери", eur: 31 },
+    { label: "Стъкло камера", eur: 15 },
+  ];
+
+  const DEFAULT_RATES_COLLEAGUE = [
+    { label: "Дисплей ≤26€", eur: 30 },
+    { label: "Дисплей ≤51€", eur: 30 },
+    { label: "Дисплей ≤77€", eur: 30 },
+    { label: "Дисплей ≤102€", eur: 35 },
+    { label: "Дисплей ≤128€", eur: 40 },
+    { label: "Дисплей >128€", eur: 50 },
+    { label: "Батерия", eur: 18 },
+    { label: "Заден капак", eur: 18 },
+    { label: "Блок захранване", eur: 20 },
+    { label: "Камери", eur: 20 },
+    { label: "Стъкло камера", eur: 10 },
+  ];
+
+  const rates = laborRates || DEFAULT_RATES;
+  const ratesColleague = laborRatesColleague || DEFAULT_RATES_COLLEAGUE;
+  const saveRates = async (newRates) => {
+    setLaborRates(newRates);
+    try {
+      const sb = getSupabase();
+      if (!sb) return;
+      await sb.from("global_settings").upsert({ key: "labor_rates", value: newRates }, { onConflict: "key" });
+    } catch (e) {}
+  };
+
+  const saveRatesColleague = async (newRates) => {
+    setLaborRatesColleague(newRates);
+    try {
+      const sb = getSupabase();
+      if (!sb) return;
+      await sb.from("global_settings").upsert({ key: "labor_rates_colleague", value: newRates }, { onConflict: "key" });
+    } catch (e) {}
+  };
 
   const accessories = [
     { value: "display", label: "Дисплей" },
@@ -3043,54 +3108,51 @@ function Calculator() {
   ];
 
   const calculate = () => {
-    const eur = Number(amount);
-    if (!eur) return { eur: 0, bgn: 0 };
-    let amountBgn = eur * rate;
-    let result = amountBgn;
-
+    const partEur = Number(amount);
+    if (!partEur) return { eur: 0, laborEur: 0 };
+    const r = rates;
+    let laborEurVal = 0;
     if (type === "client") {
       switch (accessory) {
         case "display":
-          if (amountBgn <= 50) result += 80;
-          else if (amountBgn <= 100) result += 85;
-          else if (amountBgn <= 150) result += 95;
-          else if (amountBgn <= 200) result += 100;
-          else if (amountBgn <= 250) result += 110;
-          else result += 150;
+          if (partEur <= 26) laborEurVal = r[0]?.eur || 0;
+          else if (partEur <= 51) laborEurVal = r[1]?.eur || 0;
+          else if (partEur <= 77) laborEurVal = r[2]?.eur || 0;
+          else if (partEur <= 102) laborEurVal = r[3]?.eur || 0;
+          else if (partEur <= 128) laborEurVal = r[4]?.eur || 0;
+          else laborEurVal = r[5]?.eur || 0;
           break;
-        case "battery": result += 55; break;
-        case "back_cover": result += 55; break;
-        case "power_board": result += 60; break;
-        case "camera": result += 60; break;
-        case "flex_cable": result += 60; break;
-        case "ear_speaker": result += 55; break;
-        case "polyphony": result += 60; break;
-        case "camera_glass": result += 30; break;
+        case "battery": laborEurVal = r[6]?.eur || 0; break;
+        case "back_cover": laborEurVal = r[7]?.eur || 0; break;
+        case "power_board": laborEurVal = r[8]?.eur || 0; break;
+        case "camera": laborEurVal = r[9]?.eur || 0; break;
+        case "flex_cable": laborEurVal = r[9]?.eur || 0; break;
+        case "ear_speaker": laborEurVal = r[6]?.eur || 0; break;
+        case "polyphony": laborEurVal = r[9]?.eur || 0; break;
+        case "camera_glass": laborEurVal = r[10]?.eur || 0; break;
       }
     } else {
+      const rc = ratesColleague;
       switch (accessory) {
         case "display":
-          if (amountBgn <= 50) result += 50;
-          else if (amountBgn <= 100) result += 50;
-          else if (amountBgn <= 150) result += 50;
-          else if (amountBgn <= 200) result += 70;
-          else if (amountBgn <= 250) result += 80;
-          else result += 100;
+          if (partEur <= 26) laborEurVal = rc[0]?.eur || 0;
+          else if (partEur <= 51) laborEurVal = rc[1]?.eur || 0;
+          else if (partEur <= 77) laborEurVal = rc[2]?.eur || 0;
+          else if (partEur <= 102) laborEurVal = rc[3]?.eur || 0;
+          else if (partEur <= 128) laborEurVal = rc[4]?.eur || 0;
+          else laborEurVal = rc[5]?.eur || 0;
           break;
-        case "battery": result += 35; break;
-        case "back_cover": result += 40; break;
-        case "power_board": result += 40; break;
-        case "camera": result += 40; break;
-        case "flex_cable": result += 40; break;
-        case "ear_speaker": result += 40; break;
-        case "polyphony": result += 40; break;
-        case "camera_glass": result += 20; break;
+        case "battery": laborEurVal = rc[6]?.eur || 0; break;
+        case "back_cover": laborEurVal = rc[7]?.eur || 0; break;
+        case "power_board": laborEurVal = rc[8]?.eur || 0; break;
+        case "camera": laborEurVal = rc[9]?.eur || 0; break;
+        case "flex_cable": laborEurVal = rc[9]?.eur || 0; break;
+        case "ear_speaker": laborEurVal = rc[6]?.eur || 0; break;
+        case "polyphony": laborEurVal = rc[9]?.eur || 0; break;
+        case "camera_glass": laborEurVal = rc[10]?.eur || 0; break;
       }
     }
-
-    const resultEur = Math.round(result / rate);
-    const resultBgn = resultEur * rate;
-    return { eur: resultEur, bgn: resultBgn.toFixed(2) };
+    return { eur: partEur + laborEurVal, laborEur: laborEurVal };
   };
 
   const calcConvert = () => {
@@ -3101,7 +3163,7 @@ function Calculator() {
   };
 
   const result = calculate();
-  const laborEur = amount ? result.eur - Number(amount) : 0;
+  const laborEur = result.laborEur || 0;
 
   return (
     <div className="animate-fade">
@@ -3142,7 +3204,7 @@ function Calculator() {
               {amount && result.eur > 0 ? `${result.eur} €` : "— €"}
             </div>
             <div style={{ fontSize: 14, color: "rgba(255,255,255,.6)", marginTop: 4 }}>
-              {amount && result.bgn > 0 ? `${result.bgn} лв` : "0 лв"}
+              {amount && result.eur > 0 ? `Труд: € ${laborEur}` : ""}
             </div>
             {amount && result.eur > 0 && (
               <button onClick={() => {
@@ -3181,7 +3243,7 @@ function Calculator() {
                   </div>
                   <h1>🔧 ${T.title}</h1>
                   <div class="row"><span>${T.repair}:</span><b>${accessoryLabels[lang][accessory] || accessoryLabels.bg[accessory]}</b></div>
-                  <div class="total"><span>${T.total}:</span><span>€ ${result.eur} / ${result.bgn} лв</span></div>
+                  <div class="total"><span>${T.total}:</span><span>€ ${result.eur}</span></div>
                   <div class="notice">${T.notice}</div>
                   <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
                   <div class="no-print" style="text-align:center;margin-top:16px">
@@ -3262,34 +3324,95 @@ function Calculator() {
           </Card>
 
           <Card>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#38bdf8", marginBottom: 14 }}>📋 Тарифа труд (клиент)</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#38bdf8" }}>📋 Тарифа труд (клиент)</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {editRates && <button onClick={() => { saveRates(DEFAULT_RATES); }} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontSize: 11 }}>↺ Нулирай</button>}
+                <button onClick={() => setEditRates(p => !p)} style={{ background: editRates ? "#10b981" : "#1e293b", color: editRates ? "#fff" : "#64748b", border: "none", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                  {editRates ? "✅ Готово" : "✏️ Редактирай"}
+                </button>
+              </div>
+            </div>
             <div className="table-wrap">
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: "#0f172a" }}>
                     <th style={{ padding: "7px 10px", textAlign: "left", color: "var(--text3)" }}>Вид</th>
-                    <th style={{ padding: "7px 10px", textAlign: "right", color: "var(--text3)" }}>Труд лв</th>
                     <th style={{ padding: "7px 10px", textAlign: "right", color: "var(--text3)" }}>Труд €</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    ["Дисплей ≤50лв", 80, 80 / rate],
-                    ["Дисплей ≤100лв", 85, 85 / rate],
-                    ["Дисплей ≤150лв", 95, 95 / rate],
-                    ["Дисплей ≤200лв", 100, 100 / rate],
-                    ["Дисплей ≤250лв", 110, 110 / rate],
-                    ["Дисплей >250лв", 150, 150 / rate],
-                    ["Батерия", 55, 55 / rate],
-                    ["Заден капак", 55, 55 / rate],
-                    ["Блок захранване", 60, 60 / rate],
-                    ["Камери", 60, 60 / rate],
-                    ["Стъкло камера", 30, 30 / rate],
-                  ].map(([label, bgn, eur], i) => (
+                  {rates.map((r, i) => (
                     <tr key={i} style={{ borderTop: "1px solid #1e293b" }}>
-                      <td style={{ padding: "6px 10px" }}>{label}</td>
-                      <td style={{ padding: "6px 10px", textAlign: "right", color: "#f59e0b", fontWeight: 600 }}>{bgn} лв</td>
-                      <td style={{ padding: "6px 10px", textAlign: "right", color: "#10b981", fontWeight: 600 }}>{eur.toFixed(2)} €</td>
+                      <td style={{ padding: "6px 10px" }}>{r.label}</td>
+                      <td style={{ padding: "6px 10px", textAlign: "right" }}>
+                        {editRates ? (
+                          <input type="number" min="0" step="0.5"
+                            value={Number(r.eur || 0)}
+                            onChange={e => {
+                              const eurVal = Number(e.target.value) || 0;
+                              const newRates = rates.map((x, j) => j === i ? { ...x, eur: eurVal } : x);
+                              setLaborRates(newRates);
+                            }}
+                            onBlur={e => {
+                              const eurVal = Number(e.target.value) || 0;
+                              const newRates = rates.map((x, j) => j === i ? { ...x, eur: eurVal } : x);
+                              saveRates(newRates);
+                            }}
+                            style={{ width: 70, textAlign: "right", padding: "2px 6px", fontSize: 12, color: "#10b981", fontWeight: 600 }}
+                          />
+                        ) : (
+                          <span style={{ color: "#10b981", fontWeight: 600 }}>{Number(r.eur || 0).toFixed(2)} €</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+         </Card>
+          <Card>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#10b981" }}>📋 Тарифа труд (колега)</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {editRates && <button onClick={() => saveRatesColleague(DEFAULT_RATES_COLLEAGUE)} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontSize: 11 }}>↺ Нулирай</button>}
+                <button onClick={() => setEditRates(p => !p)} style={{ background: editRates ? "#10b981" : "#1e293b", color: editRates ? "#fff" : "#64748b", border: "none", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                  {editRates ? "✅ Готово" : "✏️ Редактирай"}
+                </button>
+              </div>
+            </div>
+            <div className="table-wrap">
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "#0f172a" }}>
+                    <th style={{ padding: "7px 10px", textAlign: "left", color: "var(--text3)" }}>Вид</th>
+                    <th style={{ padding: "7px 10px", textAlign: "right", color: "var(--text3)" }}>Труд €</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ratesColleague.map((r, i) => (
+                    <tr key={i} style={{ borderTop: "1px solid #1e293b" }}>
+                      <td style={{ padding: "6px 10px" }}>{r.label}</td>
+                      <td style={{ padding: "6px 10px", textAlign: "right" }}>
+                        {editRates ? (
+                          <input type="number" min="0" step="0.5"
+                            value={Number(r.eur || 0)}
+                            onChange={e => {
+                              const eurVal = Number(e.target.value) || 0;
+                              const newRates = ratesColleague.map((x, j) => j === i ? { ...x, eur: eurVal } : x);
+                              setLaborRatesColleague(newRates);
+                            }}
+                            onBlur={e => {
+                              const eurVal = Number(e.target.value) || 0;
+                              const newRates = ratesColleague.map((x, j) => j === i ? { ...x, eur: eurVal } : x);
+                              saveRatesColleague(newRates);
+                            }}
+                            style={{ width: 70, textAlign: "right", padding: "2px 6px", fontSize: 12, color: "#10b981", fontWeight: 600 }}
+                          />
+                        ) : (
+                          <span style={{ color: "#10b981", fontWeight: 600 }}>{Number(r.eur || 0).toFixed(2)} €</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -3821,7 +3944,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>RepairPro</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>BURGAS</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>SunnyBeach</div>
         </div>
 
         {mode === "login" ? (
@@ -3894,7 +4017,7 @@ function LoginScreen({ onLogin }) {
         )}
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
-          RepairPro Бургас v2.0
+          RepairPro SunnyBeach v2.0
         </div>
       </div>
     </div>
