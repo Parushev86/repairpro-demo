@@ -361,24 +361,36 @@ export default function App() {
       }
       if (item.payment_status === "Не е платен") {
         try {
-          const debt = {
-            date_ordered: today(),
-            date_arrived: null,
-            supplier: item.supplier || "Неизвестен",
-            part_name: item.name,
-            category: item.category || "",
-            model: "",
-            quantity: Number(item.quantity) || 1,
-            cost_price: Number(item.cost) || 0,
-            total_amount: (Number(item.cost) || 0) * (Number(item.quantity) || 1),
-            is_paid: false,
-            paid_date: null,
-            payment_method: null,
-            notes: item.supplier_note || "",
-          };
-          const savedDebt = await upsertSupplierDebt(debt);
-          setSupplierDebts(p => [savedDebt, ...p]);
-          notify("✅ Добавен в склада + в Задължения!", "warn");
+          const isNew = !item.id;
+          const oldItem = isNew ? null : inventory.find(i => i.id === item.id);
+          const oldQty = Number(oldItem?.quantity || 0);
+          const newQty = Number(item.quantity) || 1;
+          const diffQty = newQty - oldQty;
+
+          // Добави в задължения само ако е нов артикул или е увеличено количеството
+          if (isNew || diffQty > 0) {
+            const qtyToDebt = isNew ? newQty : diffQty;
+            const debt = {
+              date_ordered: today(),
+              date_arrived: null,
+              supplier: item.supplier || "Неизвестен",
+              part_name: item.name,
+              category: item.category || "",
+              model: "",
+              quantity: qtyToDebt,
+              cost_price: Number(item.cost) || 0,
+              total_amount: (Number(item.cost) || 0) * qtyToDebt,
+              is_paid: false,
+              paid_date: null,
+              payment_method: null,
+              notes: item.supplier_note || "",
+            };
+            const savedDebt = await upsertSupplierDebt(debt);
+            setSupplierDebts(p => [savedDebt, ...p]);
+            notify(isNew ? "✅ Добавен в склада + в Задължения!" : `✅ Обновен + добавени ${diffQty} бр. в Задължения!`, "warn");
+          } else {
+            notify("✅ Артикулът е обновен");
+          }
         } catch (e) {
           notify("⚠️ Склад ОК, но грешка Задължения: " + e.message, "warn");
         }
@@ -941,7 +953,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
        <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>BURGAS</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>SunnyBeach</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
             <span style={{ fontSize: 10, color: connected ? "#64748b" : "#ef4444" }}>
@@ -3944,7 +3956,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>RepairPro</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>BURGAS</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>SunnyBeach</div>
         </div>
 
         {mode === "login" ? (
@@ -4017,7 +4029,7 @@ function LoginScreen({ onLogin }) {
         )}
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
-          RepairPro BURGAS v2.0
+          RepairPro SunnyBeach v2.0
         </div>
       </div>
     </div>
