@@ -98,3 +98,8 @@ export async function cleanExpiredTrash() {
   if (!sb) return;
   await sb.from("trash").delete().lt("expires_at", new Date().toISOString());
 }
+export async function fetchMonthlyExpenses() {
+  const sb = getSupabase();
+  const { data } = await sb.from("monthly_expenses").select("*").order("created_at", { ascending: false });
+  return data || [];
+}
