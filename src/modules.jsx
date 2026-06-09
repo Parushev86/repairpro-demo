@@ -180,18 +180,21 @@ export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, 
   const [modal, setModal] = useState(null);
   const [date, setDate] = useState(today());
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState("day"); // "day" | "month"
+  const [monthFilter, setMonthFilter] = useState(today().slice(0, 7));
   const today_str = new Date().toISOString().split("T")[0];
   const filtered = sales.filter(s => {
     const q = search.toLowerCase();
     if (!isAdmin) {
       if (!q && (s.date || "").slice(0, 10) !== today_str) return false;
     }
-    return (!q || [s.item_name, s.buyer_name].some(f => (f || "").toLowerCase().includes(q)))
-      && (q ? true : (s.date || "").slice(0, 10) === date);
+    if (q) return [s.item_name, s.buyer_name].some(f => (f || "").toLowerCase().includes(q));
+    if (viewMode === "month") return (s.date || "").slice(0, 7) === monthFilter;
+    return (s.date || "").slice(0, 10) === date;
   });
   const totalRev = filtered.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   const totalCost = filtered.reduce((s, r) => s + Number(r.cost_price || 0) * Number(r.quantity || 1), 0);
-  const exportDay = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r => ({ Дата: r.date, Артикул: r.item_name, "Бр.": r.quantity, "Доставна €": r.cost_price, "Продажна €": r.sale_price, "Общо €": Number(r.sale_price || 0) * Number(r.quantity || 1), Плащане: r.payment_method, Купувач: r.buyer_name || "" }))), "Аксесоари"); XLSX.writeFile(wb, `Аксесоари_${date}.xlsx`); };
+  const exportDay = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(r => ({ Дата: r.date, Артикул: r.item_name, "Бр.": r.quantity, "Доставна €": r.cost_price, "Продажна €": r.sale_price, "Общо €": Number(r.sale_price || 0) * Number(r.quantity || 1), Плащане: r.payment_method, Купувач: r.buyer_name || "" }))), "Аксесоари"); XLSX.writeFile(wb, `Аксесоари_${viewMode === "month" ? monthFilter : date}.xlsx`); };
   return (
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -199,8 +202,15 @@ export function AccessorySalesTab({ sales, inventory, technicians = [], onSave, 
         <div style={{ display: "flex", gap: 8 }}><MBtn color="#10b981" bg="#064e3b" onClick={exportDay}>📊 Excel</MBtn><MPrimaryBtn onClick={() => setModal({})}>+ Нова продажба</MPrimaryBtn></div>
       </div>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
-  <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
-  <MField label="Търси" style={{ flex: 1 }}><input placeholder="🔍  Артикул, купувач..." value={search} onChange={e => setSearch(e.target.value)} /></MField>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button onClick={() => setViewMode("day")} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: viewMode === "day" ? "#38bdf8" : "#1e293b", color: viewMode === "day" ? "#0f172a" : "#64748b" }}>По ден</button>
+          <button onClick={() => setViewMode("month")} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: viewMode === "month" ? "#38bdf8" : "#1e293b", color: viewMode === "month" ? "#0f172a" : "#64748b" }}>По месец</button>
+        </div>
+        {viewMode === "day"
+          ? <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
+          : <MField label="Месец"><input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} style={{ width: 170 }} /></MField>
+        }
+        <MField label="Търси" style={{ flex: 1 }}><input placeholder="🔍  Артикул, купувач..." value={search} onChange={e => setSearch(e.target.value)} /></MField>
         <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #10b981", flex: 1 }}><div style={{ fontSize: 11, color: "#64748b" }}>Приход</div><div style={{ fontSize: 20, fontWeight: 800, color: "#10b981" }}>{fmtM(totalRev)}</div></MCard>
         <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #f59e0b", flex: 1 }}><div style={{ fontSize: 11, color: "#64748b" }}>Печалба</div><div style={{ fontSize: 20, fontWeight: 800, color: "#f59e0b" }}>{fmtM(totalRev - totalCost)}</div></MCard>
       </div>
