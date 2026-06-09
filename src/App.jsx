@@ -7,7 +7,7 @@ import MonthlyReport from "./MonthlyReport.jsx";
 import { sendReadyEmail } from "./lib/email.js";
 import { exportOrders, exportInventory, exportTechReport, exportFullReport, parseExcelFile, mapRowsToOrders, mapRowsToInventory, exportDismantle, parseDismantleExcel } from "./lib/excel.js";
 import { exportDailyReport } from "./lib/excel_daily.js";
-import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle } from "./lib/db2.js";
+import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle, fetchMonthlyExpenses } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
@@ -118,6 +118,7 @@ export default function App() {
   const [supplierDebts, setSupplierDebts] = useState([]);
   const [trash, setTrash] = useState([]);
   const [dismantleRecs, setDismantleRecs] = useState([]);
+  const [monthlyExpenses, setMonthlyExpenses] = useState([]);
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
@@ -158,12 +159,12 @@ export default function App() {
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const [o, inv, tech, exp, cash, acc, bb, ps, phs, so, sd, tr, dis] = await Promise.all([
+      const [o, inv, tech, exp, cash, acc, bb, ps, phs, so, sd, tr, dis, me] = await Promise.all([
         fetchOrders(), fetchInventory(), fetchTechnicians(),
         fetchExpenses(), fetchCashRegister(), fetchAccessorySales(),
         fetchBuybacks(), fetchPartsSales(), fetchPhoneSales(),
         fetchStockOrders(), fetchSupplierDebts(), fetchTrash(),
-        fetchDismantle(),
+        fetchDismantle(), fetchMonthlyExpenses(),
       ]);
       setOrders(o);
       setTechnicians(tech);
@@ -177,6 +178,7 @@ export default function App() {
       setSupplierDebts(sd);
       setTrash(tr);
       setDismantleRecs(dis);
+      setMonthlyExpenses(me || []);
 
       // 🧹 Премахване на дубликати в склада (по име, case-insensitive)
       const seen = new Set();
@@ -517,11 +519,11 @@ export default function App() {
           {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={isAdmin ? () => exportInventory(inventory) : null} onImport={isAdmin ? () => setImportModal("inventory") : null} />}
           {tab === "reports" && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} accSales={accSales} onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }} />}
           {tab === "technicians" && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={() => exportTechReport(technicians, orders)} />}
-          {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} />}
+          {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} monthlyExpenses={monthlyExpenses} />}
           {tab === "calculator" && <Calculator getSupabase={getSupabase} />}
           {tab === "pricing" && <PricingTab />}
           {tab === "expenses" && <ExpensesTab
-  expenses={expenses} cashRegister={cashReg} isAdmin={isAdmin}
+  expenses={[...expenses, ...monthlyExpenses.filter(e => e.date)]} cashRegister={cashReg} isAdmin={isAdmin}
   orders={orders} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales}
   onSaveExpense={async r => {
     const s = await upsertExpense(r);
@@ -953,7 +955,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
        <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>BURGAS</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>SunnyBeach</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
             <span style={{ fontSize: 10, color: connected ? "#64748b" : "#ef4444" }}>
@@ -2608,7 +2610,7 @@ function PartsSelector({ inventory, addPart, removePart, parts, price }) {
 // КРАЙ НА ЧАСТ 3
 // ЧАСТ 4
 // ═══════════════════════════════ DAILY REPORT ══════════════════════════════════
-function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSales = [], phoneSales = [], cashReg = [] }) {
+function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSales = [], phoneSales = [], cashReg = [], monthlyExpenses = [] }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [bankAmount, setBankAmount] = useState(() => { try { return Number(localStorage.getItem("rp_bank_" + new Date().toISOString().split("T")[0]) || 0); } catch { return 0; } });
   const [externalCash, setExternalCash] = useState(() => { try { return Number(localStorage.getItem("rp_ext_" + new Date().toISOString().split("T")[0]) || 0); } catch { return 0; } });
@@ -2650,7 +2652,11 @@ const phoneRevToday = phoneSales.filter(s => {
   return toDate(pd) === date && s.payment_status === "Платена";
 }).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   
-  const allExpensesToday = expenses.filter(e => toDate(e.date) === date);
+  const monthlyExpToday = monthlyExpenses.filter(e => e.date && toDate(e.date) === date);
+  const allExpensesToday = [
+    ...expenses.filter(e => toDate(e.date) === date),
+    ...monthlyExpToday,
+  ];
   const expensesToday = allExpensesToday.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalFromCash = allExpensesToday.filter(e => e.from_cash !== false).reduce((s, e) => s + Number(e.amount || 0), 0);
   const expensesNotCash = allExpensesToday.filter(e => e.from_cash === false).reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -3956,7 +3962,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>RepairPro</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>BURGAS</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>SunnyBeach</div>
         </div>
 
         {mode === "login" ? (
@@ -4029,7 +4035,7 @@ function LoginScreen({ onLogin }) {
         )}
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
-          RepairPro BURGAS v2.0
+          RepairPro SunnyBeach v2.0
         </div>
       </div>
     </div>
