@@ -98,7 +98,7 @@ const rev = revOrders + revAcc + revParts + revPhones;
   const save = async (item) => {
     const sb = getSupabase();
     if (!sb) return;
-    const row = {...item, month: monthKey};
+    const row = {...item, month: monthKey, date: item.date || new Date().toISOString().split("T")[0]};
     const {data} = item.id
       ? await sb.from("monthly_expenses").update(row).eq("id",item.id).select().single()
       : await sb.from("monthly_expenses").insert(row).select().single();
@@ -268,6 +268,14 @@ const rev = revOrders + revAcc + revParts + revPhones;
                       <td style={{padding:"10px 12px",fontWeight:800,color:"#ef4444"}}>€ {fmtM(dailyData.reduce((s,d)=>s+d.exp,0))}</td>
                       <td style={{padding:"10px 12px",fontWeight:900,color:"#38bdf8"}}>€ {fmtM(dailyData.reduce((s,d)=>s+d.profit,0))}</td>
                     </tr>
+                    {dailyData.length > 0 && (
+                      <tr style={{background:"#0f172a"}}>
+                        <td style={{padding:"10px 12px",fontWeight:700,color:"#64748b"}}>Средно/ден</td>
+                        <td style={{padding:"10px 12px",fontWeight:700,color:"#6ee7b7"}}>€ {fmtM(dailyData.reduce((s,d)=>s+d.rev,0)/dailyData.length)}</td>
+                        <td style={{padding:"10px 12px",fontWeight:700,color:"#fca5a5"}}>€ {fmtM(dailyData.reduce((s,d)=>s+d.exp,0)/dailyData.length)}</td>
+                        <td style={{padding:"10px 12px",fontWeight:700,color:"#7dd3fc"}}>€ {fmtM(dailyData.reduce((s,d)=>s+d.profit,0)/dailyData.length)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
             }
@@ -284,7 +292,7 @@ const rev = revOrders + revAcc + revParts + revPhones;
 }
 
 function ExpenseModal({item, onSave, onClose}) {
-  const [f,setF] = useState({description:"",amount:"",category:"Друго",is_paid:false,notes:"",...item});
+  const [f,setF] = useState({description:"",amount:"",category:"Друго",is_paid:false,notes:"",from_cash:true,date:new Date().toISOString().split("T")[0],...item});
   const s = (k,v) => setF(x=>({...x,[k]:v}));
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -304,6 +312,19 @@ function ExpenseModal({item, onSave, onClose}) {
           </Row>
           <Row label="Сума (€) *">
             <input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>s("amount",e.target.value)} placeholder="0.00" style={{flex:1}}/>
+          </Row>
+          <Row label="Плащане">
+            <div style={{display:"flex",gap:8}}>
+              {[true, false].map(val => (
+                <button key={String(val)} type="button" onClick={()=>s("from_cash", val)} style={{
+                  flex:1, padding:"8px 12px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:12,
+                  background: f.from_cash === val ? (val ? "#064e3b" : "#1e3a5f") : "#0f172a",
+                  color: f.from_cash === val ? (val ? "#6ee7b7" : "#93c5fd") : "#64748b",
+                }}>
+                  {val ? "💰 От каса" : "🏦 Не от каса"}
+                </button>
+              ))}
+            </div>
           </Row>
           <Row label="Статус">
             <button type="button" onClick={()=>s("is_paid",!f.is_paid)} style={{
