@@ -1242,7 +1242,10 @@ function OrdersTab({ orders, allOrders, search, setSearch, filterStatus, setFilt
                   </td>
                   <td style={{ padding: "9px 13px", fontSize: 11, color: "var(--text3)", whiteSpace: "nowrap" }}>{fmtDate(o.date_in)}</td>
                   <td style={{ padding: "9px 13px" }}>
-                    <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 3, flexWrap: "wrap", alignItems: "center" }}>
+                      {o.notes && o.notes.trim() && (
+                        <span title={o.notes} style={{ background: "#064e3b", color: "#6ee7b7", borderRadius: 6, padding: "2px 7px", fontSize: 11, fontWeight: 700, cursor: "default" }}>📝</span>
+                      )}
                       <Btn color="#3b82f6" onClick={() => onEdit(o)} title="Редактирай">✏️</Btn>
                       <Btn color="#8b5cf6" onClick={() => onPrint(o)} title="PDF Протокол">📄</Btn>
                       <Btn color="#0ea5e9" onClick={() => onLabel(o)} title="Стикер/QR">🏷️</Btn>
