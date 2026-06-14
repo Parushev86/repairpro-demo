@@ -823,7 +823,7 @@ export default function App() {
           {tab === "monthly" && isAdmin && <MonthlyReport
             getSupabase={getSupabase}
             orders={orders}
-            expenses={expenses}
+            expenses={[...expenses, ...monthlyExpenses.filter(e => e.date)]}
             accSales={accSales}
             partsSales={partsSales}
             phoneSales={phoneSales}
