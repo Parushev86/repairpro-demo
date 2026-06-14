@@ -114,6 +114,82 @@ const rev = revOrders + revAcc + revParts + revPhones;
     await sb.from("monthly_expenses").delete().eq("id",id);
     setItems(p=>p.filter(x=>x.id!==id));
   };
+  const exportRevenue = () => {
+    const wb = XLSX.utils.book_new();
+    const ordersRows = [
+      ["Дата", "Клиент", "Телефон", "Устройство", "Проблем", "Техник", "Сума €", "Плащане"],
+      ...monthOrders.map(o => [
+        o.date_out || o.updated_at || "", o.client_name, o.phone,
+        [o.device_type, o.brand, o.model].filter(Boolean).join(" "),
+        o.problem || "", o.technician || "",
+        fmtM(o.total_price || o.price), o.payment_method || ""
+      ]),
+      ["ОБЩО", "", "", "", "", "", fmtM(monthOrders.reduce((s,o)=>s+Number(o.total_price||o.price||0),0)), ""],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ordersRows), "Ремонти");
+    const accRows = [
+      ["Дата", "Артикул", "Бр.", "Продажна €", "Общо €", "Плащане", "Купувач"],
+      ...monthAcc.map(r => [r.date, r.item_name, r.quantity, fmtM(r.sale_price), fmtM(Number(r.sale_price||0)*Number(r.quantity||1)), r.payment_method, r.buyer_name||""]),
+      ["ОБЩО", "", "", "", fmtM(monthAcc.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)), "", ""],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(accRows), "Аксесоари");
+    const partsRows = [
+      ["Дата", "Артикул", "Бр.", "Продажна €", "Общо €", "Плащане", "Купувач"],
+      ...monthParts.map(r => [r.paid_date||r.date, r.part_name, r.quantity, fmtM(r.sale_price), fmtM(Number(r.sale_price||0)*Number(r.quantity||1)), r.payment_method, r.buyer_name||""]),
+      ["ОБЩО", "", "", "", fmtM(monthParts.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)), "", ""],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(partsRows), "Части");
+    const phoneRows = [
+      ["Дата", "Марка", "Модел", "IMEI", "Продажна €", "Плащане", "Купувач"],
+      ...monthPhones.map(r => [r.paid_date||r.date, r.brand, r.model, r.imei||"", fmtM(r.sale_price), r.payment_method, r.buyer_name||""]),
+      ["ОБЩО", "", "", "", fmtM(monthPhones.reduce((s,r)=>s+Number(r.sale_price||0),0)), "", ""],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(phoneRows), "Телефони");
+    const revSum = [
+      ["ПРИХОДИ", `${MONTHS_BG[month]} ${year}`],
+      ["", ""],
+      ["Ремонти:", fmtM(monthOrders.reduce((s,o)=>s+Number(o.total_price||o.price||0),0))],
+      ["Аксесоари:", fmtM(monthAcc.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0))],
+      ["Части:", fmtM(monthParts.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0))],
+      ["Телефони:", fmtM(monthPhones.reduce((s,r)=>s+Number(r.sale_price||0),0))],
+      ["", ""],
+      ["ОБЩО ПРИХОДИ:", fmtM(totalRev)],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(revSum), "Резюме приходи");
+    XLSX.writeFile(wb, `Приходи_${monthKey}.xlsx`);
+  };
+
+  const exportExpensesDetail = () => {
+    const wb = XLSX.utils.book_new();
+    const opRows = [
+      ["Дата", "Описание", "Категория", "Платено на", "Сума €", "От каса", "Бележки"],
+      ...monthExpenses.map(e => [e.date, e.description, e.category, e.paid_to||"", fmtM(e.amount), e.from_cash !== false ? "Да" : "Не", e.notes||""]),
+      ["ОБЩО", "", "", "", fmtM(totalExpOp), "", ""],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(opRows), "Оперативни разходи");
+    const fixedRows = [
+      ["Описание", "Категория", "Сума €", "Платено", "От каса", "Бележки"],
+      ...items.map(i => [i.description, i.category, fmtM(i.amount), i.is_paid?"Да":"Не", i.from_cash!==false?"Да":"Не", i.notes||""]),
+      ["ОБЩО", "", fmtM(totalFixed), "", "", ""],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fixedRows), "Фиксирани разходи");
+    const expSum = [
+      ["РАЗХОДИ", `${MONTHS_BG[month]} ${year}`],
+      ["", ""],
+      ["Оперативни разходи:", fmtM(totalExpOp)],
+      ["  - От каса:", fmtM(monthExpenses.filter(e=>e.from_cash!==false).reduce((s,e)=>s+Number(e.amount||0),0))],
+      ["  - Не от каса:", fmtM(monthExpenses.filter(e=>e.from_cash===false).reduce((s,e)=>s+Number(e.amount||0),0))],
+      ["Фиксирани разходи:", fmtM(totalFixed)],
+      ["  - Платени:", fmtM(totalFixedPaid)],
+      ["  - Неплатени:", fmtM(totalFixedUnpaid)],
+      ["", ""],
+      ["ОБЩО РАЗХОДИ:", fmtM(totalExpOp + totalFixed)],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expSum), "Резюме разходи");
+    XLSX.writeFile(wb, `Разходи_${monthKey}.xlsx`);
+  };
+
+
 
   const exportExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -171,17 +247,24 @@ const rev = revOrders + revAcc + revParts + revPhones;
 
       {/* KPI cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:20}}>
-        {[
-          {label:"💰 ПРИХОДИ",   val:totalRev,         color:"#10b981"},
-          {label:"💸 ОП. РАЗХОДИ",val:totalExpOp,      color:"#ef4444"},
-          {label:"📋 ФИКС. РАЗХОДИ",val:totalFixed,    color:"#f59e0b"},
-          {label:"📈 НЕТНА ПЕЧАЛБА",val:netProfit,      color:netProfit>=0?"#38bdf8":"#ef4444"},
-        ].map(({label,val,color})=>(
-          <div key={label} style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:`4px solid ${color}`}}>
-            <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
-            <div style={{fontSize:24,fontWeight:900,color}}>{fmtM(val)} €</div>
-          </div>
-        ))}
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #10b981"}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>💰 ПРИХОДИ</div>
+          <div style={{fontSize:24,fontWeight:900,color:"#10b981"}}>{fmtM(totalRev)} €</div>
+          <button onClick={exportRevenue} style={{marginTop:8,background:"#064e3b",color:"#6ee7b7",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>📊 Детайлен експорт</button>
+        </div>
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #ef4444"}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>💸 ОП. РАЗХОДИ</div>
+          <div style={{fontSize:24,fontWeight:900,color:"#ef4444"}}>{fmtM(totalExpOp)} €</div>
+          <button onClick={exportExpensesDetail} style={{marginTop:8,background:"#450a0a",color:"#fca5a5",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>📊 Детайлен експорт</button>
+        </div>
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #f59e0b"}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>📋 ФИКС. РАЗХОДИ</div>
+          <div style={{fontSize:24,fontWeight:900,color:"#f59e0b"}}>{fmtM(totalFixed)} €</div>
+        </div>
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:`4px solid ${netProfit>=0?"#38bdf8":"#ef4444"}`}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>📈 НЕТНА ПЕЧАЛБА</div>
+          <div style={{fontSize:24,fontWeight:900,color:netProfit>=0?"#38bdf8":"#ef4444"}}>{fmtM(netProfit)} €</div>
+        </div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
