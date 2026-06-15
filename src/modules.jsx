@@ -879,13 +879,24 @@ export function StockOrdersTab({ orders, onSave, onDelete, notify, isAdmin = fal
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Всички");
+  const [selected, setSelected] = useState(new Set());
   const filtered = orders.filter(o => { const q = search.toLowerCase(); return (!q || [o.part_name, o.client_name, o.client_phone, o.supplier, o.category].some(f => (f || "").toLowerCase().includes(q))) && (filter === "Всички" || o.status === filter); });
-  const exportAll = () => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map(o => ({ Дата: o.date, Артикул: o.part_name, Категория: o.category || "", "Бр.": o.quantity, Клиент: o.client_name || "", Телефон: o.client_phone || "", "Цена клиент €": Number(o.client_price || 0), Доставчик: o.supplier || "", Статус: o.status, Бележки: o.notes || "" }))), "Поръчки"); XLSX.writeFile(wb, `Поръчки_${today()}.xlsx`); };
+  const toggleSel = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => selected.size === filtered.length ? setSelected(new Set()) : setSelected(new Set(filtered.map(o => o.id)));
+  const exportAll = () => {
+    const toExport = selected.size > 0 ? filtered.filter(o => selected.has(o.id)) : filtered;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toExport.map(o => ({ Дата: o.date, Артикул: o.part_name, Категория: o.category || "", "Бр.": o.quantity, Клиент: o.client_name || "", Телефон: o.client_phone || "", "Цена клиент €": Number(o.client_price || 0), Доставчик: o.supplier || "", Статус: o.status, Бележки: o.notes || "" }))), "Поръчки");
+    XLSX.writeFile(wb, `Поръчки_${today()}.xlsx`);
+  };
   return (
     <div className="animate-fade">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>📋 Поръчки към доставчици</h1>
-        <div style={{ display: "flex", gap: 8 }}>{isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 Excel</MBtn>}<MPrimaryBtn onClick={() => setModal({})}>+ Нова поръчка</MPrimaryBtn></div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {isAdmin && <MBtn color="#10b981" bg="#064e3b" onClick={exportAll}>📊 {selected.size > 0 ? `Excel (${selected.size} избрани)` : "Excel"}</MBtn>}
+          <MPrimaryBtn onClick={() => setModal({})}>+ Нова поръчка</MPrimaryBtn>
+        </div>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="🔍  Търси по артикул, клиент, доставчик..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
@@ -896,11 +907,17 @@ export function StockOrdersTab({ orders, onSave, onDelete, notify, isAdmin = fal
       <MCard style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-wrap">
           <table>
-            <thead style={{ background: "#0a1628" }}><tr>{["Дата", "Артикул", "Кат.", "Бр.", "Клиент", "Телефон", "Цена клиент", "Доставчик", "Статус", "Бележки", ""].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>)}</tr></thead>
+            <thead style={{ background: "#0a1628" }}>
+              <tr>
+                <th style={{ padding: "10px 12px", width: 36 }}><input type="checkbox" onChange={toggleAll} checked={selected.size > 0 && selected.size === filtered.length} style={{ width: 14, height: 14 }} /></th>
+                {["Дата", "Артикул", "Кат.", "Бр.", "Клиент", "Телефон", "Цена клиент", "Доставчик", "Статус", "Бележки", ""].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>)}
+              </tr>
+            </thead>
             <tbody>
               {filtered.length === 0 && <tr><td colSpan={11} style={{ textAlign: "center", padding: 32, color: "#475569" }}>Няма поръчки</td></tr>}
               {filtered.map(o => (
                 <tr key={o.id} style={{ borderTop: "1px solid #0f172a" }} onMouseEnter={e => e.currentTarget.style.background = "#243044"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "8px 12px" }}><input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleSel(o.id)} style={{ width: 14, height: 14 }} /></td>
                   <td style={{ padding: "8px 12px", fontSize: 11, color: "#64748b" }}>{fmtDate(o.date)}</td>
                   <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>{o.part_name}</td>
                   <td style={{ padding: "8px 12px", fontSize: 11, color: "#94a3b8" }}>{o.category || "—"}</td>
@@ -1399,3 +1416,4 @@ function DismantleModal({ record, onSave, onClose }) {
     </div>
   );
 }
+ 
