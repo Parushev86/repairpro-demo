@@ -816,6 +816,7 @@ export default function App() {
           />}
           {tab === "stockorders" && <StockOrdersTab
             orders={stockOrders}
+            isAdmin={isAdmin}
             onSave={async r => { const s = await upsertStockOrder(r); if (!r.id) setStockOrders(p => [s, ...p]); else setStockOrders(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Поръчката е запазена"); }}
             onDelete={async id => { const r = stockOrders.find(x => x.id === id); if (r) await moveToTrash("stock_orders", r); await deleteStockOrder(id); setStockOrders(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "stock_orders", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             notify={notify}
