@@ -2614,6 +2614,55 @@ function PartsSelector({ inventory, addPart, removePart, parts, price }) {
 // КРАЙ НА ЧАСТ 3
 // ЧАСТ 4
 // ═══════════════════════════════ DAILY REPORT ══════════════════════════════════
+function UnpaidTodayCard({ unpaidToday, unpaidAccToday, unpaidPartsToday, unpaidPhoneToday, unpaidTotal, unpaidSalesTotal, date }) {
+  const allItems = [
+    ...unpaidToday.map(o => ({ key: "order_" + o.id, type: "🔧 Ремонт", label: `${o.id} — ${o.client_name}`, amount: Number(o.total_price || o.price || 0) })),
+    ...unpaidAccToday.map(r => ({ key: "acc_" + r.id, type: "🎧 Аксесоар", label: `${r.item_name} — ${r.buyer_name || "—"}`, amount: Number(r.sale_price || 0) * Number(r.quantity || 1) })),
+    ...unpaidPartsToday.map(r => ({ key: "part_" + r.id, type: "🔩 Част", label: `${r.part_name} — ${r.buyer_name || "—"}`, amount: Number(r.sale_price || 0) * Number(r.quantity || 1) })),
+    ...unpaidPhoneToday.map(r => ({ key: "phone_" + r.id, type: "📲 Телефон", label: `${r.brand} ${r.model} — ${r.buyer_name || "—"}`, amount: Number(r.sale_price || 0) })),
+  ];
+  const [selected, setSelected] = useState(new Set());
+  const toggle = (key) => setSelected(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  const toggleAll = () => selected.size === allItems.length ? setSelected(new Set()) : setSelected(new Set(allItems.map(i => i.key)));
+  const exportSelected = () => {
+    const toExport = selected.size > 0 ? allItems.filter(i => selected.has(i.key)) : allItems;
+    const wb = XLSX.utils.book_new();
+    const rows = [
+      ["Тип", "Описание", "Сума €"],
+      ...toExport.map(i => [i.type, i.label, i.amount.toFixed(2)]),
+      ["", "ОБЩО", toExport.reduce((s, i) => s + i.amount, 0).toFixed(2)],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Неплатени");
+    XLSX.writeFile(wb, `Неплатени_${date}.xlsx`);
+  };
+  return (
+    <Card style={{ borderLeft: "4px solid #ef4444", padding: "14px 16px", gridColumn: "1/-1" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input type="checkbox" checked={selected.size > 0 && selected.size === allItems.length} onChange={toggleAll} style={{ width: 14, height: 14 }} />
+          <div style={{ fontSize: 10, color: "var(--text3)" }}>⚠️ НЕПЛАТЕНИ ЗА ДЕНЯ</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#ef4444" }}>€ {(unpaidTotal + unpaidSalesTotal).toFixed(2)}</div>
+          <button onClick={exportSelected} style={{ background: "#064e3b", color: "#6ee7b7", border: "none", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+            📊 {selected.size > 0 ? `Excel (${selected.size})` : "Excel"}
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {allItems.map(i => (
+          <div key={i.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "5px 10px", background: "#0f172a", borderRadius: 6 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+              <input type="checkbox" checked={selected.has(i.key)} onChange={() => toggle(i.key)} style={{ width: 13, height: 13 }} />
+              {i.type} {i.label}
+            </span>
+            <span style={{ color: "#ef4444", fontWeight: 700 }}>€ {i.amount.toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSales = [], phoneSales = [], cashReg = [], monthlyExpenses = [] }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [bankAmount, setBankAmount] = useState(() => { try { return Number(localStorage.getItem("rp_bank_" + new Date().toISOString().split("T")[0]) || 0); } catch { return 0; } });
@@ -2625,11 +2674,15 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
   };
 
   const issuedToday = orders.filter(o =>
-    o.status === "Издаден" && (
+    o.status === "Издаден" && o.payment_method !== "Не е платен" && (
       toDate(o.date_out) === date ||
       toDate(o.updated_at) === date
     )
   );
+  const unpaidToday = orders.filter(o =>
+    o.status === "Издаден" && o.payment_method === "Не е платен"
+  );
+  const unpaidTotal = unpaidToday.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
 
   const receivedToday = orders.filter(o => toDate(o.date_in) === date);
 
@@ -2655,6 +2708,14 @@ const phoneRevToday = phoneSales.filter(s => {
   const pd = s.paid_date || s.date;
   return toDate(pd) === date && s.payment_status === "Платена";
 }).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+
+const unpaidAccToday = accSales.filter(s => s.payment_status === "Не е платена");
+const unpaidPhoneToday = phoneSales.filter(s => s.payment_method === "Не е платена");
+const unpaidPartsToday = partsSales.filter(s => s.payment_status === "Не е платена");
+const unpaidSalesTotal =
+  unpaidAccToday.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0) +
+  unpaidPhoneToday.reduce((s, r) => s + Number(r.sale_price || 0), 0) +
+  unpaidPartsToday.reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
   
   const monthlyExpToday = monthlyExpenses.filter(e => e.date && toDate(e.date) === date);
   const allExpensesToday = [
@@ -2827,6 +2888,17 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
             {totalRevenue.toFixed(2)} − {(expensesToday ).toFixed(2)} = <b style={{ color: profit >= 0 ? "#38bdf8" : "#ef4444" }}>€ {profit.toFixed(2)}</b>
           </div>
         </Card>
+       {(unpaidToday.length > 0 || unpaidAccToday.length > 0 || unpaidPhoneToday.length > 0 || unpaidPartsToday.length > 0) && (
+          <UnpaidTodayCard
+            unpaidToday={unpaidToday}
+            unpaidAccToday={unpaidAccToday}
+            unpaidPartsToday={unpaidPartsToday}
+            unpaidPhoneToday={unpaidPhoneToday}
+            unpaidTotal={unpaidTotal}
+            unpaidSalesTotal={unpaidSalesTotal}
+            date={date}
+          />
+        )}
         <Card style={{ borderLeft: "4px solid #f59e0b", padding: "14px 16px" }}>
           <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 3 }}>🏦 НАЛИЧНО В КАСА</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "#f59e0b" }}>€ {cashNow.toFixed(2)}</div>
