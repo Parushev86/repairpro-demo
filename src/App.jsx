@@ -1,5 +1,6 @@
 // ЧАСТ 1
 import { useState, useEffect, useCallback, useRef, memo } from "react";
+import * as XLSX from "xlsx";
 import { getSupabase, resetSupabase, fetchOrders, fetchInventory, fetchTechnicians, upsertOrder, deleteOrder as dbDeleteOrder, upsertInventory, deleteInventory as dbDeleteInv, upsertTechnician, deleteTechnician as dbDeleteTech, subscribeOrders, subscribeInventory } from "./lib/supabase.js";
 import { genId, today, STATUSES, STATUS_COLOR, STATUS_BG, DEVICE_TYPES, PROBLEMS, PROBLEMS_BY_DEVICE, CATEGORIES, MONTHS_BG, fmtDate, fmtMoney, fmtDatetime } from "./lib/constants.js";
 import { printProtocol, printLabel, downloadProtocolTXT, printWarranty } from "./lib/print.js";
