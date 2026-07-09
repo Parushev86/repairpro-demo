@@ -514,7 +514,7 @@ export default function App() {
         </div>
         {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 98 }} />}
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
-          {tab === "dashboard" && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={() => setOrderModal("new")} onExport={() => exportFullReport(orders, inventory, technicians)} notify={notify} />}
+          {tab === "dashboard" && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={() => setOrderModal("new")} onExport={() => exportFullReport(orders, inventory, technicians)} notify={notify} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} />}
           {tab === "dashboard" && !isAdmin && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", flexDirection: "column", gap: 16 }}><div style={{ fontSize: 48 }}>🔒</div><div style={{ fontSize: 18, color: "#64748b" }}>Нямаш достъп до тази страница</div></div>}
           {tab === "orders" && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={() => setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={isAdmin ? () => exportOrders(orders) : null} onImport={isAdmin ? () => setImportModal("orders") : null} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder} />}
           {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={isAdmin ? () => exportInventory(inventory) : null} onImport={isAdmin ? () => setImportModal("inventory") : null} />}
@@ -1036,7 +1036,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
 }
 
 // ═══════════════════════════════ DASHBOARD ════════════════════════════════════
-function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, onNewOrder, onExport, notify }) {
+function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, onNewOrder, onExport, notify, accSales = [], partsSales = [], phoneSales = [] }) {
   const totalRev = orders.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   const monthlyRev = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
@@ -1065,6 +1065,86 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
   const maxProb = Math.max(...topProblems.map(([, c]) => c), 1);
 
   const recentOrders = orders.slice(0, 8);
+
+  // ── Аналитики ──────────────────────────────────────────────────────────────
+  const now = new Date();
+  const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().split("T")[0]; });
+  const [analyticsTo, setAnalyticsTo] = useState(() => new Date().toISOString().split("T")[0]);
+
+  const filtOrders = orders.filter(o => {
+    const d = (o.date_out || o.updated_at || o.date_in || "").slice(0,10);
+    return o.status === "Издаден" && o.payment_method !== "Не е платен" && d >= analyticsFrom && d <= analyticsTo;
+  });
+  const filtAcc = accSales.filter(s => {
+    const d = (s.paid_date || s.date || "").slice(0,10);
+    return s.payment_status !== "Не е платена" && d >= analyticsFrom && d <= analyticsTo;
+  });
+  const filtParts = partsSales.filter(s => {
+    const d = (s.paid_date || s.date || "").slice(0,10);
+    return s.payment_status === "Платена" && d >= analyticsFrom && d <= analyticsTo;
+  });
+  const filtPhones = phoneSales.filter(s => {
+    const d = (s.paid_date || s.date || "").slice(0,10);
+    return s.payment_method !== "Не е платена" && d >= analyticsFrom && d <= analyticsTo;
+  });
+
+  const revRepairs = filtOrders.reduce((s,o) => s + Number(o.total_price||o.price||0), 0);
+  const revAcc = filtAcc.reduce((s,r) => s + Number(r.sale_price||0)*Number(r.quantity||1), 0);
+  const revParts = filtParts.reduce((s,r) => s + Number(r.sale_price||0)*Number(r.quantity||1), 0);
+  const revPhones = filtPhones.reduce((s,r) => s + Number(r.sale_price||0), 0);
+  const revTotal = revRepairs + revAcc + revParts + revPhones;
+
+  // Справка по марки
+  const brandCounts = {};
+  filtOrders.forEach(o => {
+    const b = (o.brand || "Неизвестна").trim();
+    brandCounts[b] = (brandCounts[b] || 0) + 1;
+  });
+  const topBrands = Object.entries(brandCounts).sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  // Разбивка по вид ремонт
+  const repairTypeCounts = {};
+  const repairTypeRevenue = {};
+  filtOrders.forEach(o => {
+    const problems = (o.problem || "Неизвестен").split(", ").filter(Boolean);
+    problems.forEach(p => {
+      repairTypeCounts[p] = (repairTypeCounts[p] || 0) + 1;
+      repairTypeRevenue[p] = (repairTypeRevenue[p] || 0) + Number(o.total_price||o.price||0) / problems.length;
+    });
+  });
+  const topRepairTypes = Object.entries(repairTypeCounts).sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  // Средно на ден
+  const daysInPeriod = Math.max(1, Math.ceil((new Date(analyticsTo) - new Date(analyticsFrom)) / (1000*60*60*24)) + 1);
+  const avgOrdersPerDay = (filtOrders.length / daysInPeriod).toFixed(1);
+  const avgRevenuePerDay = (revRepairs / daysInPeriod).toFixed(2);
+
+  const exportAnalytics = () => {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ["АНАЛИТИКИ", `${analyticsFrom} — ${analyticsTo}`],
+      [""],
+      ["ПРИХОДИ ПО ВИД"],
+      ["Ремонти:", revRepairs.toFixed(2)],
+      ["Аксесоари:", revAcc.toFixed(2)],
+      ["Части:", revParts.toFixed(2)],
+      ["Телефони:", revPhones.toFixed(2)],
+      ["ОБЩО:", revTotal.toFixed(2)],
+      [""],
+      ["СРЕДНО НА ДЕН"],
+      ["Устройства/ден:", avgOrdersPerDay],
+      ["Приход/ден €:", avgRevenuePerDay],
+    ]), "Обобщение");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ["Марка", "Брой ремонти"],
+      ...topBrands.map(([b,c]) => [b, c]),
+    ]), "По марки");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ["Вид ремонт", "Брой", "Приход €"],
+      ...topRepairTypes.map(([t,c]) => [t, c, (repairTypeRevenue[t]||0).toFixed(2)]),
+    ]), "По вид ремонт");
+    XLSX.writeFile(wb, `Аналитики_${analyticsFrom}_${analyticsTo}.xlsx`);
+  };
 
   return (
     <div className="animate-fade">
@@ -1172,6 +1252,107 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
           </div>
         </div>
       )}
+
+      {/* ── АНАЛИТИКИ ── */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#f1f5f9" }}>📊 Аналитики</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <label style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>ОТ</label>
+              <input type="date" value={analyticsFrom} onChange={e => setAnalyticsFrom(e.target.value)} style={{ width: 150, fontSize: 12 }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <label style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>ДО</label>
+              <input type="date" value={analyticsTo} onChange={e => setAnalyticsTo(e.target.value)} style={{ width: 150, fontSize: 12 }} />
+            </div>
+            <div style={{ display: "flex", gap: 5 }}>
+              {[
+                ["Този месец", () => { const n=new Date(); setAnalyticsFrom(n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-01"); setAnalyticsTo(new Date().toISOString().split("T")[0]); }],
+                ["Предишен", () => { const n=new Date(); n.setMonth(n.getMonth()-1); const y=n.getFullYear(),m=String(n.getMonth()+1).padStart(2,"0"); setAnalyticsFrom(y+"-"+m+"-01"); const l=new Date(y,n.getMonth()+1,0); setAnalyticsTo(y+"-"+m+"-"+String(l.getDate()).padStart(2,"0")); }],
+                ["3 месеца", () => { const n=new Date(); n.setMonth(n.getMonth()-2); setAnalyticsFrom(n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-01"); setAnalyticsTo(new Date().toISOString().split("T")[0]); }],
+              ].map(([label, fn]) => (
+                <button key={label} onClick={fn} style={{ padding: "6px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid #334155", background: "#0f172a", color: "#64748b" }}>{label}</button>
+              ))}
+            </div>
+            <Btn color="#10b981" bg="#064e3b" onClick={exportAnalytics}>📊 Excel</Btn>
+          </div>
+        </div>
+
+        {/* KPI */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 14 }} className="kpi-grid">
+          {[
+            { l: "Ремонти", v: `€ ${revRepairs.toFixed(2)}`, c: "#38bdf8", sub: `${filtOrders.length} бр.` },
+            { l: "Аксесоари", v: `€ ${revAcc.toFixed(2)}`, c: "#10b981", sub: `${filtAcc.length} бр.` },
+            { l: "Части", v: `€ ${revParts.toFixed(2)}`, c: "#f59e0b", sub: `${filtParts.length} бр.` },
+            { l: "Телефони", v: `€ ${revPhones.toFixed(2)}`, c: "#8b5cf6", sub: `${filtPhones.length} бр.` },
+          ].map(({ l, v, c, sub }) => (
+            <Card key={l} style={{ borderLeft: `4px solid ${c}`, padding: "14px 16px" }}>
+              <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, textTransform: "uppercase", fontWeight: 700 }}>{l}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: c }}>{v}</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{sub}</div>
+            </Card>
+          ))}
+        </div>
+
+        <Card style={{ marginBottom: 14, padding: "14px 18px", borderLeft: "4px solid #10b981" }}>
+          <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💰 ОБЩ ОБОРОТ (всички видове)</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#10b981" }}>€ {revTotal.toFixed(2)}</div>
+        </Card>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 14 }}>
+          <Card style={{ borderLeft: "4px solid #f59e0b", padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, textTransform: "uppercase", fontWeight: 700 }}>📅 Средно устройства/ден</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#f59e0b" }}>{avgOrdersPerDay} бр.</div>
+          </Card>
+          <Card style={{ borderLeft: "4px solid #38bdf8", padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, textTransform: "uppercase", fontWeight: 700 }}>💶 Среден приход/ден (ремонти)</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#38bdf8" }}>€ {avgRevenuePerDay}</div>
+          </Card>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          {/* По марки */}
+          <Card>
+            <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>📱 По марки (брой ремонти)</div>
+            {topBrands.length === 0 && <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни</p>}
+            {topBrands.map(([brand, count], i) => {
+              const maxB = topBrands[0]?.[1] || 1;
+              return (
+                <div key={brand} style={{ marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                    <span style={{ color: "#f1f5f9", fontWeight: i === 0 ? 700 : 400 }}>{i === 0 ? "🏆 " : ""}{brand}</span>
+                    <span style={{ color: "#64748b" }}>{count} бр.</span>
+                  </div>
+                  <div style={{ height: 5, background: "#334155", borderRadius: 3 }}>
+                    <div style={{ height: "100%", width: `${(count/maxB)*100}%`, background: "linear-gradient(90deg,#38bdf8,#0ea5e9)", borderRadius: 3 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+
+          {/* По вид ремонт */}
+          <Card>
+            <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>🔧 По вид ремонт</div>
+            {topRepairTypes.length === 0 && <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни</p>}
+            {topRepairTypes.map(([type, count], i) => {
+              const maxT = topRepairTypes[0]?.[1] || 1;
+              return (
+                <div key={type} style={{ marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                    <span style={{ color: "#f1f5f9", fontWeight: i === 0 ? 700 : 400, maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i === 0 ? "🏆 " : ""}{type}</span>
+                    <span style={{ color: "#64748b" }}>{count} бр. | € {(repairTypeRevenue[type]||0).toFixed(0)}</span>
+                  </div>
+                  <div style={{ height: 5, background: "#334155", borderRadius: 3 }}>
+                    <div style={{ height: "100%", width: `${(count/maxT)*100}%`, background: "linear-gradient(90deg,#8b5cf6,#7c3aed)", borderRadius: 3 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
