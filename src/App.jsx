@@ -2857,8 +2857,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
 
   const issuedToday = orders.filter(o =>
     o.status === "Издаден" && o.payment_method !== "Не е платен" && (
-      toDate(o.date_out) === date ||
-      toDate(o.updated_at) === date
+      toDate(o.date_out) === date
     )
   );
   const unpaidToday = orders.filter(o =>
@@ -2870,8 +2869,7 @@ function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSal
 
   const dayOrders = orders.filter(o =>
     toDate(o.date_in) === date ||
-    toDate(o.date_out) === date ||
-    toDate(o.updated_at) === date
+    toDate(o.date_out) === date
   );
 
   const revenue = issuedToday.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
