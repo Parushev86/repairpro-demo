@@ -1113,6 +1113,15 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
     });
   });
   const topRepairTypes = Object.entries(repairTypeCounts).sort((a,b) => b[1]-a[1]).slice(0,10);
+// Топ клиенти
+  const clientCounts = {};
+  filtOrders.forEach(o => {
+    const name = (o.client_name || "Неизвестен").trim();
+    if (!clientCounts[name]) clientCounts[name] = { count: 0, revenue: 0, phone: o.phone || "" };
+    clientCounts[name].count++;
+    clientCounts[name].revenue += Number(o.total_price || o.price || 0);
+  });
+  const topClients = Object.entries(clientCounts).sort((a,b) => b[1].count - a[1].count).slice(0,10);
 
   // Средно на ден
   const daysInPeriod = Math.max(1, Math.ceil((new Date(analyticsTo) - new Date(analyticsFrom)) / (1000*60*60*24)) + 1);
@@ -1143,6 +1152,10 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
       ["Вид ремонт", "Брой", "Приход €"],
       ...topRepairTypes.map(([t,c]) => [t, c, (repairTypeRevenue[t]||0).toFixed(2)]),
     ]), "По вид ремонт");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ["Клиент", "Телефон", "Брой устройства", "Общо €"],
+      ...topClients.map(([name, data]) => [name, data.phone, data.count, data.revenue.toFixed(2)]),
+    ]), "Топ клиенти");
     XLSX.writeFile(wb, `Аналитики_${analyticsFrom}_${analyticsTo}.xlsx`);
   };
 
@@ -1352,6 +1365,36 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
             })}
           </Card>
         </div>
+
+        {/* Топ 10 клиенти */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>👑 Топ 10 клиенти (брой устройства)</div>
+          {topClients.length === 0 && <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни</p>}
+          {topClients.map(([name, data], i) => {
+            const maxC = topClients[0]?.[1].count || 1;
+            const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}.`;
+            const barColor = i === 0 ? "linear-gradient(90deg,#f59e0b,#d97706)" : i === 1 ? "linear-gradient(90deg,#94a3b8,#64748b)" : i === 2 ? "linear-gradient(90deg,#b45309,#92400e)" : "linear-gradient(90deg,#38bdf8,#0ea5e9)";
+            return (
+              <div key={name} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, marginBottom: 3 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, minWidth: 24, flexShrink: 0 }}>{medal}</span>
+                    <span style={{ color: "#f1f5f9", fontWeight: i < 3 ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                    {data.phone && <span style={{ color: "#475569", fontSize: 10, flexShrink: 0, marginLeft: 4 }}>{data.phone}</span>}
+                  </span>
+                  <span style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
+                    <span style={{ color: "#10b981", fontSize: 11 }}>€ {data.revenue.toFixed(0)}</span>
+                    <span style={{ color: "#38bdf8", fontWeight: 700, minWidth: 40, textAlign: "right" }}>{data.count} бр.</span>
+                  </span>
+                </div>
+                <div style={{ height: 4, background: "#334155", borderRadius: 3 }}>
+                  <div style={{ height: "100%", width: `${(data.count/maxC)*100}%`, background: barColor, borderRadius: 3 }} />
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+
       </div>
     </div>
   );
