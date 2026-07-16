@@ -1395,6 +1395,53 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
           })}
         </Card>
 
+        {/* Рентабилност */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>📈 Рентабилност на ремонтите</div>
+          {(() => {
+            const allIssued = orders.filter(o => {
+              const d = (o.date_out || o.date_in || "").slice(0,10);
+              return o.status === "Издаден" && d >= analyticsFrom && d <= analyticsTo;
+            });
+            const paid = allIssued.filter(o => o.payment_method !== "Не е платен" && Number(o.total_price || o.price || 0) > 0);
+            const unpaid = allIssued.filter(o => o.payment_method === "Не е платен" || Number(o.total_price || o.price || 0) === 0);
+            const total = allIssued.length || 1;
+            const paidPct = ((paid.length / total) * 100).toFixed(1);
+            const unpaidPct = ((unpaid.length / total) * 100).toFixed(1);
+            const avgPaid = paid.length > 0 ? paid.reduce((s,o) => s + Number(o.total_price||o.price||0), 0) / paid.length : 0;
+            return (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", borderLeft: "3px solid #10b981" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>✅ Платени ремонти</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#10b981" }}>{paid.length}</div>
+                    <div style={{ fontSize: 13, color: "#6ee7b7", fontWeight: 700 }}>{paidPct}%</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", borderLeft: "3px solid #ef4444" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>❌ Неплатени / Безплатни</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#ef4444" }}>{unpaid.length}</div>
+                    <div style={{ fontSize: 13, color: "#fca5a5", fontWeight: 700 }}>{unpaidPct}%</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", borderLeft: "3px solid #38bdf8" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>💶 Средна сума (платени)</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8" }}>€ {avgPaid.toFixed(2)}</div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>на устройство</div>
+                  </div>
+                </div>
+                <div style={{ height: 12, background: "#334155", borderRadius: 6, overflow: "hidden", display: "flex" }}>
+                  <div style={{ height: "100%", width: `${paidPct}%`, background: "linear-gradient(90deg,#10b981,#059669)", transition: "width .5s" }} title={`Платени: ${paidPct}%`} />
+                  <div style={{ height: "100%", width: `${unpaidPct}%`, background: "linear-gradient(90deg,#ef4444,#dc2626)", transition: "width .5s" }} title={`Неплатени: ${unpaidPct}%`} />
+                </div>
+                <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#64748b" }}>
+                  <span><span style={{ color: "#10b981" }}>●</span> Платени {paidPct}%</span>
+                  <span><span style={{ color: "#ef4444" }}>●</span> Неплатени {unpaidPct}%</span>
+                  <span style={{ marginLeft: "auto" }}>Общо издадени: <b style={{ color: "#f1f5f9" }}>{allIssued.length}</b></span>
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
       </div>
     </div>
   );
