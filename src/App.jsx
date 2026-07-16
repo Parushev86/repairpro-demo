@@ -1437,6 +1437,46 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
                   <span><span style={{ color: "#ef4444" }}>●</span> Неплатени {unpaidPct}%</span>
                   <span style={{ marginLeft: "auto" }}>Общо издадени: <b style={{ color: "#f1f5f9" }}>{allIssued.length}</b></span>
                 </div>
+
+                {/* По техник */}
+                {(() => {
+                  const techNames = [...new Set(allIssued.map(o => o.technician).filter(Boolean))];
+                  if (techNames.length === 0) return null;
+                  return (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>По техник</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {techNames.map(tName => {
+                          const tc = technicians.find(t => t.name === tName);
+                          const tIssued = allIssued.filter(o => o.technician === tName);
+                          const tPaid = tIssued.filter(o => o.payment_method !== "Не е платен" && Number(o.total_price || o.price || 0) > 0);
+                          const tUnpaid = tIssued.filter(o => o.payment_method === "Не е платен" || Number(o.total_price || o.price || 0) === 0);
+                          const tTotal = tIssued.length || 1;
+                          const tPaidPct = ((tPaid.length / tTotal) * 100).toFixed(1);
+                          const tUnpaidPct = ((tUnpaid.length / tTotal) * 100).toFixed(1);
+                          const tAvg = tPaid.length > 0 ? tPaid.reduce((s,o) => s + Number(o.total_price||o.price||0), 0) / tPaid.length : 0;
+                          const color = tc?.color || "#38bdf8";
+                          return (
+                            <div key={tName} style={{ background: "#0f172a", borderRadius: 8, padding: "10px 14px", borderLeft: `3px solid ${color}` }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+                                <span style={{ fontWeight: 700, color: "#f1f5f9", fontSize: 13 }}>{tName}</span>
+                                <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
+                                  <span style={{ color: "#10b981" }}>✅ {tPaid.length} бр. ({tPaidPct}%)</span>
+                                  <span style={{ color: "#ef4444" }}>❌ {tUnpaid.length} бр. ({tUnpaidPct}%)</span>
+                                  <span style={{ color: "#38bdf8" }}>⌀ € {tAvg.toFixed(2)}</span>
+                                </div>
+                              </div>
+                              <div style={{ height: 6, background: "#334155", borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                                <div style={{ height: "100%", width: `${tPaidPct}%`, background: "linear-gradient(90deg,#10b981,#059669)" }} />
+                                <div style={{ height: "100%", width: `${tUnpaidPct}%`, background: "linear-gradient(90deg,#ef4444,#dc2626)" }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
