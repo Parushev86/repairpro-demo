@@ -24,6 +24,11 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
   const [items, setItems] = useState([]);
   const [modal, setModal] = useState(null); // null | {} | item
   const [loading, setLoading] = useState(false);
+  const [dividends, setDividends] = useState({});
+  const [editingDiv, setEditingDiv] = useState(false);
+  const [divInput, setDivInput] = useState("");
+  const [compareFrom, setCompareFrom] = useState(() => { const n=new Date(); return n.getFullYear()+"-01-01"; });
+  const [compareTo, setCompareTo] = useState(() => new Date().toISOString().split("T")[0]);
 
   const monthKey = `${year}-${String(month+1).padStart(2,"0")}`;
 
@@ -35,6 +40,26 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
     sb.from("monthly_expenses").select("*").eq("month", monthKey).order("created_at")
       .then(({data}) => { setItems(data||[]); setLoading(false); });
   }, [monthKey]);
+
+  useEffect(() => {
+    const sb = getSupabase();
+    if (!sb) return;
+    sb.from("global_settings").select("value").eq("key","dividends").maybeSingle()
+      .then(({data}) => {
+        if (data?.value) setDividends(typeof data.value === "string" ? JSON.parse(data.value) : data.value);
+      });
+  }, []);
+
+  const saveDividend = async () => {
+    const sb = getSupabase();
+    if (!sb) return;
+    const updated = { ...dividends, [monthKey]: Number(divInput) || 0 };
+    setDividends(updated);
+    await sb.from("global_settings").upsert({ key: "dividends", value: updated }, { onConflict: "key" });
+    setEditingDiv(false);
+  };
+
+  const currentDividend = dividends[monthKey] || 0;
 
   // Daily profit for selected month
   const monthOrders = (orders||[]).filter(o => {
@@ -90,6 +115,46 @@ const rev = revOrders + revAcc + revParts + revPhones;
   const totalFixedPaid = items.filter(i=>i.is_paid).reduce((s,i)=>s+Number(i.amount||0),0);
   const totalFixedUnpaid = items.filter(i=>!i.is_paid).reduce((s,i)=>s+Number(i.amount||0),0);
   const netProfit  = totalRev - totalExpOp - totalFixed;
+
+  // Съпоставка по месеци
+  const compareMonths = (() => {
+    const months = [];
+    const start = new Date(compareFrom); start.setDate(1);
+    const end = new Date(compareTo);
+    let cur = new Date(start);
+    while (cur <= end) {
+      const y = cur.getFullYear();
+      const m = cur.getMonth();
+      const key = `${y}-${String(m+1).padStart(2,"0")}`;
+      const mOrders = (orders||[]).filter(o => {
+        const d = (o.date_out||o.date_in||"").slice(0,7);
+        return d === key && o.status === "Издаден" && o.payment_method !== "Не е платен";
+      });
+      const mAcc = (accSales||[]).filter(s => (s.paid_date||s.date||"").slice(0,7) === key && s.payment_status !== "Не е платена");
+      const mParts = (partsSales||[]).filter(s => (s.paid_date||s.date||"").slice(0,7) === key && s.payment_status === "Платена");
+      const mPhones = (phoneSales||[]).filter(s => (s.paid_date||s.date||"").slice(0,7) === key && s.payment_method !== "Не е платена");
+      const mExp = (expenses||[]).filter(e => (e.date||"").slice(0,7) === key);
+      const rev = mOrders.reduce((s,o)=>s+Number(o.total_price||o.price||0),0)
+                + mAcc.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)
+                + mParts.reduce((s,r)=>s+Number(r.sale_price||0)*Number(r.quantity||1),0)
+                + mPhones.reduce((s,r)=>s+Number(r.sale_price||0),0);
+      const exp = mExp.reduce((s,e)=>s+Number(e.amount||0),0);
+      if (rev > 0 || exp > 0) months.push({ label: MONTHS_BG[m]+" "+y, key, rev, exp, profit: rev-exp });
+      cur.setMonth(cur.getMonth()+1);
+    }
+    return months;
+  })();
+
+  const exportCompare = () => {
+    const wb = XLSX.utils.book_new();
+    const rows = [
+      ["Месец","Приходи €","Разходи €","Печалба €"],
+      ...compareMonths.map(m=>[m.label, fmtM(m.rev), fmtM(m.exp), fmtM(m.profit)]),
+      ["ОБЩО", fmtM(compareMonths.reduce((s,m)=>s+m.rev,0)), fmtM(compareMonths.reduce((s,m)=>s+m.exp,0)), fmtM(compareMonths.reduce((s,m)=>s+m.profit,0))],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Съпоставка");
+    XLSX.writeFile(wb, `Съпоставка_${compareFrom}_${compareTo}.xlsx`);
+  };
 
   // Cash in register (latest entry for month)
   const cashEntry = (cashReg||[]).find(c => c.date && c.date.slice(0,7) === monthKey);
@@ -246,7 +311,7 @@ const rev = revOrders + revAcc + revParts + revPhones;
       </div>
 
       {/* KPI cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:14,marginBottom:20}}>
         <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #10b981"}}>
           <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>💰 ПРИХОДИ</div>
           <div style={{fontSize:24,fontWeight:900,color:"#10b981"}}>{fmtM(totalRev)} €</div>
@@ -257,70 +322,36 @@ const rev = revOrders + revAcc + revParts + revPhones;
           <div style={{fontSize:24,fontWeight:900,color:"#ef4444"}}>{fmtM(totalExpOp)} €</div>
           <button onClick={exportExpensesDetail} style={{marginTop:8,background:"#450a0a",color:"#fca5a5",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>📊 Детайлен експорт</button>
         </div>
-        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #f59e0b"}}>
-          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>📋 ФИКС. РАЗХОДИ</div>
-          <div style={{fontSize:24,fontWeight:900,color:"#f59e0b"}}>{fmtM(totalFixed)} €</div>
-        </div>
+        
         <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:`4px solid ${netProfit>=0?"#38bdf8":"#ef4444"}`}}>
           <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>📈 НЕТНА ПЕЧАЛБА</div>
           <div style={{fontSize:24,fontWeight:900,color:netProfit>=0?"#38bdf8":"#ef4444"}}>{fmtM(netProfit)} €</div>
         </div>
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #f59e0b"}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>💰 ДИВИДЕНТИ</div>
+          {editingDiv ? (
+            <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>
+              <input type="number" min="0" step="0.01" value={divInput}
+                onChange={e=>setDivInput(e.target.value)}
+                autoFocus
+                style={{width:100,fontSize:16,fontWeight:700,padding:"4px 8px"}}
+                onKeyDown={e=>e.key==="Enter"&&saveDividend()}
+              />
+              <button onClick={saveDividend} style={{background:"#064e3b",color:"#6ee7b7",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✅</button>
+              <button onClick={()=>setEditingDiv(false)} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12}}>✕</button>
+            </div>
+          ) : (
+            <>
+              <div style={{fontSize:24,fontWeight:900,color:"#f59e0b"}}>{fmtM(currentDividend)} €</div>
+              <button onClick={()=>{setDivInput(currentDividend||"");setEditingDiv(true);}} style={{marginTop:8,background:"#451a03",color:"#fcd34d",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>✏️ Редактирай</button>
+            </>
+          )}
+        </div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr",gap:16}}>
 
-        {/* Fixed expenses table */}
-        <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{MONTHS_BG[month]} {year} — Фиксирани разходи</div>
-            <div style={{display:"flex",gap:8,fontSize:12}}>
-              <span style={{color:"#10b981"}}>✅ Платени: € {fmtM(totalFixedPaid)}</span>
-              <span style={{color:"#ef4444"}}>❌ Неплатени: € {fmtM(totalFixedUnpaid)}</span>
-            </div>
-          </div>
-          <div style={{background:"#1e293b",borderRadius:12,overflow:"hidden"}}>
-            <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead style={{background:"#0a1628"}}>
-                <tr>{["Описание","Категория","Сума €","Платено",""].map(h=>(
-                  <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase"}}>{h}</th>
-                ))}</tr>
-              </thead>
-              <tbody>
-                {loading && <tr><td colSpan={5} style={{textAlign:"center",padding:24,color:"#475569"}}>Зареждане...</td></tr>}
-                {!loading && items.length===0 && <tr><td colSpan={5} style={{textAlign:"center",padding:24,color:"#475569"}}>Няма разходи за {MONTHS_BG[month]}</td></tr>}
-                {items.map(item=>(
-                  <tr key={item.id} style={{borderTop:"1px solid #0f172a",background:item.is_paid?"rgba(16,185,129,.04)":"rgba(239,68,68,.03)"}}
-                    onMouseEnter={e=>e.currentTarget.style.background="#243044"}
-                    onMouseLeave={e=>e.currentTarget.style.background=item.is_paid?"rgba(16,185,129,.04)":"rgba(239,68,68,.03)"}>
-                    <td style={{padding:"9px 12px",fontSize:13,fontWeight:600}}>{item.description}</td>
-                    <td style={{padding:"9px 12px",fontSize:11,color:"#94a3b8"}}>{item.category}</td>
-                    <td style={{padding:"9px 12px",fontSize:13,fontWeight:700,color:item.is_paid?"#10b981":"#ef4444"}}>€ {fmtM(item.amount)}</td>
-                    <td style={{padding:"9px 12px"}}>
-                      <button onClick={()=>save({...item,is_paid:!item.is_paid})} style={{
-                        background:item.is_paid?"#064e3b":"#450a0a",
-                        color:item.is_paid?"#6ee7b7":"#fca5a5",
-                        border:"none",borderRadius:6,padding:"3px 10px",cursor:"pointer",fontSize:11,fontWeight:700,
-                      }}>{item.is_paid?"✅ Платено":"❌ Неплатено"}</button>
-                    </td>
-                    <td style={{padding:"9px 12px"}}>
-                      <div style={{display:"flex",gap:4}}>
-                        <MBtn color="#3b82f6" onClick={()=>setModal(item)}>✏️</MBtn>
-                        <MBtn color="#ef4444" onClick={()=>del(item.id)}>🗑️</MBtn>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {items.length>0 && (
-                  <tr style={{borderTop:"2px solid #334155",background:"#0a1628"}}>
-                    <td colSpan={2} style={{padding:"10px 12px",fontWeight:700,fontSize:13}}>ОБЩО</td>
-                    <td style={{padding:"10px 12px",fontWeight:900,fontSize:15,color:"#f59e0b"}}>€ {fmtM(totalFixed)}</td>
-                    <td colSpan={2}/>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+       
 
         {/* Daily profit */}
         <div>
@@ -365,6 +396,95 @@ const rev = revOrders + revAcc + revParts + revPhones;
           </div>
         </div>
       </div>
+      {/* Съпоставка по периоди */}
+      <div style={{marginTop:24}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>📊 Съпоставка приходи / разходи / печалба</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:3}}>
+              <label style={{fontSize:10,color:"#64748b",fontWeight:700}}>ОТ</label>
+              <input type="date" value={compareFrom} onChange={e=>setCompareFrom(e.target.value)} style={{width:145,fontSize:12}}/>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:3}}>
+              <label style={{fontSize:10,color:"#64748b",fontWeight:700}}>ДО</label>
+              <input type="date" value={compareTo} onChange={e=>setCompareTo(e.target.value)} style={{width:145,fontSize:12}}/>
+            </div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+              {[
+                ["Този месец", ()=>{ const n=new Date(); setCompareFrom(n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-01"); setCompareTo(new Date().toISOString().split("T")[0]); }],
+                ["3 месеца", ()=>{ const n=new Date(); n.setMonth(n.getMonth()-2); setCompareFrom(n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-01"); setCompareTo(new Date().toISOString().split("T")[0]); }],
+                ["Тази година", ()=>{ setCompareFrom(new Date().getFullYear()+"-01-01"); setCompareTo(new Date().toISOString().split("T")[0]); }],
+              ].map(([label,fn])=>(
+                <button key={label} onClick={fn} style={{padding:"6px 10px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:"1px solid #334155",background:"#0f172a",color:"#64748b"}}>{label}</button>
+              ))}
+            </div>
+            <MBtn color="#10b981" bg="#064e3b" onClick={exportCompare}>📊 Excel</MBtn>
+          </div>
+        </div>
+
+        {compareMonths.length === 0
+          ? <div style={{textAlign:"center",padding:32,color:"#475569",background:"#1e293b",borderRadius:12}}>Няма данни за избрания период</div>
+          : <>
+            {/* Обобщение */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
+              {[
+                {l:"Общо приходи",v:compareMonths.reduce((s,m)=>s+m.rev,0),c:"#10b981"},
+                {l:"Общо разходи",v:compareMonths.reduce((s,m)=>s+m.exp,0),c:"#ef4444"},
+                {l:"Обща печалба",v:compareMonths.reduce((s,m)=>s+m.profit,0),c:"#38bdf8"},
+              ].map(({l,v,c})=>(
+                <div key={l} style={{background:"#1e293b",borderRadius:10,padding:"14px 16px",borderLeft:`3px solid ${c}`}}>
+                  <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>{l}</div>
+                  <div style={{fontSize:22,fontWeight:900,color:c}}>€ {fmtM(v)}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Таблица по месеци */}
+            <div style={{background:"#1e293b",borderRadius:12,overflow:"hidden",marginBottom:14}}>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead style={{background:"#0a1628"}}>
+                  <tr>
+                    {["Месец","Приходи €","Разходи €","Печалба €","Дивиденти €",""].map(h=>(
+                      <th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase"}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {compareMonths.map((m,i)=>(
+                    <tr key={m.label} style={{borderTop:"1px solid #0f172a"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="#243044"}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <td style={{padding:"9px 14px",fontWeight:600,color:"#f1f5f9"}}>{m.label}</td>
+                      <td style={{padding:"9px 14px",color:"#10b981",fontWeight:700}}>€ {fmtM(m.rev)}</td>
+                      <td style={{padding:"9px 14px",color:"#ef4444"}}>€ {fmtM(m.exp)}</td>
+                      <td style={{padding:"9px 14px",fontWeight:800,color:m.profit>=0?"#38bdf8":"#ef4444"}}>€ {fmtM(m.profit)}</td>
+                      <td style={{padding:"9px 14px",color:"#f59e0b",fontWeight:700}}>€ {fmtM(dividends[m.key]||0)}</td>
+                      <td style={{padding:"9px 14px",width:120}}>
+                        <div style={{height:6,background:"#334155",borderRadius:3,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${Math.min(100,(m.rev/Math.max(...compareMonths.map(x=>x.rev),1))*100)}%`,background:"linear-gradient(90deg,#10b981,#059669)",borderRadius:3}}/>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{borderTop:"2px solid #334155",background:"#0a1628"}}>
+                    <td style={{padding:"10px 14px",fontWeight:800,color:"#f59e0b"}}>ОБЩО</td>
+                    <td style={{padding:"10px 14px",fontWeight:800,color:"#10b981"}}>€ {fmtM(compareMonths.reduce((s,m)=>s+m.rev,0))}</td>
+                    <td style={{padding:"10px 14px",fontWeight:800,color:"#ef4444"}}>€ {fmtM(compareMonths.reduce((s,m)=>s+m.exp,0))}</td>
+                    <td style={{padding:"10px 14px",fontWeight:900,color:"#38bdf8"}}>€ {fmtM(compareMonths.reduce((s,m)=>s+m.profit,0))}</td>
+                    <td style={{padding:"10px 14px",fontWeight:800,color:"#f59e0b"}}>€ {fmtM(compareMonths.reduce((s,m)=>s+(dividends[m.key]||0),0))}</td>
+                    <td/>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </>
+        }
+      </div>
+
+      {/* Modal */}
+      {modal!==null && (
+        <ExpenseModal item={modal} onSave={save} onClose={()=>setModal(null)}/>
+      )}
 
       {/* Modal */}
       {modal!==null && (
