@@ -962,7 +962,7 @@ function StockOrderModal({ order, onSave, onClose }) {
 }
 
 // ══ SUPPLIER DEBTS ════════════════════════════════════════════════════════════
-export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = false }) {
+export function SupplierDebtsTab({ debts, onSave, onDelete, onDeleteSupplier, notify, isAdmin = false }) {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [search, setSearch] = useState("");
@@ -1105,19 +1105,10 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
           footer={<>
             <CancelBtn onClick={() => setDeleteSupplierModal(null)} />
             <MBtn color="#ef4444" bg="#450a0a" onClick={async () => {
-              const toDelete = debts.filter(d => d.supplier === deleteSupplierModal);
-              let deleted = 0;
-              for (const d of toDelete) {
-                try {
-                  await onDelete(d.id);
-                  deleted++;
-                } catch(e) {
-                  console.warn("Грешка при изтриване:", d.id, e);
-                }
-              }
+              const supplierName = deleteSupplierModal;
               setDeleteSupplierModal(null);
               setSupplierFilter("Всички");
-              notify(`🗑️ Изтрити ${deleted} от ${toDelete.length} записа за "${deleteSupplierModal}"`);
+              if (onDeleteSupplier) await onDeleteSupplier(supplierName);
             }} style={{ padding: "9px 18px", fontSize: 13 }}>🗑️ Изтрий всичко</MBtn>
           </>}>
           <p style={{ color: "#94a3b8", fontSize: 13, marginBottom: 8 }}>
