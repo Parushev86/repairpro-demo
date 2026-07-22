@@ -970,6 +970,7 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
   const [payModal, setPayModal] = useState(false);
   const [supplierFilter, setSupplierFilter] = useState("Всички");
 
+  const [deleteSupplierModal, setDeleteSupplierModal] = useState(null);
   const suppliers = ["Всички", ...new Set(debts.map(d => d.supplier).filter(Boolean))].sort();
 
   const filtered = debts.filter(d => {
@@ -1028,6 +1029,9 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
             📊 {selected.size > 0 ? `Excel (${selected.size} избрани)` : "Excel"}
           </MBtn>
           {selected.size > 0 && <MBtn color="#10b981" bg="#064e3b" onClick={() => setPayModal(true)}>✅ Плати ({selected.size})</MBtn>}
+          {supplierFilter !== "Всички" && (
+            <MBtn color="#ef4444" bg="#450a0a" onClick={() => setDeleteSupplierModal(supplierFilter)}>🗑️ Изтрий "{supplierFilter}"</MBtn>
+          )}
           <MPrimaryBtn onClick={() => setModal({})}>+ Нов запис</MPrimaryBtn>
         </div>
       </div>
@@ -1095,6 +1099,25 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
           ))}
         </div>
       </MModal>}
+
+      {deleteSupplierModal && (
+        <MModal title={`🗑️ Изтрий доставчик "${deleteSupplierModal}"`} onClose={() => setDeleteSupplierModal(null)} maxWidth={400}
+          footer={<>
+            <CancelBtn onClick={() => setDeleteSupplierModal(null)} />
+            <MBtn color="#ef4444" bg="#450a0a" onClick={async () => {
+              const toDelete = debts.filter(d => d.supplier === deleteSupplierModal);
+              for (const d of toDelete) await onDelete(d.id);
+              setDeleteSupplierModal(null);
+              setSupplierFilter("Всички");
+              notify(`🗑️ Доставчик "${deleteSupplierModal}" и всичките му записи са изтрити`);
+            }} style={{ padding: "9px 18px", fontSize: 13 }}>🗑️ Изтрий всичко</MBtn>
+          </>}>
+          <p style={{ color: "#94a3b8", fontSize: 13, marginBottom: 8 }}>
+            Ще бъдат изтрити <b style={{ color: "#ef4444" }}>{debts.filter(d => d.supplier === deleteSupplierModal).length}</b> записа за доставчик <b style={{ color: "#38bdf8" }}>{deleteSupplierModal}</b>.
+          </p>
+          <p style={{ color: "#64748b", fontSize: 12 }}>⚠️ Това действие не може да бъде отменено!</p>
+        </MModal>
+      )}
     </div>
   );
 }
