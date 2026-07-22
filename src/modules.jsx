@@ -1106,10 +1106,18 @@ export function SupplierDebtsTab({ debts, onSave, onDelete, notify, isAdmin = fa
             <CancelBtn onClick={() => setDeleteSupplierModal(null)} />
             <MBtn color="#ef4444" bg="#450a0a" onClick={async () => {
               const toDelete = debts.filter(d => d.supplier === deleteSupplierModal);
-              for (const d of toDelete) await onDelete(d.id);
+              let deleted = 0;
+              for (const d of toDelete) {
+                try {
+                  await onDelete(d.id);
+                  deleted++;
+                } catch(e) {
+                  console.warn("Грешка при изтриване:", d.id, e);
+                }
+              }
               setDeleteSupplierModal(null);
               setSupplierFilter("Всички");
-              notify(`🗑️ Доставчик "${deleteSupplierModal}" и всичките му записи са изтрити`);
+              notify(`🗑️ Изтрити ${deleted} от ${toDelete.length} записа за "${deleteSupplierModal}"`);
             }} style={{ padding: "9px 18px", fontSize: 13 }}>🗑️ Изтрий всичко</MBtn>
           </>}>
           <p style={{ color: "#94a3b8", fontSize: 13, marginBottom: 8 }}>
