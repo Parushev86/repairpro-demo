@@ -853,6 +853,17 @@ export default function App() {
             debts={supplierDebts}
             onSave={async r => { const s = await upsertSupplierDebt(r); if (!r.id) setSupplierDebts(p => [s, ...p]); else setSupplierDebts(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Записът е запазен"); }}
             onDelete={async id => { try { const r = supplierDebts.find(x => x.id === id); if (r) await moveToTrash("supplier_debts", r); await deleteSupplierDebt(id); setSupplierDebts(p => p.filter(x => x.id !== id)); } catch(e) { console.warn("Грешка изтриване задължение:", id, e); } }}
+            onDeleteSupplier={async (supplierName) => {
+              try {
+                const toDelete = supplierDebts.filter(d => d.supplier === supplierName);
+                for (const d of toDelete) {
+                  try { await moveToTrash("supplier_debts", d); } catch(e) {}
+                  try { await deleteSupplierDebt(d.id); } catch(e) {}
+                }
+                setSupplierDebts(p => p.filter(x => x.supplier !== supplierName));
+                notify(`🗑️ Доставчик "${supplierName}" изтрит (${toDelete.length} записа)`);
+              } catch(e) { notify("❌ Грешка: " + e.message, "error"); }
+            }}
             notify={notify}
           />}
           {tab === "phonesales" && <PhoneSalesTab
