@@ -121,6 +121,7 @@ export default function App() {
   const [trash, setTrash] = useState([]);
   const [dismantleRecs, setDismantleRecs] = useState([]);
   const [monthlyExpenses, setMonthlyExpenses] = useState([]);
+  const [chatUnread, setChatUnread] = useState(0);
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
@@ -867,7 +868,7 @@ export default function App() {
             }}
             notify={notify}
           />}
-          {tab === "chat" && <ChatTab currentUser={currentUser} />}
+          {tab === "chat" && <ChatTab currentUser={currentUser} onUnreadChange={setChatUnread} />}
           {tab === "phonesales" && <PhoneSalesTab
   sales={phoneSales} inventory={inventory} isAdmin={isAdmin}
             onSave={async r => {
@@ -1000,7 +1001,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["phonesales", "📲", "Продажба телефони", null],
             ["stockorders", "📋", "Поръчки части", null],
             ["debts", "💳", "Задължения", null],
-            ["chat", "💬", "Чат", null],
+            ["chat", "💬", "Чат", chatUnread || null],
             ...(!isAdmin ? [] : [
               ["dashboard", "📊", "Дашборд", null],
               ["reports", "📈", "Справки", null],
