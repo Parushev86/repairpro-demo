@@ -122,7 +122,35 @@ export default function App() {
   const [dismantleRecs, setDismantleRecs] = useState([]);
   const [monthlyExpenses, setMonthlyExpenses] = useState([]);
   const [chatUnread, setChatUnread] = useState(0);
+  const chatSubRef = useRef(null);
   const subsRef = useRef([]);
+  // ── Chat unread counter ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!connected) return;
+    const sb = getSupabase();
+    if (!sb) return;
+    const lastSeen = Number(localStorage.getItem("chat_last_seen") || 0);
+    const currentUser = (() => { try { return JSON.parse(sessionStorage.getItem("rp_user") || "{}"); } catch { return {}; } })();
+    const userName = currentUser?.username || "";
+
+    chatSubRef.current = sb.channel("chat_unread_counter", {
+      config: { broadcast: { self: false } }
+    })
+      .on("broadcast", { event: "new_message" }, (payload) => {
+        if (payload.payload.user_name !== userName) {
+          setChatUnread(p => p + 1);
+          if (Notification.permission === "granted") {
+            new Notification(`💬 ${payload.payload.user_name}`, {
+              body: payload.payload.message || "📎 Изпрати файл",
+              icon: "/favicon.ico",
+            });
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { chatSubRef.current?.unsubscribe(); };
+  }, [connected]);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
     setNotif({ msg, type });
@@ -869,7 +897,7 @@ export default function App() {
             }}
             notify={notify}
           />}
-          {tab === "chat" && <ChatTab currentUser={currentUser} onUnreadChange={setChatUnread} />}
+          {tab === "chat" && <ChatTab currentUser={currentUser} onUnreadChange={(n) => { setChatUnread(n); }} />}
           {tab === "phonesales" && <PhoneSalesTab
   sales={phoneSales} inventory={inventory} isAdmin={isAdmin}
             onSave={async r => {
