@@ -129,19 +129,16 @@ export default function App() {
     if (!connected) return;
     const sb = getSupabase();
     if (!sb) return;
-    const lastSeen = Number(localStorage.getItem("chat_last_seen") || 0);
-    const currentUser = (() => { try { return JSON.parse(sessionStorage.getItem("rp_user") || "{}"); } catch { return {}; } })();
-    const userName = currentUser?.username || "";
+    const cu = (() => { try { return JSON.parse(sessionStorage.getItem("rp_user") || "{}"); } catch { return {}; } })();
+    const uName = cu?.username || "";
 
-    chatSubRef.current = sb.channel("chat_unread_counter", {
-      config: { broadcast: { self: false } }
-    })
-      .on("broadcast", { event: "new_message" }, (payload) => {
-        if (payload.payload.user_name !== userName) {
+    chatSubRef.current = sb.channel("chat_unread_bg")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+        if (payload.new.user_name !== uName) {
           setChatUnread(p => p + 1);
           if (Notification.permission === "granted") {
-            new Notification(`💬 ${payload.payload.user_name}`, {
-              body: payload.payload.message || "📎 Изпрати файл",
+            new Notification(`💬 ${payload.new.user_name}`, {
+              body: payload.new.message || "📎 Изпрати файл",
               icon: "/favicon.ico",
             });
           }
