@@ -10,6 +10,7 @@ import { exportOrders, exportInventory, exportTechReport, exportFullReport, pars
 import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle, fetchMonthlyExpenses } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
+import ChatTab from "./ChatTab.jsx";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -866,6 +867,7 @@ export default function App() {
             }}
             notify={notify}
           />}
+          {tab === "chat" && <ChatTab currentUser={currentUser} />}
           {tab === "phonesales" && <PhoneSalesTab
   sales={phoneSales} inventory={inventory} isAdmin={isAdmin}
             onSave={async r => {
@@ -998,6 +1000,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["phonesales", "📲", "Продажба телефони", null],
             ["stockorders", "📋", "Поръчки части", null],
             ["debts", "💳", "Задължения", null],
+            ["chat", "💬", "Чат", null],
             ...(!isAdmin ? [] : [
               ["dashboard", "📊", "Дашборд", null],
               ["reports", "📈", "Справки", null],
