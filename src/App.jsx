@@ -1017,6 +1017,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
           {[
             ["orders", "🔧", "Сервиз", readyOrders.length || null],
             ["inventory", "📦", "Склад", lowStock.length || null],
+            ["chat", "💬", "Чат", chatUnread || null],
             ["calculator", "🧮", "Калкулатор", null],
             ["pricing", "💲", "Готови цени", null],
             ["expenses", "💸", "Разходи", null],
@@ -1027,7 +1028,6 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["phonesales", "📲", "Продажба телефони", null],
             ["stockorders", "📋", "Поръчки части", null],
             ["debts", "💳", "Задължения", null],
-            ["chat", "💬", "Чат", chatUnread || null],
             ...(!isAdmin ? [] : [
               ["dashboard", "📊", "Дашборд", null],
               ["reports", "📈", "Справки", null],
