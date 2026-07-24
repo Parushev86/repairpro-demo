@@ -61,15 +61,34 @@ export default function ChatTab({ currentUser }) {
     };
     load();
 
+    // Поискай разрешение за нотификации
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     // Realtime
-    subRef.current = sb.channel("chat_room")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
+    subRef.current = sb.channel("chat_room", {
+      config: { broadcast: { self: true }, presence: { key: userName } }
+    })
+      .on("broadcast", { event: "new_message" }, (payload) => {
+        setMessages(prev => {
+          if (prev.find(m => m.id === payload.payload.id)) return prev;
+          return [...prev, payload.payload];
+        });
         scrollToBottom();
+        // Пуш нотификация
+        if (payload.payload.user_name !== userName) {
+          if (Notification.permission === "granted") {
+            new Notification(`💬 ${payload.payload.user_name}`, {
+              body: payload.payload.message || "📎 Изпрати файл",
+              icon: "/favicon.ico",
+            });
+          }
+        }
       })
       .on("presence", { event: "sync" }, () => {
         const state = subRef.current.presenceState();
-        const users = Object.values(state).flat().map(u => u);
+        const users = Object.values(state).flat();
         setOnlineUsers(users);
       })
       .subscribe(async (status) => {
@@ -87,14 +106,23 @@ export default function ChatTab({ currentUser }) {
     if (!text?.trim() && !fileData) return;
     setSending(true);
     try {
-      await sb.from("chat_messages").insert({
+      const { data, error } = await sb.from("chat_messages").insert({
         user_name: userName,
         user_color: userColor,
         message: text?.trim() || null,
         file_url: fileData?.url || null,
         file_type: fileData?.type || null,
         file_name: fileData?.name || null,
-      });
+      }).select().single();
+
+      if (!error && data) {
+        // Broadcast към всички веднага
+        await subRef.current.send({
+          type: "broadcast",
+          event: "new_message",
+          payload: data,
+        });
+      }
       setInput("");
       setShowEmoji(false);
     } catch (e) {
