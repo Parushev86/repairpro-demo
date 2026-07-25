@@ -11,6 +11,7 @@ import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle, fetchMonthlyExpenses } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
 import ChatTab from "./ChatTab.jsx";
+import { registerPWA, showNotification } from "./registerSW.js";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -136,18 +137,14 @@ export default function App() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
         if (payload.new.user_name !== uName) {
           setChatUnread(p => p + 1);
-          if (Notification.permission === "granted") {
-            new Notification(`💬 ${payload.new.user_name}`, {
-              body: payload.new.message || "📎 Изпрати файл",
-              icon: "/favicon.ico",
-            });
-          }
+          showNotification(`💬 ${payload.new.user_name}`, payload.new.message || "📎 Файл");
         }
       })
       .subscribe();
 
     return () => { chatSubRef.current?.unsubscribe(); };
   }, [connected]);
+  useEffect(() => { registerPWA(); }, []);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
     setNotif({ msg, type });
