@@ -70,6 +70,8 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
     if (sb) await sb.from("global_settings").upsert({ key: "starting_cash", value: updated }, { onConflict: "key" });
     setEditingCash(false);
   };
+
+  const saveDividend = async () => {
     const sb = getSupabase();
     if (!sb) return;
     const updated = { ...dividends, [monthKey]: Number(divInput) || 0 };
