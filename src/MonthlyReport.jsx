@@ -28,6 +28,9 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
   const [editingDiv, setEditingDiv] = useState(false);
   const [divInput, setDivInput] = useState("");
   const [compareFrom, setCompareFrom] = useState(() => { const n=new Date(); return n.getFullYear()+"-01-01"; });
+  const [startingCash, setStartingCash] = useState({});
+  const [editingCash, setEditingCash] = useState(false);
+  const [cashInput, setCashInput] = useState("");
   const [compareTo, setCompareTo] = useState(() => new Date().toISOString().split("T")[0]);
 
   const monthKey = `${year}-${String(month+1).padStart(2,"0")}`;
@@ -50,7 +53,23 @@ export default function MonthlyReport({getSupabase, orders, expenses, accSales, 
       });
   }, []);
 
-  const saveDividend = async () => {
+  const currentStartingCash = startingCash[monthKey] || 0;
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("monthly_starting_cash") || "{}");
+      setStartingCash(saved);
+    } catch { }
+  }, []);
+
+  const saveStartingCash = async () => {
+    const updated = { ...startingCash, [monthKey]: Number(cashInput) || 0 };
+    setStartingCash(updated);
+    localStorage.setItem("monthly_starting_cash", JSON.stringify(updated));
+    const sb = getSupabase();
+    if (sb) await sb.from("global_settings").upsert({ key: "starting_cash", value: updated }, { onConflict: "key" });
+    setEditingCash(false);
+  };
     const sb = getSupabase();
     if (!sb) return;
     const updated = { ...dividends, [monthKey]: Number(divInput) || 0 };
@@ -311,7 +330,7 @@ const rev = revOrders + revAcc + revParts + revPhones;
       </div>
 
       {/* KPI cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:14,marginBottom:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:14,marginBottom:20}}>
         <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #10b981"}}>
           <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>💰 ПРИХОДИ</div>
           <div style={{fontSize:24,fontWeight:900,color:"#10b981"}}>{fmtM(totalRev)} €</div>
@@ -344,6 +363,27 @@ const rev = revOrders + revAcc + revParts + revPhones;
             <>
               <div style={{fontSize:24,fontWeight:900,color:"#f59e0b"}}>{fmtM(currentDividend)} €</div>
               <button onClick={()=>{setDivInput(currentDividend||"");setEditingDiv(true);}} style={{marginTop:8,background:"#451a03",color:"#fcd34d",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>✏️ Редактирай</button>
+            </>
+          )}
+        </div>
+
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",borderLeft:"4px solid #06b6d4"}}>
+          <div style={{fontSize:10,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>🏦 НАЧАЛО НА МЕСЕЦА</div>
+          {editingCash ? (
+            <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>
+              <input type="number" min="0" step="0.01" value={cashInput}
+                onChange={e=>setCashInput(e.target.value)}
+                autoFocus
+                style={{width:100,fontSize:16,fontWeight:700,padding:"4px 8px"}}
+                onKeyDown={e=>e.key==="Enter"&&saveStartingCash()}
+              />
+              <button onClick={saveStartingCash} style={{background:"#064e3b",color:"#6ee7b7",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,fontWeight:700}}>✅</button>
+              <button onClick={()=>setEditingCash(false)} style={{background:"#334155",color:"#94a3b8",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12}}>✕</button>
+            </div>
+          ) : (
+            <>
+              <div style={{fontSize:24,fontWeight:900,color:"#06b6d4"}}>{fmtM(currentStartingCash)} €</div>
+              <button onClick={()=>{setCashInput(currentStartingCash||"");setEditingCash(true);}} style={{marginTop:8,background:"#0c4a6e",color:"#67e8f9",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>✏️ Редактирай</button>
             </>
           )}
         </div>
