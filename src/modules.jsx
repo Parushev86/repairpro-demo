@@ -106,11 +106,8 @@ export function ExpensesTab({ expenses, cashRegister, orders = [], accSales = []
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 1fr", gap: 14, marginBottom: 18, alignItems: "end" }}>
         <MField label="Дата"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: 170 }} /></MField>
        <MCard style={{ padding: "12px 16px", borderLeft: "4px solid #38bdf8" }}>
-  <div style={{ fontSize: 11, color: "#64748b" }}>Баланс (каса)</div>
-  <div style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8" }}>{fmtM(openingCash + totalCashIn - totalFromCash)}</div>
-  <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
-    Начало: {fmtM(openingCash)} + Приходи: {fmtM(totalCashIn)} − Разходи: {fmtM(totalFromCash)}
-  </div>
+  <div style={{ fontSize: 11, color: "#64748b" }}>💰 Начало на деня</div>
+  <div style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8" }}>{fmtM(openingCash)}</div>
 </MCard>
       </div>
       <MCard style={{ padding: 0, overflow: "hidden" }}>
