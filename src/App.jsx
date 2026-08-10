@@ -10,8 +10,6 @@ import { exportOrders, exportInventory, exportTechReport, exportFullReport, pars
 import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle, fetchMonthlyExpenses } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
-import ChatTab from "./ChatTab.jsx";
-import { registerPWA, showNotification } from "./registerSW.js";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -115,29 +113,7 @@ export default function App() {
   const [trash, setTrash] = useState([]);
   const [dismantleRecs, setDismantleRecs] = useState([]);
   const [monthlyExpenses, setMonthlyExpenses] = useState([]);
-  const [chatUnread, setChatUnread] = useState(0);
-  const chatSubRef = useRef(null);
   const subsRef = useRef([]);
-  // ── Chat unread counter ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!connected) return;
-    const sb = getSupabase();
-    if (!sb) return;
-    const cu = (() => { try { return JSON.parse(sessionStorage.getItem("rp_user") || "{}"); } catch { return {}; } })();
-    const uName = cu?.username || "";
-
-    chatSubRef.current = sb.channel("chat_unread_bg")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
-        if (payload.new.user_name !== uName) {
-          setChatUnread(p => p + 1);
-          showNotification(`💬 ${payload.new.user_name}`, payload.new.message || "📎 Файл");
-        }
-      })
-      .subscribe();
-
-    return () => { chatSubRef.current?.unsubscribe(); };
-  }, [connected]);
-  useEffect(() => { registerPWA(); }, []);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
     setNotif({ msg, type });
@@ -299,9 +275,11 @@ export default function App() {
   const saveOrder = async (ord) => {
     if (syncing) return;
     const isNew = !ord.id;
-    const cleaned = {
+    const now = new Date().toISOString();
+  const cleaned = {
       ...ord,
       date_in: ord.date_in || today(),
+      time_in: ord.time_in || (!ord.id ? new Date().toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" }) : ord.time_in),
       date_out: ord.date_out || null,
       price: ord.price || 0,
       deposit: ord.deposit || 0,
@@ -311,12 +289,18 @@ export default function App() {
       external_service_note: ord.external_service_note || "",
     };
     const final = isNew ? { ...cleaned, id: genId() } : cleaned;
+
+    // Задай time_out преди запазване
+    if (!isNew && final.status === "Издаден" && !final.time_out) {
+      final.time_out = new Date().toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" });
+    }
+
     setSyncing(true);
     try {
       const saved = await upsertOrder(final);
       if (!isNew) {
         const prev = orders.find(o => o.id === final.id);
-        if (prev?.status !== "Готов" && final.status === "Готов" && final.email && !final.email_sent) {
+      if (prev?.status !== "Готов" && final.status === "Готов" && final.email && !final.email_sent) {
           const res = await sendReadyEmail(final, settings);
           if (res.ok) {
             await upsertOrder({ ...saved, email_sent: true });
@@ -521,8 +505,7 @@ export default function App() {
         activeOrders={activeOrders} orders={orders} connected={connected} realtimeOn={realtimeOn}
         syncing={syncing} onSettings={() => setSettingsOpen(true)} onRefresh={() => loadData(false)}
         onNewOrder={() => setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
-        dismantleCount={dismantleRecs.filter(r => r.status === "Чака разглобяване" || r.status === "В процес").length}
-        chatUnread={chatUnread} />
+        dismantleCount={dismantleRecs.filter(r => r.status === "Чака разглобяване" || r.status === "В процес").length} />
 
       {/* ── MAIN ── */}
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
@@ -870,21 +853,9 @@ export default function App() {
           {tab === "debts" && <SupplierDebtsTab
             debts={supplierDebts}
             onSave={async r => { const s = await upsertSupplierDebt(r); if (!r.id) setSupplierDebts(p => [s, ...p]); else setSupplierDebts(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Записът е запазен"); }}
-            onDelete={async id => { try { const r = supplierDebts.find(x => x.id === id); if (r) await moveToTrash("supplier_debts", r); await deleteSupplierDebt(id); setSupplierDebts(p => p.filter(x => x.id !== id)); } catch(e) { console.warn("Грешка изтриване задължение:", id, e); } }}
-            onDeleteSupplier={async (supplierName) => {
-              try {
-                const toDelete = supplierDebts.filter(d => d.supplier === supplierName);
-                for (const d of toDelete) {
-                  try { await moveToTrash("supplier_debts", d); } catch(e) {}
-                  try { await deleteSupplierDebt(d.id); } catch(e) {}
-                }
-                setSupplierDebts(p => p.filter(x => x.supplier !== supplierName));
-                notify(`🗑️ Доставчик "${supplierName}" изтрит (${toDelete.length} записа)`);
-              } catch(e) { notify("❌ Грешка: " + e.message, "error"); }
-            }}
+            onDelete={async id => { const r = supplierDebts.find(x => x.id === id); if (r) await moveToTrash("supplier_debts", r); await deleteSupplierDebt(id); setSupplierDebts(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "supplier_debts", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             notify={notify}
           />}
-          {tab === "chat" && <ChatTab currentUser={currentUser} onUnreadChange={(n) => { setChatUnread(n); }} />}
           {tab === "phonesales" && <PhoneSalesTab
   sales={phoneSales} inventory={inventory} isAdmin={isAdmin}
             onSave={async r => {
@@ -975,7 +946,7 @@ export default function App() {
 // КРАЙ НА ЧАСТ 1
 // ЧАСТ 2
 // ═══════════════════════════════ SIDEBAR ══════════════════════════════════════
-function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { }, dismantleCount = 0, chatUnread = 0 }) {
+function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { }, dismantleCount = 0 }) {
   const totalRev = orders.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   return (
     <>
@@ -1007,7 +978,6 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
           {[
             ["orders", "🔧", "Сервиз", readyOrders.length || null],
             ["inventory", "📦", "Склад", lowStock.length || null],
-            ["chat", "💬", "Чат", chatUnread || null],
             ["calculator", "🧮", "Калкулатор", null],
             ["pricing", "💲", "Готови цени", null],
             ["expenses", "💸", "Разходи", null],
@@ -1584,7 +1554,10 @@ function OrdersTab({ orders, allOrders, search, setSearch, filterStatus, setFilt
                       color: o.payment_method === "Не е платен" ? "#fca5a5" : o.payment_method === "В брой" ? "#6ee7b7" : o.payment_method === "С карта" ? "#93c5fd" : "#94a3b8",
                     }}>{o.payment_method}</span>}
                   </td>
-                  <td style={{ padding: "9px 13px", fontSize: 11, color: "var(--text3)", whiteSpace: "nowrap" }}>{fmtDate(o.date_in)}</td>
+                  <td style={{ padding: "9px 13px", fontSize: 11, color: "var(--text3)", whiteSpace: "nowrap" }}>
+                    {fmtDate(o.date_in)}{o.time_in ? <span style={{ color: "#475569", marginLeft: 4 }}>{o.time_in}</span> : ""}
+                    {o.date_out && <div style={{ fontSize: 10, color: "#475569" }}>{fmtDate(o.date_out)}{o.time_out ? " " + o.time_out : ""}</div>}
+                  </td>
                   <td style={{ padding: "9px 13px" }}>
                     <div style={{ display: "flex", gap: 3, flexWrap: "wrap", alignItems: "center" }}>
                       {o.notes && o.notes.trim() && (
@@ -4604,5 +4577,5 @@ export function UsersTab() {
       </div>
     </div>
   );
-} 
+}
 // КРАЙ НА ЧАСТ 4
