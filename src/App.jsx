@@ -62,9 +62,7 @@ const Notif = ({ notif }) => notif ? (
   }}>{notif.msg}</div>
 ) : null;
 function printInvLabel(item) {
-  const rate = 1.95583;
   const priceEur = Number(item.price || 0);
-  const priceBgn = (priceEur * rate).toFixed(2);
   const w = window.open("", "_blank");
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Етикет</title>
@@ -74,17 +72,12 @@ function printInvLabel(item) {
     .company { font-size: 9px; color: #555; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 3px; }
     .name { font-size: 11px; font-weight: 800; color: #111; margin-bottom: 6px; line-height: 1.3; }
     .price-label { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
-    .prices { display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: center; }
-    .price-eur { font-size: 18px; font-weight: 900; color: #111; }
-    .price-bgn { font-size: 18px; font-weight: 900; color: #111; }
+    .price-eur { font-size: 24px; font-weight: 900; color: #111; }
   </style></head><body>
   <div class="company">Сънификс ЕООД</div>
   <div class="name">${item.name}</div>
   <div class="price-label">ЦЕНА:</div>
-  <div class="prices">
-    <span class="price-eur">€ ${priceEur.toFixed(2)}</span>
-    <span class="price-bgn">${priceBgn} лв</span>
-  </div>
+  <span class="price-eur">€ ${priceEur.toFixed(2)}</span>
   <script>window.onload=()=>{ window.print(); }</script>
   </body></html>`);
   w.document.close();
