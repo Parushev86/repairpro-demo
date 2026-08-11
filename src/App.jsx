@@ -208,6 +208,28 @@ export default function App() {
     if (showLoading) setLoading(false);
   };
 
+  // ── Chat notifications (background) ──────────────────────────────────────
+  useEffect(() => {
+    if (!connected) return;
+    const sb = getSupabase();
+    if (!sb) return;
+    if (Notification.permission === "default") Notification.requestPermission();
+    chatSubRef.current = sb.channel("chat_bg_" + (currentUser?.username || "user"))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+        const msg = payload.new;
+        if (msg.user_name === currentUser?.username) return;
+        setChatUnread(p => p + 1);
+        if (tab !== "chat" && Notification.permission === "granted") {
+          new Notification(`💬 ${msg.user_name}`, {
+            body: msg.message || "📎 Изпрати файл",
+            icon: "/favicon.ico",
+          });
+        }
+      })
+      .subscribe();
+    return () => { chatSubRef.current?.unsubscribe(); };
+  }, [connected, tab]);
+
   // ── Realtime subscriptions ─────────────────────────────────────────────────
   useEffect(() => {
     if (!connected) return;
