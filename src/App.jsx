@@ -207,6 +207,34 @@ export default function App() {
     }
     if (showLoading) setLoading(false);
   };
+  // ── Забравени устройства (>5 дни в Приет) ────────────────────────────────
+  useEffect(() => {
+    if (!connected || orders.length === 0) return;
+    const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const forgotten = orders.filter(o =>
+      o.status === "Приет" &&
+      o.date_in &&
+      (now - new Date(o.date_in).getTime()) > FIVE_DAYS
+    );
+    if (forgotten.length === 0) return;
+    const key = "rp_forgotten_notif_" + new Date().toDateString();
+    if (localStorage.getItem(key)) return; // Веднъж на ден
+    localStorage.setItem(key, "1");
+    if (Notification.permission === "granted") {
+      forgotten.forEach(o => {
+        new Notification(`⚠️ Забравено устройство!`, {
+          body: `${o.client_name} — ${o.device_type || ""} ${o.brand || ""} ${o.model || ""} (${Math.floor((now - new Date(o.date_in).getTime()) / (1000 * 60 * 60 * 24))} дни)`,
+          icon: "/favicon.ico",
+        });
+      });
+    }
+    notify(
+      `⚠️ ${forgotten.length} устройства стоят повече от 5 дни в статут "Приет"!`,
+      "warn",
+      8000
+    );
+  }, [connected, orders]);
 
   // ── Chat notifications (background) ──────────────────────────────────────
   useEffect(() => {
