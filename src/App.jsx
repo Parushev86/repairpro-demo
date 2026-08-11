@@ -951,7 +951,7 @@ export default function App() {
 // КРАЙ НА ЧАСТ 1
 // ЧАСТ 2
 // ═══════════════════════════════ SIDEBAR ══════════════════════════════════════
-function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { }, dismantleCount = 0 }) {
+function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, connected, realtimeOn, syncing, onSettings, onRefresh, onNewOrder, trash = [], isAdmin = false, sidebarOpen = false, setSidebarOpen = () => { }, dismantleCount = 0, chatUnread = 0 }) {
   const totalRev = orders.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   return (
     <>
