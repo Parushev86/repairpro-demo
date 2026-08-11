@@ -207,34 +207,7 @@ export default function App() {
     }
     if (showLoading) setLoading(false);
   };
-  // ── Забравени устройства (>5 дни в Приет) ────────────────────────────────
-  useEffect(() => {
-    if (!connected || orders.length === 0) return;
-    const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const forgotten = orders.filter(o =>
-      o.status === "Приет" &&
-      o.date_in &&
-      (now - new Date(o.date_in).getTime()) > FIVE_DAYS
-    );
-    if (forgotten.length === 0) return;
-    const key = "rp_forgotten_notif_" + new Date().toDateString();
-    if (localStorage.getItem(key)) return; // Веднъж на ден
-    localStorage.setItem(key, "1");
-    if (Notification.permission === "granted") {
-      forgotten.forEach(o => {
-        new Notification(`⚠️ Забравено устройство!`, {
-          body: `${o.client_name} — ${o.device_type || ""} ${o.brand || ""} ${o.model || ""} (${Math.floor((now - new Date(o.date_in).getTime()) / (1000 * 60 * 60 * 24))} дни)`,
-          icon: "/favicon.ico",
-        });
-      });
-    }
-    notify(
-      `⚠️ ${forgotten.length} устройства стоят повече от 5 дни в статут "Приет"!`,
-      "warn",
-      8000
-    );
-  }, [connected, orders]);
+  
 
   // ── Chat notifications (background) ──────────────────────────────────────
   useEffect(() => {
@@ -1321,6 +1294,41 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
           </div>
         </div>
       )}
+      {(() => {
+        const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        const forgotten = orders.filter(o =>
+          o.status === "Приет" &&
+          o.date_in &&
+          (now - new Date(o.date_in).getTime()) > FIVE_DAYS
+        );
+        if (forgotten.length === 0) return null;
+        return (
+          <div style={{ background: "#451a03", border: "1px solid #92400e", borderRadius: 10, padding: 14, marginTop: 14 }}>
+            <div style={{ fontWeight: 700, color: "#fed7aa", marginBottom: 8, fontSize: 13 }}>
+              ⏰ Забравени устройства — повече от 5 дни в статут "Приет" ({forgotten.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {forgotten.map(o => {
+                const days = Math.floor((now - new Date(o.date_in).getTime()) / (1000 * 60 * 60 * 24));
+                return (
+                  <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#7c2d1233", borderRadius: 8, padding: "8px 12px" }}>
+                    <div>
+                      <span style={{ color: "#fb923c", fontWeight: 700, fontFamily: "monospace", fontSize: 12 }}>{o.id}</span>
+                      <span style={{ color: "#fed7aa", fontSize: 13, marginLeft: 10, fontWeight: 600 }}>{o.client_name}</span>
+                      <span style={{ color: "#fdba74", fontSize: 12, marginLeft: 8 }}>{o.device_type} {o.brand} {o.model}</span>
+                      {o.technician && <span style={{ color: "#9ca3af", fontSize: 11, marginLeft: 8 }}>— {o.technician}</span>}
+                    </div>
+                    <span style={{ color: "#f97316", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap", marginLeft: 12 }}>
+                      {days} дни
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── АНАЛИТИКИ ── */}
       <div style={{ marginTop: 24 }}>
