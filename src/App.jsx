@@ -10,6 +10,7 @@ import { exportOrders, exportInventory, exportTechReport, exportFullReport, pars
 import { exportDailyReport } from "./lib/excel_daily.js";
 import { fetchExpenses, upsertExpense, deleteExpense, fetchCashRegister, upsertCashRegister, fetchAccessorySales, upsertAccessorySale, deleteAccessorySale, fetchBuybacks, upsertBuyback, deleteBuyback, fetchPartsSales, upsertPartsSale, deletePartsSale, fetchPhoneSales, upsertPhoneSale, deletePhoneSale, fetchStockOrders, upsertStockOrder, deleteStockOrder, fetchSupplierDebts, upsertSupplierDebt, deleteSupplierDebt, moveToTrash, fetchTrash, restoreFromTrash, deleteFromTrash, cleanExpiredTrash, fetchDismantle, upsertDismantle, deleteDismantle, fetchMonthlyExpenses } from "./lib/db2.js";
 import { ExpensesTab, AccessorySalesTab, BuybacksTab, PartsSalesTab, PhoneSalesTab, StockOrdersTab, SupplierDebtsTab, DismantleTab } from "./modules.jsx";
+import ChatTab from "./ChatTab.jsx";
 
 const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
@@ -113,6 +114,8 @@ export default function App() {
   const [trash, setTrash] = useState([]);
   const [dismantleRecs, setDismantleRecs] = useState([]);
   const [monthlyExpenses, setMonthlyExpenses] = useState([]);
+  const [chatUnread, setChatUnread] = useState(0);
+  const chatSubRef = useRef(null);
   const subsRef = useRef([]);
 
   const notify = useCallback((msg, type = "success", dur = 3500) => {
@@ -505,7 +508,8 @@ export default function App() {
         activeOrders={activeOrders} orders={orders} connected={connected} realtimeOn={realtimeOn}
         syncing={syncing} onSettings={() => setSettingsOpen(true)} onRefresh={() => loadData(false)}
         onNewOrder={() => setOrderModal("new")} trash={trash} isAdmin={isAdmin} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
-        dismantleCount={dismantleRecs.filter(r => r.status === "Чака разглобяване" || r.status === "В процес").length} />
+        dismantleCount={dismantleRecs.filter(r => r.status === "Чака разглобяване" || r.status === "В процес").length}
+        chatUnread={chatUnread} />
 
       {/* ── MAIN ── */}
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
@@ -850,6 +854,7 @@ export default function App() {
               notify("Изтрито завинаги", "error");
             }}
           />}
+          {tab === "chat" && <ChatTab currentUser={currentUser} onUnreadChange={setChatUnread} />}
           {tab === "debts" && <SupplierDebtsTab
             debts={supplierDebts}
             onSave={async r => { const s = await upsertSupplierDebt(r); if (!r.id) setSupplierDebts(p => [s, ...p]); else setSupplierDebts(p => p.map(x => x.id === s.id ? s : x)); notify("✅ Записът е запазен"); }}
@@ -978,6 +983,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
           {[
             ["orders", "🔧", "Сервиз", readyOrders.length || null],
             ["inventory", "📦", "Склад", lowStock.length || null],
+            ["chat", "💬", "Чат", chatUnread || null],
             ["calculator", "🧮", "Калкулатор", null],
             ["pricing", "💲", "Готови цени", null],
             ["expenses", "💸", "Разходи", null],
@@ -987,7 +993,6 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["partssales", "🔩", "Продажба части", null],
             ["phonesales", "📲", "Продажба телефони", null],
             ["stockorders", "📋", "Поръчки части", null],
-            ["debts", "💳", "Задължения", null],
             ...(!isAdmin ? [] : [
               ["dashboard", "📊", "Дашборд", null],
               ["reports", "📈", "Справки", null],
