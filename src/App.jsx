@@ -1071,14 +1071,20 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
   const monthlyRev = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
     const m = d.getMonth(), y = d.getFullYear();
-    const rev = orders.filter(o => {
-  if (o.status !== "Издаден") return false;
-  // Използвай date_out, ако го има, иначе updated_at, иначе date_in
-  const d = o.date_out || o.updated_at || o.date_in;
-  if (!d) return false;
-  const od = new Date(d);
-  return od.getMonth() === m && od.getFullYear() === y;
-}).reduce((s, o) => s + Number(o.price || 0), 0);
+    const inMonth = (dateStr) => {
+      if (!dateStr) return false;
+      const od = new Date(dateStr);
+      return od.getMonth() === m && od.getFullYear() === y;
+    };
+    const revRepairs = orders.filter(o => o.status === "Издаден" && inMonth(o.date_out || o.updated_at || o.date_in))
+      .reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+    const revAcc = accSales.filter(s => s.payment_status !== "Не е платена" && inMonth(s.paid_date || s.date))
+      .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+    const revParts = partsSales.filter(s => s.payment_status === "Платена" && inMonth(s.paid_date || s.date))
+      .reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0);
+    const revPhones = phoneSales.filter(s => s.payment_method !== "Не е платена" && inMonth(s.paid_date || s.date))
+      .reduce((s, r) => s + Number(r.sale_price || 0), 0);
+    const rev = revRepairs + revAcc + revParts + revPhones;
     return { label: MONTHS_BG[m] + ' ' + y, rev };
   });
   const maxRev = Math.max(...monthlyRev.map(m => m.rev), 1);
@@ -1219,7 +1225,7 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
 
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 14, marginBottom: 14 }}>
         <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Оборот — последните 6 месеца</div>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Общ оборот — последните 6 месеца</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 110 }}>
             {monthlyRev.map(({ label, rev }, idx) => (
               <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
