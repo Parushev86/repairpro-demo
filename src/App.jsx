@@ -1793,9 +1793,24 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
         upsertInventory({ ...exists, quantity: newQty }).catch(() => { });
         return iv.map(i => i.id === part.id ? { ...i, quantity: newQty } : i);
       } else {
-        const restored = { id: part.id, name: part.name, price: part.price, quantity: 1, min_qty: 2, category: part.category || "Друго" };
-        upsertInventory(restored).catch(() => { });
-        return [...iv, restored];
+        // Артикулът го няма в локалния state — вземи го от базата и го върни
+        getSupabase()?.from("inventory").select("*").eq("id", part.id).single().then(({ data }) => {
+          if (data) {
+            const newQty = Number(data.quantity) + 1;
+            upsertInventory({ ...data, quantity: newQty }).catch(() => { });
+            setInventory(iv2 => {
+              const alreadyIn = iv2.find(i => i.id === part.id);
+              if (alreadyIn) return iv2.map(i => i.id === part.id ? { ...i, quantity: newQty } : i);
+              return [...iv2, { ...data, quantity: newQty }];
+            });
+          } else {
+            // Артикулът го няма в базата — създай го наново
+            const restored = { id: part.id, name: part.name, price: part.price, quantity: 1, min_qty: 0, category: part.category || "Друго" };
+            upsertInventory(restored).catch(() => { });
+            setInventory(iv2 => [...iv2, restored]);
+          }
+        });
+        return iv;
       }
     });
     setForm(f => {
