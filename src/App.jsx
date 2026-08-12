@@ -1546,6 +1546,72 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
           })()}
         </Card>
 
+        {/* Средно време на ремонт */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>⏱️ Средно време на ремонт (Приет → Готов)</div>
+          {(() => {
+            const completed = filtOrders.filter(o => o.date_in && (o.date_out || o.updated_at));
+            if (completed.length === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма достатъчно данни</p>;
+            const times = completed.map(o => {
+              const start = new Date(o.date_in).getTime();
+              const end = new Date(o.date_out || o.updated_at).getTime();
+              return Math.max(0, end - start);
+            }).filter(t => t > 0 && t < 90 * 24 * 60 * 60 * 1000);
+            if (times.length === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма достатъчно данни</p>;
+            const avgMs = times.reduce((s, t) => s + t, 0) / times.length;
+            const avgHours = avgMs / (1000 * 60 * 60);
+            const avgDays = avgHours / 24;
+            const minMs = Math.min(...times);
+            const maxMs = Math.max(...times);
+            const under1day = times.filter(t => t < 24 * 60 * 60 * 1000).length;
+            const under3days = times.filter(t => t < 3 * 24 * 60 * 60 * 1000).length;
+            const over7days = times.filter(t => t >= 7 * 24 * 60 * 60 * 1000).length;
+            const fmtDur = (ms) => {
+              const h = Math.floor(ms / (1000 * 60 * 60));
+              const d = Math.floor(h / 24);
+              if (d >= 1) return `${d} дни ${h % 24} ч.`;
+              return `${h} ч.`;
+            };
+            const pct = (n) => ((n / times.length) * 100).toFixed(0);
+            return (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", borderLeft: "3px solid #38bdf8", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>⌀ Средно</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8" }}>{avgDays >= 1 ? `${avgDays.toFixed(1)} дни` : `${avgHours.toFixed(0)} ч.`}</div>
+                    <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{times.length} ремонта</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", borderLeft: "3px solid #10b981", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>🏆 Най-бързо</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#10b981" }}>{fmtDur(minMs)}</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", borderLeft: "3px solid #ef4444", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>🐢 Най-бавно</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#ef4444" }}>{fmtDur(maxMs)}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    { label: "До 1 ден", count: under1day, color: "#10b981" },
+                    { label: "До 3 дни", count: under3days, color: "#38bdf8" },
+                    { label: "Над 7 дни", count: over7days, color: "#ef4444" },
+                  ].map(({ label, count, color }) => (
+                    <div key={label}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                        <span style={{ color: "#cbd5e1" }}>{label}</span>
+                        <span style={{ color, fontWeight: 700 }}>{count} бр. ({pct(count)}%)</span>
+                      </div>
+                      <div style={{ height: 6, background: "#334155", borderRadius: 3 }}>
+                        <div style={{ height: "100%", width: `${pct(count)}%`, background: color, borderRadius: 3, transition: "width .4s" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
       </div>
     </div>
   );
