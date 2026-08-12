@@ -1550,7 +1550,7 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
         <Card style={{ marginTop: 14 }}>
           <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>⏱️ Средно време на ремонт (Приет → Готов)</div>
           {(() => {
-            const completed = filtOrders.filter(o => o.date_in && (o.date_out || o.updated_at));
+            const completed = orders.filter(o => o.status === "Готов" && o.date_in && o.date_out);
             if (completed.length === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма достатъчно данни</p>;
             const times = completed.map(o => {
               const start = new Date(o.date_in).getTime();
