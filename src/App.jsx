@@ -1016,6 +1016,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["partssales", "🔩", "Продажба части", null],
             ["phonesales", "📲", "Продажба телефони", null],
             ["stockorders", "📋", "Поръчки части", null],
+            ["debts", "💳", "Задължения", null],
             ...(!isAdmin ? [] : [
               ["dashboard", "📊", "Дашборд", null],
               ["reports", "📈", "Справки", null],
