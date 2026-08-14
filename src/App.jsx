@@ -73,7 +73,7 @@ function printInvLabel(item) {
     .price-label { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
     .price-eur { font-size: 24px; font-weight: 900; color: #111; }
   </style></head><body>
-  <div class="company">Сънификс ЕООД</div>
+  <div class="company">ЕС ЕН МОБАЙЛ ЕООД</div>
   <div class="name">${item.name}</div>
   <div class="price-label">ЦЕНА:</div>
   <span class="price-eur">€ ${priceEur.toFixed(2)}</span>
