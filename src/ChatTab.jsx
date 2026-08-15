@@ -159,7 +159,8 @@ export default function ChatTab({ currentUser, onUnreadChange }) {
     if (!sb) return;
     const load = async () => {
       setLoading(true);
-      const { data, error: loadError } = await sb.from("chat_messages").select("*").order("created_at", { ascending: true }).limit(200);
+      const { data: rawData, error: loadError } = await sb.from("chat_messages").select("*").order("created_at", { ascending: false }).limit(200);
+      const data = (rawData || []).reverse();
       console.log("CHAT LOAD data count:", data?.length);
       console.log("CHAT LOAD error:", loadError);
       setMessages(data || []);
