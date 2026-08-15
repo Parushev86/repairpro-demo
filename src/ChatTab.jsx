@@ -155,14 +155,13 @@ export default function ChatTab({ currentUser, onUnreadChange }) {
   // Load messages + realtime
   useEffect(() => {
     const sb = getSupabase();
-    console.log("CHAT: getSupabase result:", sb ? "OK" : "NULL");
+    
     if (!sb) return;
     const load = async () => {
       setLoading(true);
       const { data: rawData, error: loadError } = await sb.from("chat_messages").select("*").order("created_at", { ascending: false }).limit(200);
       const data = (rawData || []).reverse();
-      console.log("CHAT LOAD data count:", data?.length);
-      console.log("CHAT LOAD error:", loadError);
+      
       setMessages(data || []);
       messagesRef.current = data || [];
       setLoading(false);
@@ -258,9 +257,7 @@ export default function ChatTab({ currentUser, onUnreadChange }) {
         reply_to_text: replyTo?.message ? replyTo.message.slice(0, 80) : (replyTo?.file_name || null),
       };
       const { data, error } = await sb.from("chat_messages").insert(payload).select().single();
-      console.log("CHAT INSERT payload:", payload);
-      console.log("CHAT INSERT data:", data);
-      console.log("CHAT INSERT error:", error);
+      
       if (!error && data) {
         await subRef.current.send({ type: "broadcast", event: "new_message", payload: data });
       }
