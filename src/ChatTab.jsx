@@ -254,6 +254,9 @@ export default function ChatTab({ currentUser, onUnreadChange }) {
         reply_to_text: replyTo?.message ? replyTo.message.slice(0, 80) : (replyTo?.file_name || null),
       };
       const { data, error } = await sb.from("chat_messages").insert(payload).select().single();
+      console.log("CHAT INSERT payload:", payload);
+      console.log("CHAT INSERT data:", data);
+      console.log("CHAT INSERT error:", error);
       if (!error && data) {
         await subRef.current.send({ type: "broadcast", event: "new_message", payload: data });
       }
