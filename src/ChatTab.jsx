@@ -155,10 +155,13 @@ export default function ChatTab({ currentUser, onUnreadChange }) {
   // Load messages + realtime
   useEffect(() => {
     const sb = getSupabase();
+    console.log("CHAT: getSupabase result:", sb ? "OK" : "NULL");
     if (!sb) return;
     const load = async () => {
       setLoading(true);
-      const { data } = await sb.from("chat_messages").select("*").order("created_at", { ascending: true }).limit(200);
+      const { data, error: loadError } = await sb.from("chat_messages").select("*").order("created_at", { ascending: true }).limit(200);
+      console.log("CHAT LOAD data count:", data?.length);
+      console.log("CHAT LOAD error:", loadError);
       setMessages(data || []);
       messagesRef.current = data || [];
       setLoading(false);
