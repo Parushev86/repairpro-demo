@@ -1618,6 +1618,54 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
           })()}
         </Card>
 
+        {/* Приходи по начин на плащане */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>💳 Приходи по начин на плащане</div>
+          {(() => {
+            const methods = ["В брой", "С карта", "Банка", "Еконт", "Спиди"];
+            const colors = { "В брой": "#10b981", "С карта": "#3b82f6", "Банка": "#8b5cf6", "Еконт": "#f59e0b", "Спиди": "#06b6d4" };
+            const allSales = [
+              ...filtOrders.map(o => ({ method: o.payment_method, amount: Number(o.total_price || o.price || 0) })),
+              ...filtAcc.map(r => ({ method: r.payment_method, amount: Number(r.sale_price || 0) * Number(r.quantity || 1) })),
+              ...filtParts.map(r => ({ method: r.payment_method, amount: Number(r.sale_price || 0) * Number(r.quantity || 1) })),
+              ...filtPhones.map(r => ({ method: r.payment_method, amount: Number(r.sale_price || 0) })),
+            ];
+            const breakdown = methods.map(m => ({
+              method: m,
+              amount: allSales.filter(s => s.method === m).reduce((sum, s) => sum + s.amount, 0),
+              count: allSales.filter(s => s.method === m).length,
+            }));
+            const total = breakdown.reduce((s, b) => s + b.amount, 0) || 1;
+            return (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10, marginBottom: 16 }} className="kpi-grid">
+                  {breakdown.map(({ method, amount, count }) => (
+                    <div key={method} style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: `3px solid ${colors[method]}`, textAlign: "center" }}>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>{method}</div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: colors[method] }}>€ {amount.toFixed(2)}</div>
+                      <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{count} бр.</div>
+                      <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>{((amount / total) * 100).toFixed(1)}%</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {breakdown.filter(b => b.amount > 0).sort((a, b) => b.amount - a.amount).map(({ method, amount }) => (
+                    <div key={method}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                        <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{method}</span>
+                        <span style={{ color: colors[method], fontWeight: 700 }}>€ {amount.toFixed(2)} ({((amount / total) * 100).toFixed(1)}%)</span>
+                      </div>
+                      <div style={{ height: 6, background: "#334155", borderRadius: 3 }}>
+                        <div style={{ height: "100%", width: `${(amount / total) * 100}%`, background: colors[method], borderRadius: 3, transition: "width .4s" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
       </div>
     </div>
   );
