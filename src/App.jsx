@@ -1132,11 +1132,14 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
 
   // Справка по марки
   const brandCounts = {};
+  const brandLabels = {};
   filtOrders.forEach(o => {
-    const b = (o.brand || "Неизвестна").trim();
-    brandCounts[b] = (brandCounts[b] || 0) + 1;
+    const raw = (o.brand || "Неизвестна").trim();
+    const key = raw.toLowerCase();
+    brandCounts[key] = (brandCounts[key] || 0) + 1;
+    if (!brandLabels[key]) brandLabels[key] = raw;
   });
-  const topBrands = Object.entries(brandCounts).sort((a,b) => b[1]-a[1]).slice(0,10);
+  const topBrands = Object.entries(brandCounts).sort((a,b) => b[1]-a[1]).slice(0,10).map(([key, count]) => [brandLabels[key], count]);
 
   // Разбивка по вид ремонт
   const repairTypeCounts = {};
