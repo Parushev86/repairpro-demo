@@ -2679,7 +2679,7 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
     if (Number(inv.quantity) <= 0) return;
     const newQty = Number(inv.quantity) - 1;
     setForm(f => {
-      const newParts = [...(f.parts || []), { id: inv.id, name: inv.name, price: Number(inv.price), category: inv.category || "" }];
+      const newParts = [...(f.parts || []), { id: inv.id, name: inv.name, price: Number(inv.price), category: inv.category || "", supplier: inv.supplier || "", cost: Number(inv.cost || 0) }];
       const partsSum = newParts.reduce((s, p) => s + Number(p.price || 0), 0);
       const currentTotal = Number(f.total_price || f.price || 0);
       // Ако има въведена крайна цена — изчисли труда автоматично
