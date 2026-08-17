@@ -1669,6 +1669,860 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
           })()}
         </Card>
 
+        {/* Справка по техник */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>👨‍🔧 Разширена справка по техник</div>
+          {(() => {
+            const techNames = [...new Set(filtOrders.map(o => o.technician).filter(Boolean))];
+            if (techNames.length === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни за избрания период</p>;
+            const daysInPeriod = Math.max(1, Math.ceil((new Date(analyticsTo) - new Date(analyticsFrom)) / (1000 * 60 * 60 * 24)) + 1);
+            const fmtDur = (ms) => {
+              const d = ms / (1000 * 60 * 60 * 24);
+              return `${d.toFixed(1)} дни`;
+            };
+            const stats = techNames.map(name => {
+              const tc = technicians.find(t => t.name === name);
+              const techOrders = filtOrders.filter(o => o.technician === name);
+              const totalCount = techOrders.length;
+              const totalRevenue = techOrders.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+              const avgPerDay = (totalCount / daysInPeriod).toFixed(1);
+              const avgRevPerRepair = totalCount > 0 ? (totalRevenue / totalCount).toFixed(2) : "0.00";
+              const withDates = techOrders.filter(o => o.date_in && (o.date_out || o.updated_at));
+              const times = withDates.map(o => {
+                const start = new Date(o.date_in).getTime();
+                const end = new Date(o.date_out || o.updated_at).getTime();
+                return Math.max(0, end - start);
+              }).filter(t => t > 0 && t < 90 * 24 * 60 * 60 * 1000);
+              const avgTime = times.length > 0 ? times.reduce((s, t) => s + t, 0) / times.length : null;
+              const paid = techOrders.filter(o => o.payment_method !== "Не е платен" && Number(o.total_price || o.price || 0) > 0).length;
+              const unpaid = totalCount - paid;
+              return { name, color: tc?.color || "#38bdf8", totalCount, totalRevenue, avgPerDay, avgRevPerRepair, avgTime, paid, unpaid };
+            }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+            const maxRevenue = Math.max(...stats.map(s => s.totalRevenue), 1);
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {stats.map((s, i) => (
+                  <div key={s.name} style={{ background: "#0f172a", borderRadius: 12, padding: "14px 16px", borderLeft: `4px solid ${s.color}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff" }}>
+                          {s.name[0]?.toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: "#f1f5f9" }}>{i === 0 ? "🏆 " : ""}{s.name}</span>
+                      </div>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: "#10b981" }}>€ {s.totalRevenue.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 12 }} className="kpi-grid">
+                      {[
+                        { l: "Общо ремонти", v: s.totalCount + " бр.", c: "#38bdf8" },
+                        { l: "Средно/ден", v: s.avgPerDay + " бр.", c: "#f59e0b" },
+                        { l: "Средно/ремонт", v: "€ " + s.avgRevPerRepair, c: "#10b981" },
+                        { l: "Средно време", v: s.avgTime ? fmtDur(s.avgTime) : "—", c: "#8b5cf6" },
+                      ].map(({ l, v, c }) => (
+                        <div key={l} style={{ background: "#1e293b", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                          <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>{l}</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: c }}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: 16, fontSize: 11, marginBottom: 8 }}>
+                      <span style={{ color: "#10b981" }}>✅ Платени: {s.paid} бр.</span>
+                      <span style={{ color: "#ef4444" }}>❌ Неплатени: {s.unpaid} бр.</span>
+                      <span style={{ color: "#64748b" }}>📊 {s.totalCount > 0 ? ((s.paid / s.totalCount) * 100).toFixed(0) : 0}% събираемост</span>
+                    </div>
+                    <div style={{ height: 6, background: "#334155", borderRadius: 3 }}>
+                      <div style={{ height: "100%", width: `${(s.totalRevenue / maxRevenue) * 100}%`, background: s.color, borderRadius: 3, transition: "width .4s" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Справка по ден от седмицата */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>📅 Справка по ден от седмицата</div>
+          {(() => {
+            const DAYS = ["Неделя", "Понеделник", "Вторник", "Сряда", "Четвъртък", "Петък", "Събота"];
+            const DAYS_SHORT = ["Нед", "Пон", "Вт", "Ср", "Чет", "Пет", "Съб"];
+            const dayStats = DAYS.map((name, idx) => {
+              const dayOrders = filtOrders.filter(o => new Date(o.date_in).getDay() === idx);
+              const revenue = dayOrders.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+              const received = orders.filter(o => {
+                const d = (o.date_in || "").slice(0, 10);
+                return d >= analyticsFrom && d <= analyticsTo && new Date(o.date_in).getDay() === idx;
+              }).length;
+              return { name, short: DAYS_SHORT[idx], idx, count: dayOrders.length, revenue, received };
+            });
+            const maxCount = Math.max(...dayStats.map(d => d.count), 1);
+            const maxRevenue = Math.max(...dayStats.map(d => d.revenue), 1);
+            const maxReceived = Math.max(...dayStats.map(d => d.received), 1);
+            const busiestDay = [...dayStats].sort((a, b) => b.received - a.received)[0];
+            const richestDay = [...dayStats].sort((a, b) => b.revenue - a.revenue)[0];
+            return (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>📥 Най-натоварен ден</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>{busiestDay.name}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>{busiestDay.received} приети устройства</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #10b981" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💰 Най-печеливш ден</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#10b981" }}>{richestDay.name}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>€ {richestDay.revenue.toFixed(2)} оборот</div>
+                  </div>
+                </div>
+                {/* Графика приети устройства */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>📥 Приети устройства по ден</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
+                    {dayStats.map(d => (
+                      <div key={d.idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>{d.received > 0 ? d.received : ""}</div>
+                        <div style={{
+                          width: "100%", borderRadius: "4px 4px 0 0",
+                          height: `${Math.max((d.received / maxReceived) * 80, d.received > 0 ? 4 : 2)}px`,
+                          background: d.idx === busiestDay.idx ? "linear-gradient(180deg,#f59e0b,#d97706)" : "linear-gradient(180deg,#38bdf8,#0ea5e9)",
+                          opacity: d.received > 0 ? 1 : 0.2,
+                          transition: "height .4s",
+                        }} />
+                        <div style={{ fontSize: 10, color: d.idx === busiestDay.idx ? "#f59e0b" : "#64748b", fontWeight: d.idx === busiestDay.idx ? 700 : 400 }}>{d.short}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Графика оборот */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💰 Оборот по ден</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
+                    {dayStats.map(d => (
+                      <div key={d.idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>{d.revenue > 0 ? Math.round(d.revenue) : ""}</div>
+                        <div style={{
+                          width: "100%", borderRadius: "4px 4px 0 0",
+                          height: `${Math.max((d.revenue / maxRevenue) * 80, d.revenue > 0 ? 4 : 2)}px`,
+                          background: d.idx === richestDay.idx ? "linear-gradient(180deg,#10b981,#059669)" : "linear-gradient(180deg,#8b5cf6,#7c3aed)",
+                          opacity: d.revenue > 0 ? 1 : 0.2,
+                          transition: "height .4s",
+                        }} />
+                        <div style={{ fontSize: 10, color: d.idx === richestDay.idx ? "#10b981" : "#64748b", fontWeight: d.idx === richestDay.idx ? 700 : 400 }}>{d.short}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Таблица */}
+                <div style={{ overflow: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#0f172a" }}>
+                        {["Ден", "Приети", "Издадени", "Оборот", "Средно/ремонт"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dayStats.map(d => (
+                        <tr key={d.idx} style={{ borderTop: "1px solid #1e293b", background: d.idx === busiestDay.idx ? "rgba(245,158,11,.05)" : "transparent" }}>
+                          <td style={{ padding: "8px 12px", fontWeight: d.idx === busiestDay.idx || d.idx === richestDay.idx ? 700 : 400, color: "#f1f5f9" }}>
+                            {d.idx === busiestDay.idx ? "🔥 " : d.idx === richestDay.idx ? "💰 " : ""}{d.name}
+                          </td>
+                          <td style={{ padding: "8px 12px", color: "#38bdf8" }}>{d.received} бр.</td>
+                          <td style={{ padding: "8px 12px", color: "#10b981" }}>{d.count} бр.</td>
+                          <td style={{ padding: "8px 12px", color: "#10b981", fontWeight: 700 }}>€ {d.revenue.toFixed(2)}</td>
+                          <td style={{ padding: "8px 12px", color: "#f59e0b" }}>{d.count > 0 ? "€ " + (d.revenue / d.count).toFixed(2) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Справка по час от деня */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>🕐 Справка по час от деня</div>
+          {(() => {
+            const hourStats = Array.from({ length: 24 }, (_, h) => {
+              const hourOrders = orders.filter(o => {
+                const d = (o.date_in || "").slice(0, 10);
+                if (d < analyticsFrom || d > analyticsTo) return false;
+                const time = o.time_in || (o.created_at ? new Date(o.created_at).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" }) : null);
+                if (!time) return false;
+                const hour = parseInt(time.split(":")[0]);
+                return hour === h;
+              });
+              const revenue = hourOrders.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+              return { hour: h, count: hourOrders.length, revenue };
+            });
+            const workHours = hourStats.filter(h => h.hour >= 8 && h.hour <= 20);
+            const maxCount = Math.max(...workHours.map(h => h.count), 1);
+            const maxRevenue = Math.max(...workHours.map(h => h.revenue), 1);
+            const busiestHour = [...workHours].sort((a, b) => b.count - a.count)[0];
+            const richestHour = [...workHours].sort((a, b) => b.revenue - a.revenue)[0];
+            const totalInPeriod = workHours.reduce((s, h) => s + h.count, 0);
+            if (totalInPeriod === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма достатъчно данни — нужно е попълнено поле "Час на приемане" в поръчките</p>;
+            return (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🔥 Най-натоварен час</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>{String(busiestHour.hour).padStart(2, "0")}:00 — {String(busiestHour.hour + 1).padStart(2, "0")}:00</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>{busiestHour.count} приети устройства</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #10b981" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💰 Най-печеливш час</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#10b981" }}>{String(richestHour.hour).padStart(2, "0")}:00 — {String(richestHour.hour + 1).padStart(2, "0")}:00</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>€ {richestHour.revenue.toFixed(2)} оборот</div>
+                  </div>
+                </div>
+                {/* Графика */}
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>📥 Приети устройства по час (08:00 — 20:00)</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 120 }}>
+                    {workHours.map(h => (
+                      <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                        <div style={{ fontSize: 9, color: "#64748b" }}>{h.count > 0 ? h.count : ""}</div>
+                        <div style={{
+                          width: "100%", borderRadius: "3px 3px 0 0",
+                          height: `${Math.max((h.count / maxCount) * 90, h.count > 0 ? 4 : 2)}px`,
+                          background: h.hour === busiestHour.hour
+                            ? "linear-gradient(180deg,#f59e0b,#d97706)"
+                            : h.hour === richestHour.hour
+                            ? "linear-gradient(180deg,#10b981,#059669)"
+                            : "linear-gradient(180deg,#38bdf8,#0ea5e9)",
+                          opacity: h.count > 0 ? 1 : 0.15,
+                          transition: "height .4s",
+                        }} />
+                        <div style={{ fontSize: 9, color: h.hour === busiestHour.hour ? "#f59e0b" : "#475569", fontWeight: h.hour === busiestHour.hour ? 700 : 400, transform: "rotate(-45deg)", transformOrigin: "center", marginTop: 4, whiteSpace: "nowrap" }}>
+                          {String(h.hour).padStart(2, "0")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Топ часове таблица */}
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Топ часове</div>
+                  <div style={{ overflow: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: "#0f172a" }}>
+                          {["Час", "Приети", "% от деня", "Оборот"].map(h => (
+                            <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...workHours].sort((a, b) => b.count - a.count).filter(h => h.count > 0).slice(0, 8).map((h, i) => (
+                          <tr key={h.hour} style={{ borderTop: "1px solid #1e293b" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 700, color: "#f1f5f9" }}>
+                              {i === 0 ? "🔥 " : i === 1 ? "🥈 " : i === 2 ? "🥉 " : ""}{String(h.hour).padStart(2, "0")}:00 — {String(h.hour + 1).padStart(2, "0")}:00
+                            </td>
+                            <td style={{ padding: "8px 12px", color: "#38bdf8", fontWeight: 700 }}>{h.count} бр.</td>
+                            <td style={{ padding: "8px 12px", color: "#f59e0b" }}>{((h.count / totalInPeriod) * 100).toFixed(1)}%</td>
+                            <td style={{ padding: "8px 12px", color: "#10b981", fontWeight: 700 }}>€ {h.revenue.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Справка за повторни клиенти */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>🔄 Справка за повторни клиенти</div>
+          {(() => {
+            // Използва ВСИЧКИ поръчки (не само filtOrders) за да е по-точно
+            const clientMap = {};
+            orders.forEach(o => {
+              const name = (o.client_name || "").trim();
+              const phone = (o.phone || "").trim();
+              if (!name) return;
+              const key = phone || name;
+              if (!clientMap[key]) clientMap[key] = { name, phone, orders: [], revenue: 0 };
+              clientMap[key].orders.push(o);
+              clientMap[key].revenue += Number(o.total_price || o.price || 0);
+            });
+            const clients = Object.values(clientMap);
+            const total = clients.length;
+            const returning = clients.filter(c => c.orders.length > 1);
+            const newClients = clients.filter(c => c.orders.length === 1);
+            const returningPct = total > 0 ? ((returning.length / total) * 100).toFixed(1) : 0;
+            const newPct = total > 0 ? ((newClients.length / total) * 100).toFixed(1) : 0;
+            const avgVisits = total > 0 ? (orders.length / total).toFixed(1) : 0;
+            const avgRevenuePerClient = total > 0 ? (clients.reduce((s, c) => s + c.revenue, 0) / total).toFixed(2) : 0;
+            const topReturning = [...returning].sort((a, b) => b.orders.length - a.orders.length).slice(0, 10);
+            const maxVisits = topReturning[0]?.orders.length || 1;
+            if (total === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни</p>;
+            return (
+              <div>
+                {/* KPI */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }} className="kpi-grid">
+                  {[
+                    { l: "Общо клиенти", v: total, c: "#38bdf8" },
+                    { l: "Повторни", v: `${returning.length} (${returningPct}%)`, c: "#10b981" },
+                    { l: "Еднократни", v: `${newClients.length} (${newPct}%)`, c: "#f59e0b" },
+                    { l: "Средно посещения", v: avgVisits + " пъти", c: "#8b5cf6" },
+                  ].map(({ l, v, c }) => (
+                    <div key={l} style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: `3px solid ${c}`, textAlign: "center" }}>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>{l}</div>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: c }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Визуализация повторни/нови */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
+                    <span style={{ color: "#10b981", fontWeight: 700 }}>🔄 Повторни {returningPct}%</span>
+                    <span style={{ color: "#f59e0b", fontWeight: 700 }}>🆕 Нови {newPct}%</span>
+                  </div>
+                  <div style={{ height: 12, background: "#334155", borderRadius: 6, overflow: "hidden", display: "flex" }}>
+                    <div style={{ height: "100%", width: `${returningPct}%`, background: "linear-gradient(90deg,#10b981,#059669)", transition: "width .5s" }} />
+                    <div style={{ height: "100%", width: `${newPct}%`, background: "linear-gradient(90deg,#f59e0b,#d97706)", transition: "width .5s" }} />
+                  </div>
+                </div>
+                {/* Среден приход */}
+                <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #38bdf8", marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💶 Среден приход на клиент (всички поръчки)</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8" }}>€ {avgRevenuePerClient}</div>
+                </div>
+                {/* Топ повторни клиенти */}
+                {topReturning.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>👑 Топ повторни клиенти</div>
+                    <div style={{ overflow: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#0f172a" }}>
+                            {["Клиент", "Телефон", "Посещения", "Общо €"].map(h => (
+                              <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topReturning.map((c, i) => (
+                            <tr key={i} style={{ borderTop: "1px solid #1e293b" }}>
+                              <td style={{ padding: "8px 12px", fontWeight: 700, color: "#f1f5f9" }}>
+                                {i === 0 ? "🥇 " : i === 1 ? "🥈 " : i === 2 ? "🥉 " : `${i + 1}. `}{c.name}
+                              </td>
+                              <td style={{ padding: "8px 12px", color: "#64748b" }}>{c.phone || "—"}</td>
+                              <td style={{ padding: "8px 12px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ height: 6, width: `${(c.orders.length / maxVisits) * 100}px`, maxWidth: 100, background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 3 }} />
+                                  <span style={{ color: "#10b981", fontWeight: 700 }}>{c.orders.length} пъти</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: "8px 12px", color: "#f59e0b", fontWeight: 700 }}>€ {c.revenue.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Справка за сезонност */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>📆 Справка за сезонност (исторически данни)</div>
+          {(() => {
+            const MONTHS = ["Януари","Февруари","Март","Април","Май","Юни","Юли","Август","Септември","Октомври","Ноември","Декември"];
+            const MONTHS_SHORT = ["Яну","Фев","Мар","Апр","Май","Юни","Юли","Авг","Сеп","Окт","Ное","Дек"];
+            // Вземи всички години от данните
+            const years = [...new Set(orders.map(o => new Date(o.date_in).getFullYear()).filter(y => !isNaN(y)))].sort();
+            if (years.length === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма достатъчно данни</p>;
+            // Статистика по месец (всички години)
+            const monthStats = Array.from({ length: 12 }, (_, m) => {
+              const monthOrders = orders.filter(o => new Date(o.date_in).getMonth() === m);
+              const issuedOrders = orders.filter(o => {
+                const d = new Date(o.date_out || o.updated_at || o.date_in);
+                return o.status === "Издаден" && d.getMonth() === m;
+              });
+              const revenue = issuedOrders.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+              const avgRevenue = years.length > 0 ? revenue / years.length : 0;
+              const avgCount = years.length > 0 ? monthOrders.length / years.length : 0;
+              return { month: m, name: MONTHS[m], short: MONTHS_SHORT[m], count: monthOrders.length, revenue, avgRevenue, avgCount };
+            });
+            const maxAvgRevenue = Math.max(...monthStats.map(m => m.avgRevenue), 1);
+            const maxAvgCount = Math.max(...monthStats.map(m => m.avgCount), 1);
+            const bestMonth = [...monthStats].sort((a, b) => b.avgRevenue - a.avgRevenue)[0];
+            const busiestMonth = [...monthStats].sort((a, b) => b.avgCount - a.avgCount)[0];
+            const worstMonth = [...monthStats].sort((a, b) => a.avgRevenue - b.avgRevenue)[0];
+            // По години таблица
+            const yearStats = years.map(y => {
+              const yOrders = orders.filter(o => new Date(o.date_in).getFullYear() === y);
+              const yIssued = orders.filter(o => {
+                const d = new Date(o.date_out || o.updated_at || o.date_in);
+                return o.status === "Издаден" && d.getFullYear() === y;
+              });
+              const revenue = yIssued.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+              return { year: y, count: yOrders.length, revenue };
+            });
+            return (
+              <div>
+                {/* KPI */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #10b981", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🏆 Най-силен месец</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#10b981" }}>{bestMonth.name}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>⌀ € {bestMonth.avgRevenue.toFixed(0)}/год.</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #38bdf8", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🔥 Най-натоварен</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#38bdf8" }}>{busiestMonth.name}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>⌀ {busiestMonth.avgCount.toFixed(0)} устройства/год.</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #ef4444", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>📉 Най-слаб месец</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#ef4444" }}>{worstMonth.name}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>⌀ € {worstMonth.avgRevenue.toFixed(0)}/год.</div>
+                  </div>
+                </div>
+                {/* Графика среден оборот по месец */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💰 Среден оборот по месец (за {years.length} год.)</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 120 }}>
+                    {monthStats.map(m => (
+                      <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                        <div style={{ fontSize: 9, color: "#64748b" }}>{m.avgRevenue > 0 ? Math.round(m.avgRevenue) : ""}</div>
+                        <div style={{
+                          width: "100%", borderRadius: "3px 3px 0 0",
+                          height: `${Math.max((m.avgRevenue / maxAvgRevenue) * 90, m.avgRevenue > 0 ? 4 : 2)}px`,
+                          background: m.month === bestMonth.month
+                            ? "linear-gradient(180deg,#10b981,#059669)"
+                            : m.month === worstMonth.month
+                            ? "linear-gradient(180deg,#ef4444,#dc2626)"
+                            : "linear-gradient(180deg,#38bdf8,#0ea5e9)",
+                          opacity: m.avgRevenue > 0 ? 1 : 0.15,
+                          transition: "height .4s",
+                        }} />
+                        <div style={{ fontSize: 9, color: m.month === bestMonth.month ? "#10b981" : m.month === worstMonth.month ? "#ef4444" : "#475569", fontWeight: m.month === bestMonth.month || m.month === worstMonth.month ? 700 : 400 }}>{m.short}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Графика средно устройства по месец */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>📥 Средно приети устройства по месец</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80 }}>
+                    {monthStats.map(m => (
+                      <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                        <div style={{ fontSize: 9, color: "#64748b" }}>{m.avgCount > 0 ? m.avgCount.toFixed(0) : ""}</div>
+                        <div style={{
+                          width: "100%", borderRadius: "3px 3px 0 0",
+                          height: `${Math.max((m.avgCount / maxAvgCount) * 60, m.avgCount > 0 ? 4 : 2)}px`,
+                          background: m.month === busiestMonth.month ? "linear-gradient(180deg,#f59e0b,#d97706)" : "linear-gradient(180deg,#8b5cf6,#7c3aed)",
+                          opacity: m.avgCount > 0 ? 1 : 0.15,
+                        }} />
+                        <div style={{ fontSize: 9, color: m.month === busiestMonth.month ? "#f59e0b" : "#475569" }}>{m.short}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* По години */}
+                {yearStats.length > 1 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>📊 Сравнение по години</div>
+                    <div style={{ overflow: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#0f172a" }}>
+                            {["Година", "Приети устройства", "Оборот", "Ръст оборот"].map(h => (
+                              <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {yearStats.map((y, i) => {
+                            const prev = yearStats[i - 1];
+                            const growth = prev && prev.revenue > 0 ? (((y.revenue - prev.revenue) / prev.revenue) * 100).toFixed(1) : null;
+                            return (
+                              <tr key={y.year} style={{ borderTop: "1px solid #1e293b" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 800, color: "#f1f5f9" }}>{y.year}</td>
+                                <td style={{ padding: "8px 12px", color: "#38bdf8", fontWeight: 700 }}>{y.count} бр.</td>
+                                <td style={{ padding: "8px 12px", color: "#10b981", fontWeight: 700 }}>€ {y.revenue.toFixed(2)}</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                  {growth !== null ? (
+                                    <span style={{ color: Number(growth) >= 0 ? "#10b981" : "#ef4444", fontWeight: 700 }}>
+                                      {Number(growth) >= 0 ? "▲" : "▼"} {Math.abs(growth)}%
+                                    </span>
+                                  ) : <span style={{ color: "#475569" }}>—</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Справка за части */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>🔩 Справка за части</div>
+          {(() => {
+            // Събери всички части от поръчките за периода
+            const partStats = {};
+            filtOrders.forEach(o => {
+              (o.parts || []).forEach(p => {
+                const name = (p.name || "Неизвестна").trim();
+                if (!partStats[name]) partStats[name] = { name, count: 0, totalPrice: 0, orders: 0 };
+                partStats[name].count++;
+                partStats[name].totalPrice += Number(p.price || 0);
+                partStats[name].orders++;
+              });
+            });
+            const parts = Object.values(partStats).sort((a, b) => b.count - a.count);
+            if (parts.length === 0) return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни за вложени части в избрания период</p>;
+            const totalParts = parts.reduce((s, p) => s + p.count, 0);
+            const totalPartsValue = parts.reduce((s, p) => s + p.totalPrice, 0);
+            const maxCount = parts[0]?.count || 1;
+            // Категории от части
+            const categoryStats = {};
+            filtOrders.forEach(o => {
+              (o.parts || []).forEach(p => {
+                const cat = (p.category || "Друго").trim();
+                if (!categoryStats[cat]) categoryStats[cat] = { count: 0, totalPrice: 0 };
+                categoryStats[cat].count++;
+                categoryStats[cat].totalPrice += Number(p.price || 0);
+              });
+            });
+            const categories = Object.entries(categoryStats).sort((a, b) => b[1].count - a[1].count);
+            return (
+              <div>
+                {/* KPI */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #38bdf8", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🔩 Общо части</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8" }}>{totalParts} бр.</div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>{parts.length} различни вида</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #10b981", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💰 Обща стойност части</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: "#10b981" }}>€ {totalPartsValue.toFixed(2)}</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>⌀ Средна цена/част</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: "#f59e0b" }}>€ {totalParts > 0 ? (totalPartsValue / totalParts).toFixed(2) : "0.00"}</div>
+                  </div>
+                </div>
+                {/* Топ части */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>🏆 Най-използвани части</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {parts.slice(0, 10).map((p, i) => (
+                      <div key={p.name}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, marginBottom: 3 }}>
+                          <span style={{ color: "#f1f5f9", fontWeight: i < 3 ? 700 : 400, display: "flex", alignItems: "center", gap: 6 }}>
+                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            <span style={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                          </span>
+                          <span style={{ display: "flex", gap: 16, flexShrink: 0 }}>
+                            <span style={{ color: "#38bdf8", fontWeight: 700 }}>{p.count} бр.</span>
+                            <span style={{ color: "#10b981", fontWeight: 700 }}>€ {p.totalPrice.toFixed(2)}</span>
+                            <span style={{ color: "#64748b" }}>⌀ € {(p.totalPrice / p.count).toFixed(2)}</span>
+                            <span style={{ color: "#475569" }}>{((p.count / totalParts) * 100).toFixed(1)}%</span>
+                          </span>
+                        </div>
+                        <div style={{ height: 5, background: "#334155", borderRadius: 3 }}>
+                          <div style={{ height: "100%", width: `${(p.count / maxCount) * 100}%`, background: i === 0 ? "linear-gradient(90deg,#f59e0b,#d97706)" : i === 1 ? "linear-gradient(90deg,#94a3b8,#64748b)" : i === 2 ? "linear-gradient(90deg,#b45309,#92400e)" : "linear-gradient(90deg,#38bdf8,#0ea5e9)", borderRadius: 3, transition: "width .4s" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* По категории */}
+                {categories.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>📂 По категории</div>
+                    <div style={{ overflow: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#0f172a" }}>
+                            {["Категория", "Брой", "Стойност", "Средна цена", "% от всички"].map(h => (
+                              <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {categories.map(([cat, data]) => (
+                            <tr key={cat} style={{ borderTop: "1px solid #1e293b" }}>
+                              <td style={{ padding: "8px 12px", fontWeight: 600, color: "#f1f5f9" }}>{cat}</td>
+                              <td style={{ padding: "8px 12px", color: "#38bdf8", fontWeight: 700 }}>{data.count} бр.</td>
+                              <td style={{ padding: "8px 12px", color: "#10b981", fontWeight: 700 }}>€ {data.totalPrice.toFixed(2)}</td>
+                              <td style={{ padding: "8px 12px", color: "#f59e0b" }}>€ {(data.totalPrice / data.count).toFixed(2)}</td>
+                              <td style={{ padding: "8px 12px", color: "#64748b" }}>{((data.count / totalParts) * 100).toFixed(1)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Справка за доставчици */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>🚚 Справка за доставчици</div>
+          {(() => {
+            // Събери данни от склада и задълженията
+            const supplierMap = {};
+            // От склада (inventory)
+            const allInventoryItems = [...(window._inventoryForDashboard || [])];
+            // Използваме supplierDebts за данни
+            // Тъй като нямаме директен достъп до inventory тук, използваме само orders parts
+            filtOrders.forEach(o => {
+              (o.parts || []).forEach(p => {
+                const supplier = (p.supplier || "Неизвестен").trim();
+                if (!supplierMap[supplier]) supplierMap[supplier] = { name: supplier, partCount: 0, totalCost: 0, orders: new Set() };
+                supplierMap[supplier].partCount++;
+                supplierMap[supplier].totalCost += Number(p.cost || p.price || 0);
+                supplierMap[supplier].orders.add(o.id);
+              });
+            });
+            const suppliers = Object.values(supplierMap).map(s => ({ ...s, orderCount: s.orders.size })).sort((a, b) => b.partCount - a.partCount);
+            if (suppliers.length === 0) {
+              return (
+                <div>
+                  <p style={{ color: "var(--text3)", fontSize: 12, marginBottom: 12 }}>Няма данни за доставчици в частите от поръчките за избрания период.</p>
+                  <div style={{ fontSize: 11, color: "#64748b", background: "#0f172a", borderRadius: 8, padding: 12 }}>
+                    💡 За да се появят данни тук — при добавяне на части към поръчка трябва артикулите в склада да имат попълнено поле "Доставчик".
+                  </div>
+                </div>
+              );
+            }
+            const totalCost = suppliers.reduce((s, sup) => s + sup.totalCost, 0);
+            const maxParts = suppliers[0]?.partCount || 1;
+            return (
+              <div>
+                {/* KPI */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #38bdf8", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🏭 Доставчици</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8" }}>{suppliers.length}</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #10b981", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💰 Общо разходи части</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: "#10b981" }}>€ {totalCost.toFixed(2)}</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🏆 Основен доставчик</div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: "#f59e0b" }}>{suppliers[0]?.name}</div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>{suppliers[0]?.partCount} части</div>
+                  </div>
+                </div>
+                {/* Топ доставчици */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>🏆 По брой доставени части</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {suppliers.slice(0, 10).map((s, i) => (
+                      <div key={s.name}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, marginBottom: 3 }}>
+                          <span style={{ color: "#f1f5f9", fontWeight: i < 3 ? 700 : 400, display: "flex", alignItems: "center", gap: 6 }}>
+                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            <span>{s.name}</span>
+                          </span>
+                          <span style={{ display: "flex", gap: 16, flexShrink: 0 }}>
+                            <span style={{ color: "#38bdf8", fontWeight: 700 }}>{s.partCount} части</span>
+                            <span style={{ color: "#10b981", fontWeight: 700 }}>€ {s.totalCost.toFixed(2)}</span>
+                            <span style={{ color: "#64748b" }}>{totalCost > 0 ? ((s.totalCost / totalCost) * 100).toFixed(1) : 0}%</span>
+                          </span>
+                        </div>
+                        <div style={{ height: 5, background: "#334155", borderRadius: 3 }}>
+                          <div style={{ height: "100%", width: `${(s.partCount / maxParts) * 100}%`, background: i === 0 ? "linear-gradient(90deg,#f59e0b,#d97706)" : i === 1 ? "linear-gradient(90deg,#94a3b8,#64748b)" : i === 2 ? "linear-gradient(90deg,#b45309,#92400e)" : "linear-gradient(90deg,#38bdf8,#0ea5e9)", borderRadius: 3, transition: "width .4s" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Таблица */}
+                <div style={{ overflow: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#0f172a" }}>
+                        {["Доставчик", "Части", "Поръчки", "Общо €", "% от разходи"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {suppliers.map((s, i) => (
+                        <tr key={s.name} style={{ borderTop: "1px solid #1e293b" }}>
+                          <td style={{ padding: "8px 12px", fontWeight: 600, color: "#f1f5f9" }}>
+                            {i === 0 ? "🏆 " : ""}{s.name}
+                          </td>
+                          <td style={{ padding: "8px 12px", color: "#38bdf8", fontWeight: 700 }}>{s.partCount} бр.</td>
+                          <td style={{ padding: "8px 12px", color: "#8b5cf6" }}>{s.orderCount} бр.</td>
+                          <td style={{ padding: "8px 12px", color: "#10b981", fontWeight: 700 }}>€ {s.totalCost.toFixed(2)}</td>
+                          <td style={{ padding: "8px 12px", color: "#f59e0b" }}>{totalCost > 0 ? ((s.totalCost / totalCost) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Прогноза за следващия месец */}
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>🔮 Прогноза за следващия месец</div>
+          {(() => {
+            const now = new Date();
+            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            const nextMonthIdx = nextMonth.getMonth();
+            const nextMonthYear = nextMonth.getFullYear();
+            const nextMonthName = MONTHS_BG[nextMonthIdx] + " " + nextMonthYear;
+            // Вземи данни от същия месец в предишни години
+            const historicalSameMonth = [];
+            const historicalMonths = [];
+            // Последните 6 месеца за тренд
+            for (let i = 1; i <= 6; i++) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const m = d.getMonth();
+              const y = d.getFullYear();
+              const monthOrders = orders.filter(o => {
+                const od = new Date(o.date_in);
+                return od.getMonth() === m && od.getFullYear() === y;
+              });
+              const monthIssued = orders.filter(o => {
+                const od = new Date(o.date_out || o.updated_at || o.date_in);
+                return o.status === "Издаден" && od.getMonth() === m && od.getFullYear() === y;
+              });
+              const revenue = monthIssued.reduce((s, o) => s + Number(o.total_price || o.price || 0), 0);
+              historicalMonths.push({ month: MONTHS_BG[m], year: y, count: monthOrders.length, revenue });
+              // Ако е същият месец от предишна година
+              if (m === nextMonthIdx) historicalSameMonth.push({ year: y, count: monthOrders.length, revenue });
+            }
+            // Изчисли прогноза
+            const recentMonths = historicalMonths.slice(0, 3); // последните 3 месеца
+            const avgRecentCount = recentMonths.length > 0 ? recentMonths.reduce((s, m) => s + m.count, 0) / recentMonths.length : 0;
+            const avgRecentRevenue = recentMonths.length > 0 ? recentMonths.reduce((s, m) => s + m.revenue, 0) / recentMonths.length : 0;
+            // Сезонен фактор от същия месец миналата година
+            const sameMonthLastYear = historicalSameMonth[0];
+            const allMonthsAvgRevenue = historicalMonths.length > 0 ? historicalMonths.reduce((s, m) => s + m.revenue, 0) / historicalMonths.length : 0;
+            const seasonalFactor = sameMonthLastYear && allMonthsAvgRevenue > 0 ? sameMonthLastYear.revenue / allMonthsAvgRevenue : 1;
+            const predictedRevenue = avgRecentRevenue * Math.min(Math.max(seasonalFactor, 0.5), 2);
+            const predictedCount = Math.round(avgRecentCount * Math.min(Math.max(seasonalFactor, 0.5), 2));
+            // Тренд (ръст/спад)
+            const oldest = historicalMonths[historicalMonths.length - 1];
+            const newest = historicalMonths[0];
+            const trend = oldest && oldest.revenue > 0 ? ((newest.revenue - oldest.revenue) / oldest.revenue) * 100 : 0;
+            const trendPerMonth = trend / Math.max(historicalMonths.length - 1, 1);
+            const trendPrediction = avgRecentRevenue * (1 + trendPerMonth / 100);
+            // Финална прогноза (средно от сезонна и тренд)
+            const finalRevenue = sameMonthLastYear ? (predictedRevenue + trendPrediction) / 2 : trendPrediction;
+            const finalCount = predictedCount;
+            if (historicalMonths.filter(m => m.count > 0).length < 2) {
+              return <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма достатъчно исторически данни за прогноза (нужни са поне 2 месеца данни)</p>;
+            }
+            return (
+              <div>
+                {/* Прогноза */}
+                <div style={{ background: "linear-gradient(135deg,#0f2a3d,#0f172a)", borderRadius: 12, padding: 20, marginBottom: 16, border: "1px solid #334155" }}>
+                  <div style={{ fontSize: 13, color: "#38bdf8", fontWeight: 700, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                    🔮 Прогноза за {nextMonthName}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>📥 Очаквани устройства</div>
+                      <div style={{ fontSize: 42, fontWeight: 900, color: "#38bdf8" }}>{finalCount}</div>
+                      <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>бр.</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>💰 Очакван оборот</div>
+                      <div style={{ fontSize: 36, fontWeight: 900, color: "#10b981" }}>€ {finalRevenue.toFixed(0)}</div>
+                      <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>прогнозен</div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(56,189,248,.08)", borderRadius: 8, fontSize: 11, color: "#64748b", lineHeight: 1.7 }}>
+                    📊 Базирано на: средно последните 3 месеца
+                    {sameMonthLastYear && <span> + сезонен фактор от {MONTHS_BG[nextMonthIdx]} {sameMonthLastYear.year} (€ {sameMonthLastYear.revenue.toFixed(0)})</span>}
+                    {trend !== 0 && <span> + тренд {trend >= 0 ? "▲" : "▼"} {Math.abs(trend).toFixed(1)}% за {historicalMonths.length} месеца</span>}
+                  </div>
+                </div>
+                {/* Тренд индикатор */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: `3px solid ${trend >= 0 ? "#10b981" : "#ef4444"}`, textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>📈 Тренд (6 мес.)</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: trend >= 0 ? "#10b981" : "#ef4444" }}>
+                      {trend >= 0 ? "▲" : "▼"} {Math.abs(trend).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>⌀ Последни 3 мес.</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>€ {avgRecentRevenue.toFixed(0)}</div>
+                  </div>
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #8b5cf6", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🗓️ Сезонен фактор</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#8b5cf6" }}>
+                      {seasonalFactor >= 1 ? "▲" : "▼"} {((seasonalFactor - 1) * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                </div>
+                {/* Исторически данни */}
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>📊 Последните 6 месеца (база за прогнозата)</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, marginBottom: 8 }}>
+                    {[...historicalMonths].reverse().map((m, i) => {
+                      const maxRev = Math.max(...historicalMonths.map(x => x.revenue), finalRevenue, 1);
+                      const isLast = i === historicalMonths.length;
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                          <div style={{ fontSize: 9, color: "#64748b" }}>{m.revenue > 0 ? Math.round(m.revenue) : ""}</div>
+                          <div style={{
+                            width: "100%", borderRadius: "3px 3px 0 0",
+                            height: `${Math.max((m.revenue / Math.max(...historicalMonths.map(x => x.revenue), 1)) * 80, m.revenue > 0 ? 4 : 2)}px`,
+                            background: "linear-gradient(180deg,#38bdf8,#0ea5e9)",
+                            opacity: m.revenue > 0 ? 1 : 0.15,
+                            transition: "height .4s",
+                          }} />
+                          <div style={{ fontSize: 9, color: "#475569" }}>{m.month.slice(0, 3)}</div>
+                        </div>
+                      );
+                    })}
+                    {/* Прогноза бар */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                      <div style={{ fontSize: 9, color: "#10b981", fontWeight: 700 }}>{Math.round(finalRevenue)}</div>
+                      <div style={{
+                        width: "100%", borderRadius: "3px 3px 0 0",
+                        height: `${Math.max((finalRevenue / Math.max(...historicalMonths.map(x => x.revenue), finalRevenue, 1)) * 80, 4)}px`,
+                        background: "linear-gradient(180deg,#10b981,#059669)",
+                        border: "2px dashed #10b981",
+                        boxSizing: "border-box",
+                        transition: "height .4s",
+                      }} />
+                      <div style={{ fontSize: 9, color: "#10b981", fontWeight: 700 }}>{MONTHS_BG[nextMonthIdx].slice(0, 3)}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: "#475569", padding: "8px 12px", background: "#0f172a", borderRadius: 8 }}>
+                  ⚠️ Прогнозата е ориентировъчна и се базира на исторически данни. Реалните резултати могат да се различават.
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
       </div>
     </div>
   );
