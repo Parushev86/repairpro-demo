@@ -2844,11 +2844,21 @@ const OrderModal = memo(function OrderModal({ order, technicians, inventory, set
                     placeholder="0.00" />
                 </Field>
                 
-                <Field label="🔩 Цена части (€) — авт.">
+                                <Field label="🔩 Цена части (€) — авт.">
                   <input type="number"
                     value={(form.parts || []).reduce((s, p) => s + Number(p.price || 0), 0).toFixed(2)}
                     readOnly
                     style={{ background: "#0f172a", color: "#f59e0b", cursor: "not-allowed" }} />
+                  {(form.parts || []).some(p => p.supplier) && (
+                    <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
+                      {(form.parts || []).filter(p => p.supplier).map((p, i) => (
+                        <div key={i} style={{ fontSize: 11, color: "#64748b", padding: "3px 8px", background: "#0f172a", borderRadius: 6, display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "#94a3b8" }}>{p.name}</span>
+                          <span style={{ color: "#38bdf8" }}>🚚 {p.supplier}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Field>
                 <Field label="💰 Крайна цена (€)">
                   <input type="number" min="0" step="0.01"
@@ -3957,12 +3967,15 @@ function PartsSelector({ inventory, addPart, removePart, parts, price }) {
           <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
             Вложени части ({parts.length})
           </div>
-          {parts.map((p, i) => (
+                    {parts.map((p, i) => (
             <div key={i} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
               padding: "7px 0", borderBottom: i < parts.length - 1 ? "1px solid #1e293b" : "none"
             }}>
-              <span style={{ fontSize: 13 }}>{p.name}</span>
+              <div>
+                <span style={{ fontSize: 13 }}>{p.name}</span>
+                {p.supplier && <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>🚚 {p.supplier}</div>}
+              </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ color: "#10b981", fontWeight: 700 }}>€ {Number(p.price).toFixed(2)}</span>
                 <button onClick={() => removePart(i)} style={{
