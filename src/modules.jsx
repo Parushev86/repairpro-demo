@@ -283,11 +283,12 @@ function AccSaleModal({ sale, inventory, technicians = [], onSave, onClose, isAd
                 border: f.inventory_id === i.id ? "1px solid #10b981" : "1px solid #334155",
                 borderRadius: 7, padding: "6px 12px", fontSize: 11, cursor: "pointer", textAlign: "left",
               }}>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>{i.name}</div>
+                              <div style={{ fontWeight: 600, marginBottom: 2 }}>{i.name}</div>
                 <div style={{ display: "flex", gap: 8, fontSize: 10 }}>
                   <span style={{ color: "#64748b" }}>{i.category}</span>
                   <span style={{ color: "#f59e0b" }}>{i.quantity} бр.</span>
                   <span style={{ color: "#10b981", fontWeight: 700 }}>{fmtM(i.price)}</span>
+                  {i.supplier && <span style={{ color: "#38bdf8" }}>🚚 {i.supplier}</span>}
                 </div>
               </button>
             ))}
@@ -570,7 +571,7 @@ function PartsSaleModal({ sale, inventory, onSave, onClose, isAdmin = false }) {
       const cost = Number(inv.cost || 0);
       const price = Number(inv.price || 0);
       const markup = cost > 0 ? Math.round(((price - cost) / cost) * 100) : 0;
-      return [...prev, { inv_id: inv.id, name: inv.name, category: inv.category || "", qty: 1, cost, markup, price }];
+            return [...prev, { inv_id: inv.id, name: inv.name, category: inv.category || "", supplier: inv.supplier || "", qty: 1, cost, markup, price }];
     });
     if (items.length === 0) sv("part_name", inv.name);
   };
@@ -659,12 +660,15 @@ function PartsSaleModal({ sale, inventory, onSave, onClose, isAdmin = false }) {
           {!manualMode && items.length > 0 && (
             <div style={{ marginTop: 12, background: "#0f172a", borderRadius: 10, padding: 10 }}>
               <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Избрани части</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 36px 52px 52px 52px 56px 18px", gap: 4, marginBottom: 4 }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 36px 52px 52px 52px 56px 18px", gap: 4, marginBottom: 4 }}>
                 {["Артикул", "Бр.", "Дост.", "Надц.%", "Цена €", "Общо €", ""].map(h => <div key={h} style={{ fontSize: 9, color: "#475569", fontWeight: 700, textTransform: "uppercase", textAlign: "center" }}>{h}</div>)}
               </div>
               {items.map(i => (
                 <div key={i.inv_id} style={{ display: "grid", gridTemplateColumns: "1fr 36px 52px 52px 52px 56px 18px", gap: 4, padding: "5px 0", borderBottom: "1px solid #1e293b", alignItems: "center" }}>
-                  <div style={{ fontSize: 11, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={i.name}>{i.name}</div>
+                                    <div style={{ fontSize: 11, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={i.name}>
+                    {i.name}
+                    {i.supplier && <div style={{ fontSize: 9, color: "#38bdf8" }}>🚚 {i.supplier}</div>}
+                  </div>
                   <input type="number" min="1" value={i.qty} onChange={e => updateQty(i.inv_id, e.target.value)}
                     style={{ padding: "3px 4px", fontSize: 11, textAlign: "center" }} />
                   <div style={{ fontSize: 11, color: "#f59e0b", textAlign: "center", padding: "3px 0" }}>{Number(i.cost).toFixed(2)}</div>
@@ -775,12 +779,13 @@ export function PhoneSalesTab({ sales, inventory = [], onSave, onDelete, onWarra
               })} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, padding: "7px 12px", cursor: "pointer", textAlign: "left" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#60a5fa"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#334155"}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{ph.phone_brand ? ph.phone_brand + " " : ""}{ph.phone_model || ph.name}</div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{ph.phone_brand ? ph.phone_brand + " " : ""}{ph.phone_model || ph.name}</div>
                 <div style={{ display: "flex", gap: 8, fontSize: 10, marginTop: 2 }}>
                   {ph.phone_color && <span style={{ color: "#64748b" }}>{ph.phone_color}</span>}
                   {ph.sku && <span style={{ color: "#64748b" }}>{ph.sku}</span>}
                   <span style={{ color: "#f59e0b" }}>{ph.quantity} бр.</span>
                   <span style={{ color: "#10b981", fontWeight: 700 }}>€ {Number(ph.price).toFixed(2)}</span>
+                  {ph.supplier && <span style={{ color: "#38bdf8" }}>🚚 {ph.supplier}</span>}
                 </div>
               </button>
             ))}
