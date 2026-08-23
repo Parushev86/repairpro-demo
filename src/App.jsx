@@ -3625,9 +3625,12 @@ function SettingsModal({ settings, onSave, onClose, connected }) {
             <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8 }}>💡 За Gmail: използвай App Password от Google Account → Security → 2FA → App passwords</div>
           </div>
         </div>
-        <div style={{ padding: "0 22px 18px" }}>
+                <div style={{ padding: "0 22px 18px" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#38bdf8", marginBottom: 8 }}>🗄️ Резервно копие</div>
-          <BackupButton />
+          <div style={{ display: "flex", gap: 10 }}>
+            <BackupButton />
+            <RestoreButton />
+          </div>
         </div>
         <div style={{ padding: "14px 22px", borderTop: "1px solid #334155", display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button onClick={onClose} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "9px 18px", cursor: "pointer", fontWeight: 600 }}>Затвори</button>
@@ -3647,13 +3650,14 @@ function BackupButton() {
     try {
       const XLSX = await import("xlsx");
       const wb = XLSX.utils.book_new();
-      const tables = [
+            const tables = [
         ["Сервиз", "orders"], ["Склад", "inventory"], ["Разходи", "expenses"],
         ["Каса", "cash_register"], ["Аксесоари", "accessory_sales"],
         ["Изкупуване", "buybacks"], ["Продажба части", "parts_sales"],
         ["Продажба телефони", "phone_sales"], ["Поръчки части", "stock_orders"],
         ["Задължения", "supplier_debts"], ["Техници", "technicians"],
         ["Кошче", "trash"], ["Месечни разходи", "monthly_expenses"],
+        ["За разглобяване", "dismantle"], ["Чат", "chat_messages"],
       ];
       for (const [name, table] of tables) {
         try {
@@ -3680,6 +3684,117 @@ function BackupButton() {
     }}>
       {loading ? "⏳ Изтегляне..." : "📥 Изтегли пълен backup (Excel)"}
     </button>
+  );
+}
+function RestoreButton() {
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState("");
+  const fileRef = useRef();
+
+  const TABLE_MAP = {
+    "Сервиз": "orders",
+    "Склад": "inventory",
+    "Разходи": "expenses",
+    "Каса": "cash_register",
+    "Аксесоари": "accessory_sales",
+    "Изкупуване": "buybacks",
+    "Продажба части": "parts_sales",
+    "Продажба телефони": "phone_sales",
+    "Поръчки части": "stock_orders",
+    "Задължения": "supplier_debts",
+    "Техници": "technicians",
+    "Кошче": "trash",
+    "Месечни разходи": "monthly_expenses",
+    "За разглобяване": "dismantle",
+    "Чат": "chat_messages",
+  };
+
+  const doRestore = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const sb = getSupabase();
+    if (!sb) { alert("Няма връзка с базата данни!"); return; }
+    if (!confirm("⚠️ ВНИМАНИЕ! Това ще изтрие ВСИЧКИ съществуващи данни и ще ги замени с данните от backup файла!\n\nСигурен ли си?")) {
+      fileRef.current.value = "";
+      return;
+    }
+    setLoading(true);
+    try {
+      const XLSX = await import("xlsx");
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: "array" });
+      const sheets = wb.SheetNames;
+      let restored = 0;
+      let failed = 0;
+      for (const sheetName of sheets) {
+        const tableName = TABLE_MAP[sheetName];
+        if (!tableName) {
+          console.warn("Непознат лист:", sheetName);
+          continue;
+        }
+        setProgress(`Възстановяване: ${sheetName}...`);
+        try {
+          const ws = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws);
+          if (rows.length === 0) continue;
+          // Изчисти таблицата
+          const { error: delError } = await sb.from(tableName).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          if (delError) throw new Error("Грешка при изчистване на " + tableName + ": " + delError.message);
+          // Вкарай данните на части по 100
+          const BATCH = 100;
+          for (let i = 0; i < rows.length; i += BATCH) {
+            const batch = rows.slice(i, i + BATCH).map(row => {
+              const clean = {};
+              for (const [k, v] of Object.entries(row)) {
+                if (v === null || v === undefined || v === "") {
+                  clean[k] = null;
+                } else if (typeof v === "number" && (k.includes("price") || k.includes("amount") || k.includes("cost") || k.includes("cash") || k.includes("deposit") || k.includes("quantity") || k.includes("min_qty") || k.includes("warranty"))) {
+                  clean[k] = Number(v);
+                } else if (v === "TRUE" || v === true) {
+                  clean[k] = true;
+                } else if (v === "FALSE" || v === false) {
+                  clean[k] = false;
+                } else {
+                  clean[k] = v;
+                }
+              }
+              return clean;
+            });
+            const { error: insError } = await sb.from(tableName).insert(batch);
+            if (insError) throw new Error("Грешка при вмъкване в " + tableName + ": " + insError.message);
+          }
+          restored++;
+          setProgress(`✅ ${sheetName} (${rows.length} записа)`);
+        } catch (tableErr) {
+          console.error("Грешка за таблица", sheetName, tableErr);
+          failed++;
+          setProgress(`❌ Грешка: ${sheetName} — ${tableErr.message}`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+      setProgress(`✅ Готово! Възстановени: ${restored} таблици${failed > 0 ? `, Грешки: ${failed}` : ""}`);
+      setTimeout(() => { setLoading(false); setProgress(""); window.location.reload(); }, 2500);
+    } catch (e) {
+      alert("Грешка при възстановяване: " + e.message);
+      setLoading(false);
+      setProgress("");
+    }
+    fileRef.current.value = "";
+  };
+
+  return (
+    <div>
+      <input type="file" ref={fileRef} accept=".xlsx" onChange={doRestore} style={{ display: "none" }} />
+      <button onClick={() => fileRef.current.click()} disabled={loading} style={{
+        background: loading ? "#334155" : "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff",
+        border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700,
+        fontSize: 13, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.9 : 1,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+      }}>
+        {loading ? "⏳ Възстановяване..." : "📤 Възстанови от backup"}
+        {progress && <span style={{ fontSize: 10, fontWeight: 400, maxWidth: 180, textAlign: "center", lineHeight: 1.4 }}>{progress}</span>}
+      </button>
+    </div>
   );
 }
 
