@@ -3108,7 +3108,8 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const [showSuppliers, setShowSuppliers] = useState(false);
 
-  const knownSuppliers = [...new Set(allInventory.map(i => i.supplier).filter(Boolean))].sort();
+    const deletedSuppliers = (() => { try { return JSON.parse(localStorage.getItem("rp_deleted_suppliers") || "[]"); } catch { return []; } })();
+  const knownSuppliers = [...new Set(allInventory.map(i => i.supplier).filter(Boolean))].filter(s => !deletedSuppliers.includes(s)).sort();
   const filteredSuppliers = knownSuppliers.filter(s =>
     s.toLowerCase().includes((form.supplier || "").toLowerCase()) && s !== form.supplier
   );
@@ -3149,13 +3150,34 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
                   placeholder="TechParts BG, iRepair..."
                   autoComplete="off"
                 />
-                {showSuppliers && filteredSuppliers.length > 0 && (
+                                {showSuppliers && filteredSuppliers.length > 0 && (
                   <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#0f172a", border: "1px solid #334155", borderRadius: "0 0 8px 8px", zIndex: 100, maxHeight: 160, overflow: "auto" }}>
                     {filteredSuppliers.map(s => (
-                      <div key={s} onMouseDown={() => { set("supplier", s); setShowSuppliers(false); }} style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: "#e2e8f0", borderBottom: "1px solid #1e293b" }}
+                      <div key={s} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid #1e293b" }}
                         onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        {s}
+                        <div onMouseDown={() => { set("supplier", s); setShowSuppliers(false); }}
+                          style={{ flex: 1, padding: "8px 12px", cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
+                          {s}
+                        </div>
+                        <button
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirm(`Изтрий доставчик "${s}" от списъка?`)) {
+                              const saved = JSON.parse(localStorage.getItem("rp_deleted_suppliers") || "[]");
+                              if (!saved.includes(s)) {
+                                saved.push(s);
+                                localStorage.setItem("rp_deleted_suppliers", JSON.stringify(saved));
+                              }
+                              setShowSuppliers(false);
+                            }
+                          }}
+                          style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", padding: "8px 10px", fontSize: 13 }}
+                          onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                          onMouseLeave={e => e.currentTarget.style.color = "#475569"}>
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
