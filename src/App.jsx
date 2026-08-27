@@ -73,7 +73,7 @@ function printInvLabel(item) {
     .price-label { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
     .price-eur { font-size: 24px; font-weight: 900; color: #111; }
   </style></head><body>
-  <div class="company">ЕС ЕН МОБАЙЛ ЕООД</div>
+  <div class="company">Сънификс ЕООД</div>
   <div class="name">${item.name}</div>
   <div class="price-label">ЦЕНА:</div>
   <span class="price-eur">€ ${priceEur.toFixed(2)}</span>
@@ -89,7 +89,7 @@ export default function App() {
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [technicians, setTechnicians] = useState([]);
-  const [tab, setTab] = useState("dashboard");
+    const [tab, setTab] = useState("orders");
   const [orderModal, setOrderModal] = useState(null);
   const [invModal, setInvModal] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -485,9 +485,10 @@ export default function App() {
   // ── Current user & role ──────────────────────────────────────────────────────
   const currentUser = (() => { try { return JSON.parse(sessionStorage.getItem("rp_user") || "{}"); } catch { return {}; } })();
   const isAdmin = currentUser.role === "Администратор" || currentUser.role === "admin";
-  const ADMIN_TABS = ["dashboard", "reports", "technicians", "daily", "users", "trash"];
+      const ADMIN_TABS = ["analytics", "technicians", "daily", "users", "trash"];
   useEffect(() => {
     if (!isAdmin && ADMIN_TABS.includes(tab)) setTab("orders");
+    if (tab === "dashboard" || tab === "reports") setTab("analytics");
   }, [isAdmin, tab]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -542,11 +543,10 @@ export default function App() {
         </div>
         {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 98 }} />}
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
-          {tab === "dashboard" && isAdmin && <Dashboard orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={() => setOrderModal("new")} onExport={() => exportFullReport(orders, inventory, technicians)} notify={notify} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} />}
-          {tab === "dashboard" && !isAdmin && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", flexDirection: "column", gap: 16 }}><div style={{ fontSize: 48 }}>🔒</div><div style={{ fontSize: 18, color: "#64748b" }}>Нямаш достъп до тази страница</div></div>}
+                    {tab === "analytics" && isAdmin && <AnalyticsPage orders={orders} lowStock={lowStock} activeOrders={activeOrders} readyOrders={readyOrders} technicians={technicians} onNewOrder={() => setOrderModal("new")} onExport={() => exportFullReport(orders, inventory, technicians)} notify={notify} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} inventory={inventory} />}
           {tab === "orders" && <OrdersTab orders={filteredOrders} allOrders={orders} search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterDevice={filterDevice} setFilterDevice={setFilterDevice} onNew={() => setOrderModal("new")} onEdit={setOrderModal} onDelete={handleDeleteOrder} onPrint={printProtocol} onLabel={printLabel} onDownloadTXT={downloadProtocolTXT} onWarranty={printWarranty} onExport={isAdmin ? () => exportOrders(orders) : null} onImport={isAdmin ? () => setImportModal("orders") : null} inventory={inventory} setInventory={setInventory} upsertOrder={upsertOrder} />}
           {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={isAdmin ? () => exportInventory(inventory) : null} onImport={isAdmin ? () => setImportModal("inventory") : null} />}
-          {tab === "reports" && isAdmin && <ReportsTab orders={orders} inventory={inventory} technicians={technicians} accSales={accSales} onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }} />}
+          
           {tab === "technicians" && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={() => exportTechReport(technicians, orders)} />}
           {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} monthlyExpenses={monthlyExpenses} />}
           {tab === "calculator" && <Calculator getSupabase={getSupabase} />}
@@ -1017,9 +1017,8 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
             ["phonesales", "📲", "Продажба телефони", null],
             ["stockorders", "📋", "Поръчки части", null],
             ["debts", "💳", "Задължения", null],
-            ...(!isAdmin ? [] : [
-              ["dashboard", "📊", "Дашборд", null],
-              ["reports", "📈", "Справки", null],
+                        ...(!isAdmin ? [] : [
+              ["analytics", "📊", "Анализи", null],
               ["technicians", "👨‍🔧", "Техници", null],
               ["daily", "🧾", "Дневен отчет", null],
               ["monthly", "📅", "Месечен отчет", null],
@@ -1064,9 +1063,60 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
     </>
   );
 }
+// ═══════════════════════════════ ANALYTICS PAGE ═══════════════════════════════
+function AnalyticsPage({ orders, lowStock, activeOrders, readyOrders, technicians, onNewOrder, onExport, notify, accSales, partsSales, phoneSales, inventory }) {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const tabs = [
+    ["dashboard", "📊", "Дашборд"],
+    ["reports", "📈", "Справки"],
+    ["analytics", "🔬", "Аналитики"],
+  ];
+  return (
+    <div className="animate-fade">
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid #334155" }}>
+        {tabs.map(([key, icon, label]) => (
+          <button key={key} onClick={() => setActiveTab(key)} style={{
+            padding: "10px 24px", border: "none", background: "transparent",
+            color: activeTab === key ? "#38bdf8" : "#64748b",
+            fontSize: 14, fontWeight: activeTab === key ? 700 : 400,
+            cursor: "pointer",
+            borderBottom: activeTab === key ? "2px solid #38bdf8" : "2px solid transparent",
+            transition: "all .15s",
+          }}>
+            {icon} {label}
+          </button>
+        ))}
+      </div>
+      {activeTab === "dashboard" && (
+        <Dashboard
+          orders={orders} lowStock={lowStock} activeOrders={activeOrders}
+          readyOrders={readyOrders} technicians={technicians}
+          onNewOrder={onNewOrder} onExport={onExport} notify={notify}
+          accSales={accSales} partsSales={partsSales} phoneSales={phoneSales}
+        />
+      )}
+      {activeTab === "reports" && (
+        <ReportsTab
+          orders={orders} inventory={inventory} technicians={technicians}
+          accSales={accSales}
+          onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }}
+        />
+      )}
+      {activeTab === "analytics" && (
+        <Dashboard
+          orders={orders} lowStock={lowStock} activeOrders={activeOrders}
+          readyOrders={readyOrders} technicians={technicians}
+          onNewOrder={onNewOrder} onExport={onExport} notify={notify}
+          accSales={accSales} partsSales={partsSales} phoneSales={phoneSales}
+          analyticsOnly={true}
+        />
+      )}
+    </div>
+  );
+}
 
 // ═══════════════════════════════ DASHBOARD ════════════════════════════════════
-function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, onNewOrder, onExport, notify, accSales = [], partsSales = [], phoneSales = [] }) {
+function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, onNewOrder, onExport, notify, accSales = [], partsSales = [], phoneSales = [], analyticsOnly = false }) {
   const totalRev = orders.filter(o => o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0);
   const monthlyRev = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
@@ -1198,105 +1248,113 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
     XLSX.writeFile(wb, `Аналитики_${analyticsFrom}_${analyticsTo}.xlsx`);
   };
 
-  return (
+    return (
     <div className="animate-fade">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Дашборд</h1>
-          <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>{new Date().toLocaleDateString("bg-BG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+      {!analyticsOnly && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Дашборд</h1>
+            <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>{new Date().toLocaleDateString("bg-BG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Пълен Excel</Btn>
+            <PrimaryBtn onClick={onNewOrder}>+ Нов сервиз</PrimaryBtn>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Пълен Excel</Btn>
-          <PrimaryBtn onClick={onNewOrder}>+ Нов сервиз</PrimaryBtn>
-        </div>
-      </div>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 18 }}>
-        {[
-          { l: "Активни поръчки", v: activeOrders.length, icon: "🔧", c: "#3b82f6" },
-          { l: "Готови за вземане", v: readyOrders.length, icon: "✅", c: "#10b981" },
-          { l: "Нисък склад", v: lowStock.length, icon: "⚠️", c: "#ef4444" },
-          { l: "Общ оборот", v: fmtMoney(totalRev), icon: "💰", c: "#f59e0b" },
-        ].map(({ l, v, icon, c }) => (
-          <Card key={l} style={{ borderLeft: `4px solid ${c}`, padding: "16px 18px" }}>
-            <div style={{ fontSize: 24 }}>{icon}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: "#f1f5f9", margin: "6px 0 2px" }}>{v}</div>
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>{l}</div>
+            {!analyticsOnly && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 18 }}>
+          {[
+            { l: "Активни поръчки", v: activeOrders.length, icon: "🔧", c: "#3b82f6" },
+            { l: "Готови за вземане", v: readyOrders.length, icon: "✅", c: "#10b981" },
+            { l: "Нисък склад", v: lowStock.length, icon: "⚠️", c: "#ef4444" },
+            { l: "Общ оборот", v: fmtMoney(totalRev), icon: "💰", c: "#f59e0b" },
+          ].map(({ l, v, icon, c }) => (
+            <Card key={l} style={{ borderLeft: `4px solid ${c}`, padding: "16px 18px" }}>
+              <div style={{ fontSize: 24 }}>{icon}</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#f1f5f9", margin: "6px 0 2px" }}>{v}</div>
+              <div style={{ fontSize: 11, color: "var(--text3)" }}>{l}</div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+            {!analyticsOnly && (
+        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 14, marginBottom: 14 }}>
+          <Card>
+            <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Оборот — последните 6 месеца</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 110 }}>
+              {monthlyRev.map(({ label, rev }, idx) => (
+                <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                  <div style={{ fontSize: 10, color: "var(--text3)", height: 14, display: "flex", alignItems: "center" }}>{rev > 0 ? Math.round(rev) + "" : ""}</div>
+                  <div style={{ width: "100%", background: "linear-gradient(180deg,#38bdf8,#0369a1)", borderRadius: "4px 4px 0 0", height: `${Math.max((rev / maxRev) * 90, rev > 0 ? 4 : 1)}px`, opacity: rev > 0 ? 1 : 0.15, transition: "height .5s ease" }} />
+                  <div style={{ fontSize: 11, color: "var(--text3)" }}>{label.split(" ")[0]}</div>
+                </div>
+              ))}
+            </div>
           </Card>
-        ))}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 14, marginBottom: 14 }}>
-        <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Общ оборот — последните 6 месеца</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 110 }}>
-            {monthlyRev.map(({ label, rev }, idx) => (
-              <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                <div style={{ fontSize: 10, color: "var(--text3)", height: 14, display: "flex", alignItems: "center" }}>{rev > 0 ? Math.round(rev) + "" : ""}</div>
-                <div style={{ width: "100%", background: "linear-gradient(180deg,#38bdf8,#0369a1)", borderRadius: "4px 4px 0 0", height: `${Math.max((rev / maxRev) * 90, rev > 0 ? 4 : 1)}px`, opacity: rev > 0 ? 1 : 0.15, transition: "height .5s ease" }} />
-                <div style={{ fontSize: 11, color: "var(--text3)" }}>{label.split(" ")[0]}</div>
+          <Card>
+            <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Топ проблеми</div>
+            {topProblems.map(([name, count]) => (
+              <div key={name} style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}><span style={{ color: "#cbd5e1" }}>{name}</span><span style={{ color: "var(--text3)" }}>{count}</span></div>
+                <div style={{ height: 5, background: "#334155", borderRadius: 3 }}><div style={{ height: "100%", width: `${(count / maxProb) * 100}%`, background: "var(--purple)", borderRadius: 3, transition: "width .4s ease" }} /></div>
               </div>
             ))}
-          </div>
-        </Card>
-        <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Топ проблеми</div>
-          {topProblems.map(([name, count]) => (
-            <div key={name} style={{ marginBottom: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}><span style={{ color: "#cbd5e1" }}>{name}</span><span style={{ color: "var(--text3)" }}>{count}</span></div>
-              <div style={{ height: 5, background: "#334155", borderRadius: 3 }}><div style={{ height: "100%", width: `${(count / maxProb) * 100}%`, background: "var(--purple)", borderRadius: 3, transition: "width .4s ease" }} /></div>
+            {topProblems.length === 0 && <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни</p>}
+          </Card>
+        </div>
+      )}
+
+            {!analyticsOnly && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 14 }}>
+          <Card>
+            <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Техници</div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr>{["Техник", "Брой", "Приход"].map(h => <th key={h} style={{ textAlign: "left", fontSize: 10, color: "var(--text3)", padding: "6px 4px", borderBottom: "1px solid #334155" }}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {techStats.map(({ name, color, count, revenue }, i) => (
+                    <tr key={name} style={{ borderBottom: "1px solid #1e293b" }}>
+                      <td style={{ padding: "8px 4px", fontSize: 13, fontWeight: 600 }}><span style={{ color, marginRight: 6 }}>●</span>{i === 0 ? "🏆 " : ""}{name}</td>
+                      <td style={{ padding: "8px 4px", fontSize: 12, color: "var(--text2)" }}>{count} бр.</td>
+                      <td style={{ padding: "8px 4px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmtMoney(revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-          {topProblems.length === 0 && <p style={{ color: "var(--text3)", fontSize: 12 }}>Няма данни</p>}
-        </Card>
-      </div>
+          </Card>
+          <Card>
+            <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Последни поръчки</div>
+            <div className="table-wrap">
+              <table>
+                <tbody>
+                  {recentOrders.map(o => (
+                    <tr key={o.id} style={{ borderBottom: "1px solid #1e293b" }}>
+                      <td style={{ padding: "5px 0" }}>
+                        <span style={{ fontSize: 11, color: "#38bdf8", fontFamily: "monospace", minWidth: 100 }}>{o.id}</span>
+                      </td>
+                      <td style={{ padding: "5px 0" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>{o.client_name}</span>
+                      </td>
+                      <td style={{ padding: "5px 0" }}>
+                        <span style={{ fontSize: 11, color: "var(--text3)" }}>{o.device_type}</span>
+                      </td>
+                      <td style={{ padding: "5px 0" }}>
+                        <Badge status={o.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 14 }}>
-        <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Техници</div>
-          <div className="table-wrap">
-            <table>
-              <thead><tr>{["Техник", "Брой", "Приход"].map(h => <th key={h} style={{ textAlign: "left", fontSize: 10, color: "var(--text3)", padding: "6px 4px", borderBottom: "1px solid #334155" }}>{h}</th>)}</tr></thead>
-              <tbody>
-                {techStats.map(({ name, color, count, revenue }, i) => (
-                  <tr key={name} style={{ borderBottom: "1px solid #1e293b" }}>
-                    <td style={{ padding: "8px 4px", fontSize: 13, fontWeight: 600 }}><span style={{ color, marginRight: 6 }}>●</span>{i === 0 ? "🏆 " : ""}{name}</td>
-                    <td style={{ padding: "8px 4px", fontSize: 12, color: "var(--text2)" }}>{count} бр.</td>
-                    <td style={{ padding: "8px 4px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmtMoney(revenue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-        <Card>
-          <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Последни поръчки</div>
-          <div className="table-wrap">
-            <table>
-              <tbody>
-                {recentOrders.map(o => (
-                  <tr key={o.id} style={{ borderBottom: "1px solid #1e293b" }}>
-                    <td style={{ padding: "5px 0" }}>
-                      <span style={{ fontSize: 11, color: "#38bdf8", fontFamily: "monospace", minWidth: 100 }}>{o.id}</span>
-                    </td>
-                    <td style={{ padding: "5px 0" }}>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{o.client_name}</span>
-                    </td>
-                    <td style={{ padding: "5px 0" }}>
-                      <span style={{ fontSize: 11, color: "var(--text3)" }}>{o.device_type}</span>
-                    </td>
-                    <td style={{ padding: "5px 0" }}>
-                      <Badge status={o.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </div>
-
-      {lowStock.length > 0 && (
+      {!analyticsOnly && lowStock.length > 0 && (
         <div style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: 14, marginTop: 14 }}>
           <div style={{ fontWeight: 700, color: "#fca5a5", marginBottom: 6, fontSize: 13 }}>⚠️ Ниска складова наличност ({lowStock.length} артикула)</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1340,8 +1398,8 @@ function Dashboard({ orders, lowStock, activeOrders, readyOrders, technicians, o
         );
       })()}
 
-      {/* ── АНАЛИТИКИ ── */}
-      <div style={{ marginTop: 24 }}>
+            {/* ── АНАЛИТИКИ ── */}
+      <div style={{ marginTop: analyticsOnly ? 0 : 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#f1f5f9" }}>📊 Аналитики</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
