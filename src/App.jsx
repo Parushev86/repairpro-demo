@@ -3624,14 +3624,9 @@ function SettingsModal({ settings, onSave, onClose, connected }) {
         <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 18 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#38bdf8", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-              🗄️ Supabase — База данни (синхрон между компютри)
+              
             </div>
-            <div style={{ background: "#0f172a", borderRadius: 8, padding: 12, fontSize: 11, color: "var(--text3)", lineHeight: 1.7, marginBottom: 12 }}>
-              1️⃣ Отвори <b style={{ color: "#38bdf8" }}>supabase.com</b> → New project (безплатно)<br />
-              2️⃣ Изпълни SQL от файл <b style={{ color: "#38bdf8" }}>sql/schema.sql</b> в SQL Editor<br />
-              3️⃣ Отвори <b>Settings → API</b> и копирай URL и anon key<br />
-              4️⃣ Постави ги по-долу и кликни Запази
-            </div>
+            
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <Field label="Supabase Project URL"><input value={form.sb_url || ""} onChange={e => set("sb_url", e.target.value)} placeholder="https://xxxxxxxxxxxx.supabase.co" /></Field>
               <Field label="Supabase Anon Key"><input value={form.sb_key || ""} onChange={e => set("sb_key", e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp..." type="password" /></Field>
