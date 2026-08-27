@@ -943,7 +943,7 @@ export function StockOrdersTab({ orders, onSave, onDelete, notify, isAdmin = fal
 }
 
 function StockOrderModal({ order, onSave, onClose }) {
-  const [f, sf] = useState({ date: today(), part_name: "", category: "", quantity: 1, client_name: "", client_phone: "", client_price: "", supplier: "", status: "Чака", notes: "", ...order });
+    const [f, sf] = useState({ date: today(), part_name: "", category: "", quantity: 1, client_name: "", client_phone: "", client_price: 0, supplier: "", status: "Чака", notes: "", ...order });
   const s = (k, v) => sf(x => ({ ...x, [k]: v }));
   return (
     <MModal title={order?.id ? "Редактирай поръчка" : "Нова поръчка към доставчик"} onClose={onClose} maxWidth={700} footer={<><CancelBtn onClick={onClose} /><MPrimaryBtn onClick={() => { if (!f.part_name) { alert("Въведи артикул!"); return; } onSave(f); }}>💾 Запази</MPrimaryBtn></>}>
