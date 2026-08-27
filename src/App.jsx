@@ -5755,7 +5755,7 @@ export function UsersTab() {
           </table>
         </div>
       </div>
-    const [f, sf] = useState({ date: today(), part_name: "", category: "", quantity: 1, client_name: "", client_phone: "", client_price: 0, supplier: "", status: "Чака", notes: "", ...order });
+
       <div style={{ marginTop: 16, padding: "12px 16px", background: "#0f172a", borderRadius: 10, fontSize: 12, color: "#64748b" }}>
         💡 Паролите се пазят локално в браузъра. За повече сигурност препоръчваме различни пароли за всеки потребител.
         <br />За да излезеш от акаунта: затвори браузъра или изчисти сесията.
