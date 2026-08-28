@@ -5170,18 +5170,19 @@ function PricingTab() {
     setEditData(null);
     setNewModelName("");
   };
+
   const updateModelName = (oldName, newName) => {
-  const nd = JSON.parse(JSON.stringify(editData));
-  if (!nd[activeService]) return;
-  const idx = nd[activeService].models.indexOf(oldName);
-  if (idx === -1) return;
-  nd[activeService].models[idx] = newName;
-  nd[activeService].client[newName] = nd[activeService].client[oldName] || 0;
-  nd[activeService].colleague[newName] = nd[activeService].colleague[oldName] || 0;
-  delete nd[activeService].client[oldName];
-  delete nd[activeService].colleague[oldName];
-  setEditData(nd);
-};
+    const nd = JSON.parse(JSON.stringify(editData));
+    if (!nd[activeService]) return;
+    const idx = nd[activeService].models.indexOf(oldName);
+    if (idx === -1) return;
+    nd[activeService].models[idx] = newName;
+    nd[activeService].client[newName] = nd[activeService].client[oldName] || 0;
+    nd[activeService].colleague[newName] = nd[activeService].colleague[oldName] || 0;
+    delete nd[activeService].client[oldName];
+    delete nd[activeService].colleague[oldName];
+    setEditData(nd);
+  };
 
   const addModel = () => {
     if (!newModelName.trim()) return;
@@ -5229,32 +5230,58 @@ function PricingTab() {
     setActiveService(keys.length > 0 ? keys[0] : "");
   };
 
-  // Ключът на текущо избраната услуга (ако не съществува, взима първата налична)
-const currentKey = Object.keys(prices).includes(activeService)
-  ? activeService
-  : Object.keys(prices)[0] || "";
+  // ── Преместване на услуга ──────────────────────────────────────────────────
+  const moveService = (key, direction) => {
+    const keys = Object.keys(editData);
+    const currentIndex = keys.indexOf(key);
+    const newIndex = currentIndex + direction;
+    if (newIndex < 0 || newIndex >= keys.length) return;
+    const nd = JSON.parse(JSON.stringify(editData));
+    const newKeys = [...keys];
+    [newKeys[currentIndex], newKeys[newIndex]] = [newKeys[newIndex], newKeys[currentIndex]];
+    const reordered = {};
+    newKeys.forEach(k => { reordered[k] = nd[k]; });
+    setEditData(reordered);
+  };
 
-// Ако няма никакви услуги – показваме празно състояние
-if (!currentKey) {
-  return (
-    <div className="animate-fade">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>💲 Готови цени</h1>
-          <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>Все още нямаш въведени цени</p>
+  // ── Преместване на модел ────────────────────────────────────────────────────
+  const moveModel = (modelName, direction) => {
+    const nd = JSON.parse(JSON.stringify(editData));
+    const service = nd[activeService];
+    if (!service || !service.models || !Array.isArray(service.models)) return;
+    const currentIndex = service.models.indexOf(modelName);
+    const newIndex = currentIndex + direction;
+    if (currentIndex === -1 || newIndex < 0 || newIndex >= service.models.length) return;
+    const newModels = [...service.models];
+    [newModels[currentIndex], newModels[newIndex]] = [newModels[newIndex], newModels[currentIndex]];
+    service.models = newModels;
+    setEditData(nd);
+  };
+
+  const currentKey = Object.keys(prices).includes(activeService)
+    ? activeService
+    : Object.keys(prices)[0] || "";
+
+  if (!currentKey) {
+    return (
+      <div className="animate-fade">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>💲 Готови цени</h1>
+            <p style={{ margin: "3px 0 0", color: "var(--text3)", fontSize: 12 }}>Все още нямаш въведени цени</p>
+          </div>
+          <button onClick={() => { setEditData(JSON.parse(JSON.stringify(DEFAULT_PRICES))); setEditMode(true); }}
+            style={{ background: "#1e293b", color: "#64748b", border: "1px solid #334155", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            ✏️ Създай цени
+          </button>
         </div>
-        <button onClick={() => { setEditData(JSON.parse(JSON.stringify(DEFAULT_PRICES))); setEditMode(true); }}
-          style={{ background: "#1e293b", color: "#64748b", border: "1px solid #334155", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-          ✏️ Създай цени
-        </button>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-const service = prices[currentKey];
-const activeLabel = service.label || currentKey;
-const serviceModels = service.models || [];
+  const service = prices[currentKey];
+  const activeLabel = service.label || currentKey;
+  const serviceModels = service.models || [];
 
   const printPriceList = () => {
     const w = window.open("", "_blank");
@@ -5275,7 +5302,7 @@ const serviceModels = service.models || [];
     tr:nth-child(even){background:#f9fafb}
     @media print{body{padding:16px}}</style></head><body>
     <h1>💲 ${activeLabel}</h1>
-    <table><thead><tr><th>Модел</th><th colspan="2" style="text-align:center;color:#065f46">Клиент</th><th colspan="2" style="text-align:center;color:#1e40af">Колега</th></tr></thead>
+        <table><thead><tr><th>Модел</th><th style="text-align:center;color:#065f46">Клиент (€)</th><th style="text-align:center;color:#1e40af">Колега (€)</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <p style="font-size:10px;color:#999;margin-top:16px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
     <script>window.onload=()=>{window.print();}</script></body></html>`);
@@ -5309,7 +5336,7 @@ const serviceModels = service.models || [];
 
       <div style={{ background: "#1e293b", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "12px 18px", background: "#0a1628", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-         <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>Цени</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>Цени</span>
           <div style={{ display: "flex", gap: 20 }}>
             <span style={{ fontSize: 12, color: "#10b981", fontWeight: 700 }}>● Клиент</span>
             <span style={{ fontSize: 12, color: "#38bdf8", fontWeight: 700 }}>● Колега</span>
@@ -5321,9 +5348,7 @@ const serviceModels = service.models || [];
               <tr>
                 <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Модел</th>
                 <th style={{ padding: "10px 16px", textAlign: "center", fontSize: 11, color: "#10b981", fontWeight: 700, textTransform: "uppercase" }}>Клиент (€)</th>
-                <th style={{ padding: "10px 16px", textAlign: "center", fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Клиент (лв)</th>
                 <th style={{ padding: "10px 16px", textAlign: "center", fontSize: 11, color: "#38bdf8", fontWeight: 700, textTransform: "uppercase" }}>Колега (€)</th>
-                <th style={{ padding: "10px 16px", textAlign: "center", fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Колега (лв)</th>
               </tr>
             </thead>
             <tbody>
@@ -5333,9 +5358,7 @@ const serviceModels = service.models || [];
                   onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "rgba(255,255,255,.02)"}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{m}</td>
                   <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#10b981" }}>€ {service.client?.[m] || "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.client?.[m] ? ((service.client[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
                   <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#38bdf8" }}>€ {service.colleague?.[m] || "—"}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{service.colleague?.[m] ? ((service.colleague[m]) * RATE).toFixed(2) + " лв" : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -5351,42 +5374,60 @@ const serviceModels = service.models || [];
               <button onClick={() => setEditMode(false)} style={{ background: "#334155", border: "none", color: "#94a3b8", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 16 }}>×</button>
             </div>
             <div style={{ padding: "10px 20px 0", borderBottom: "1px solid #334155", display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
-              {Object.entries(editData).map(([key, svc]) => (
+              {Object.entries(editData).map(([key, svc], idx, arr) => (
                 <div key={key} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                  <button onClick={() => moveService(key, -1)} disabled={idx === 0}
+                    style={{ padding: "6px 8px", borderRadius: "7px 0 0 7px", fontSize: 11, cursor: "pointer", border: "none", background: activeService === key ? "#0ea5e9" : "#0f172a", color: activeService === key ? "#fff" : "#64748b", opacity: idx === 0 ? 0.4 : 1 }}>
+                    ⬆️
+                  </button>
                   <button onClick={() => setActiveService(key)} style={{
-                    padding: "6px 14px", borderRadius: "7px 0 0 7px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                    padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
                     background: activeService === key ? "#38bdf8" : "#0f172a",
                     color: activeService === key ? "#0f172a" : "#64748b",
                   }}>{svc.label || key}</button>
+                  <button onClick={() => moveService(key, 1)} disabled={idx === arr.length - 1}
+                    style={{ padding: "6px 8px", fontSize: 11, cursor: "pointer", border: "none", background: activeService === key ? "#0ea5e9" : "#0f172a", color: activeService === key ? "#fff" : "#64748b", opacity: idx === arr.length - 1 ? 0.4 : 1 }}>
+                    ⬇️
+                  </button>
                   <button onClick={() => removeService(key)} style={{ padding: "6px 8px", borderRadius: "0 7px 7px 0", fontSize: 11, cursor: "pointer", border: "none", background: activeService === key ? "#0ea5e9" : "#1e293b", color: "#ef4444" }}>✕</button>
                 </div>
               ))}
               {!showNewSvc
                 ? <button onClick={() => setShowNewSvc(true)} style={{ padding: "6px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px dashed #334155", background: "transparent", color: "#64748b" }}>+ Нова услуга</button>
                 : <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-  <input value={newSvcLabel} onChange={e => { setNewSvcLabel(e.target.value); setNewSvcKey(e.target.value); }} placeholder="Наименование..." style={{ width: 180, fontSize: 12 }} />
-  <button onClick={addNewService} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#10b981", color: "#fff", fontWeight: 700 }}>Добави</button>
-  <button onClick={() => setShowNewSvc(false)} style={{ padding: "5px 8px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#334155", color: "#94a3b8" }}>✕</button>
-</div>
+                    <input value={newSvcLabel} onChange={e => { setNewSvcLabel(e.target.value); setNewSvcKey(e.target.value); }} placeholder="Наименование..." style={{ width: 180, fontSize: 12 }} />
+                    <button onClick={addNewService} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#10b981", color: "#fff", fontWeight: 700 }}>Добави</button>
+                    <button onClick={() => setShowNewSvc(false)} style={{ padding: "5px 8px", borderRadius: 7, fontSize: 12, cursor: "pointer", border: "none", background: "#334155", color: "#94a3b8" }}>✕</button>
+                  </div>
               }
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
-              {editData[activeService] && <>
+              {editData[activeService] && (
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead><tr style={{ background: "#0f172a" }}>
                     {["Модел", "Цена клиент (€)", "Цена колега (€)", ""].map(h => <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>)}
                   </tr></thead>
                   <tbody>
                     {editData[activeService].models.map((m, idx) => (
-  <tr key={m + idx} style={{ borderTop: "1px solid #0f172a" }}>
-    <td style={{ padding: "6px 12px" }}>
-  <input
-    key={m}
-    defaultValue={m}
-    onBlur={e => { if (e.target.value.trim() && e.target.value !== m) updateModelName(m, e.target.value.trim()); }}
-    style={{width:"100%",fontSize:13,fontWeight:600,background:"#0f172a",color:"#e2e8f0",border:"1px solid #334155",borderRadius:6,padding:"4px 8px"}}
-  />
-</td>
+                      <tr key={m + idx} style={{ borderTop: "1px solid #0f172a" }}>
+                        <td style={{ padding: "6px 12px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <input
+                              key={m}
+                              defaultValue={m}
+                              onBlur={e => { if (e.target.value.trim() && e.target.value !== m) updateModelName(m, e.target.value.trim()); }}
+                              style={{ flex: 1, fontSize: 13, fontWeight: 600, background: "#0f172a", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 6, padding: "4px 8px", minWidth: 0 }}
+                            />
+                            <button onClick={() => moveModel(m, -1)} disabled={idx === 0}
+                              style={{ background: "transparent", border: "none", cursor: "pointer", opacity: idx === 0 ? 0.4 : 1, fontSize: 14, flexShrink: 0 }}>
+                              ⬆️
+                            </button>
+                            <button onClick={() => moveModel(m, 1)} disabled={idx === editData[activeService].models.length - 1}
+                              style={{ background: "transparent", border: "none", cursor: "pointer", opacity: idx === editData[activeService].models.length - 1 ? 0.4 : 1, fontSize: 14, flexShrink: 0 }}>
+                              ⬇️
+                            </button>
+                          </div>
+                        </td>
                         <td style={{ padding: "6px 12px" }}>
                           <input type="number" min="0" step="0.5"
                             value={editData[activeService].client?.[m] || ""}
@@ -5417,7 +5458,7 @@ const serviceModels = service.models || [];
                     </tr>
                   </tbody>
                 </table>
-              </>}
+              )}
             </div>
             <div style={{ padding: "14px 22px", borderTop: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
               <span style={{ fontSize: 12, color: "#64748b" }}>Промените се запазват в облака (Supabase) и локално</span>
