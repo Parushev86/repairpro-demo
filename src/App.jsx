@@ -384,7 +384,8 @@ export default function App() {
           return;
         }
       }
-      const saved = await upsertInventory(item);
+            const itemWithDate = item.id ? item : { ...item, created_at: new Date().toISOString() };
+      const saved = await upsertInventory(itemWithDate);
       if (!realtimeOn) {
         if (!item.id) setInventory(p => [saved, ...p]);
         else setInventory(p => p.map(i => i.id === saved.id ? saved : i));
