@@ -384,7 +384,8 @@ export async function printLabel(order) {
       <div class="client">${order.client_name}</div>
       <div class="info">📱 ${order.phone}</div>
       <div class="info">${order.device_type} ${order.brand || ""} ${order.model || ""}</div>
-      <div class="info">⚠️ ${order.problem}</div>
+            <div class="info">⚠️ ${order.problem}</div>
+      ${order.device_password ? `<div class="info">🔑 ${order.device_password}</div>` : ""}
       <div class="info">📅 ${fmtDate(order.date_in)} | 👨‍🔧 ${order.technician || "—"}</div>
     </div>
     <img src="${qr}" width="80" height="80"/>
