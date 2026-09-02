@@ -5606,8 +5606,8 @@ function TrashTab({ trash, onRestore, onDelete }) {
 
 // ═══════════════════════════════ LOGIN SCREEN ═════════════════════════════════
 const DEFAULT_USERS = [
-  { username: "admin", password: "admin123", role: "Администратор", color: "#38bdf8", email: "" },
-  { username: "technik", password: "technik123", role: "Техник", color: "#10b981", email: "" },
+  { username: "admin", password: "demo123", role: "Администратор", color: "#38bdf8", email: "" },
+  { username: "technik", password: "demo123", role: "Техник", color: "#10b981", email: "" },
 ];
 
 function LoginScreen({ onLogin }) {
