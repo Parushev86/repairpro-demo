@@ -3092,7 +3092,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
         <div className="table-wrap">
           <table>
             <thead style={{ background: "#0a1628" }}>
-              <tr>{["Наименование", "Категория", "Наличност", "Мин.", "Продажна цена", "Себестойност", "Стойност", "Доставчик", ""].map(h => <th key={h} style={{ padding: "11px 13px", textAlign: "left", fontSize: 10, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>)}</tr>
+              <tr>{["Наименование", "Категория", "Наличност", "Мин.", "Продажна цена", "Себестойност", "Стойност", "Доставчик", "Вписано на", ""].map(h => <th key={h} style={{ padding: "11px 13px", textAlign: "left", fontSize: 10, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {filtered.map(i => {
@@ -3124,7 +3124,10 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text2)" }}>{fmtMoney(i.cost)}</td>
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "#f59e0b" }}>{fmtMoney(Number(i.quantity) * Number(i.price))}</td>
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text3)" }}>{highlight(i.supplier || "—")}</td>
-                    <td style={{ padding: "9px 13px" }}><div style={{ display: "flex", gap: 4 }}>
+<td style={{ padding: "9px 13px", fontSize: 11, color: "var(--text3)", whiteSpace: "nowrap" }}>
+  {i.created_at ? new Date(i.created_at).toLocaleString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+</td>
+<td style={{ padding: "9px 13px" }}><div style={{ display: "flex", gap: 4 }}>
                       <Btn color="#3b82f6" onClick={() => onEdit(i)} title="Редактирай">✏️</Btn>
                       <Btn color="#8b5cf6" onClick={() => printInvLabel(i)} title="Принт етикет">🏷️</Btn>
                       <Btn color="#ef4444" onClick={() => { if (confirm("Изтрий?")) onDelete(i.id); }} title="Изтрий">🗑️</Btn>
