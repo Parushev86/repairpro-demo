@@ -5630,7 +5630,7 @@ function LoginScreen({ onLogin }) {
   );
 
 // ═══════════════════════════════ USER MANAGEMENT ══════════════════════════════
-export function UsersTab() {
+function UsersTab() {
   const [users, setUsers] = useState(() => {
     try { return JSON.parse(localStorage.getItem("rp_users")) || DEFAULT_USERS; } catch { return DEFAULT_USERS; }
   });
