@@ -987,8 +987,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
        <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>DEMO</div>
-<div style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, marginTop: 2 }}>⚡ {Math.ceil((new Date("2026-09-07") - new Date()) / (1000*60*60*24))} дни остават</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>BURGAS</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
             <span style={{ fontSize: 10, color: connected ? "#64748b" : "#ef4444" }}>
@@ -5607,26 +5606,139 @@ function TrashTab({ trash, onRestore, onDelete }) {
 
 // ═══════════════════════════════ LOGIN SCREEN ═════════════════════════════════
 const DEFAULT_USERS = [
-  { username: "admin", password: "demo123", role: "Администратор", name: "Администратор" },
-  { username: "technik", password: "demo123", role: "Техник", name: "Техник" },
+  { username: "admin", password: "admin123", role: "Администратор", color: "#38bdf8", email: "" },
+  { username: "technik", password: "technik123", role: "Техник", color: "#10b981", email: "" },
 ];
 
 function LoginScreen({ onLogin }) {
-  const DEMO_EXPIRES = "2026-09-07";
-  const isDemoExpired = new Date() > new Date(DEMO_EXPIRES);
-  const daysLeft = Math.ceil((new Date(DEMO_EXPIRES) - new Date()) / (1000*60*60*24));
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [mode, setMode] = useState("login");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
+  const [users, setUsers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("rp_users")) || DEFAULT_USERS; } catch { return DEFAULT_USERS; }
+  });
 
-  if (isDemoExpired) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#0a1628", flexDirection:"column", gap:16 }}>
-      <div style={{ fontSize:48 }}>⏰</div>
-      <div style={{ fontSize:24, fontWeight:800, color:"#ef4444" }}>Демо периодът е изтекъл</div>
-      <div style={{ color:"#64748b", fontSize:14 }}>Свържете се с нас за пълен достъп</div>
-      <div style={{ color:"#38bdf8", fontSize:16, fontWeight:700 }}>📞 0888 123 456</div>
+  const handleLogin = () => {
+    const user = users.find(u => u.username === username.trim() && u.password === password);
+    if (user) {
+      sessionStorage.setItem("rp_auth", "1");
+      sessionStorage.setItem("rp_user", JSON.stringify(user));
+      setError("");
+      onLogin();
+    } else {
+      setError("Грешно потребителско име или парола!");
+    }
+  };
+
+  const handleForgot = () => {
+    const user = users.find(u => u.email === resetEmail.trim());
+    if (!user) {
+      setResetMsg("❌ Не е намерен потребител с този имейл.");
+      return;
+    }
+    setResetMsg(`✅ Намерен акаунт!\nПотребителско: ${user.username}\nПарола: ${user.password}`);
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#0f172a",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: "'Segoe UI',system-ui,sans-serif",
+    }}>
+      <div style={{
+        background: "#1e293b", borderRadius: 20, padding: "40px 36px",
+        width: "100%", maxWidth: 400, boxShadow: "0 30px 80px rgba(0,0,0,.5)",
+        border: "1px solid #334155",
+      }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>RepairPro</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>BURGAS</div>
+        </div>
+
+        {mode === "login" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: .4 }}>
+                Потребителско име
+              </label>
+              <input
+                value={username}
+                onChange={e => { setUsername(e.target.value); setError(""); }}
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                placeholder="Въведи потребителско име"
+                autoFocus
+                style={{ width: "100%", background: "#0f172a", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 10, padding: "11px 14px", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: .4 }}>
+                Парола
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPass ? "text" : "password"}
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); setError(""); }}
+                  onKeyDown={e => e.key === "Enter" && handleLogin()}
+                  placeholder="Въведи парола"
+                  style={{ width: "100%", background: "#0f172a", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 10, padding: "11px 44px 11px 14px", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                />
+                <button onClick={() => setShowPass(p => !p)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#64748b", padding: 0 }}>
+                  {showPass ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+            {error && <div style={{ background: "#450a0a", border: "1px solid #7f1d1d", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#fca5a5", textAlign: "center" }}>❌ {error}</div>}
+            <button onClick={handleLogin} style={{ background: "linear-gradient(135deg,#38bdf8,#0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 6 }}>
+              🔐 Вход
+            </button>
+            <button onClick={() => { setMode("forgot"); setResetMsg(""); }} style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, cursor: "pointer", textDecoration: "underline", marginTop: -6 }}>
+              Забравена парола?
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: 14, color: "#94a3b8", marginBottom: 4 }}>
+              Въведи имейл адреса свързан с акаунта ти и ще видиш данните за вход.
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: .4 }}>Имейл адрес</label>
+              <input
+                type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleForgot()}
+                placeholder="email@example.com" autoFocus
+                style={{ width: "100%", background: "#0f172a", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 10, padding: "11px 14px", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            {resetMsg && (
+              <div style={{ background: resetMsg.startsWith("✅") ? "#052e16" : "#450a0a", border: `1px solid ${resetMsg.startsWith("✅") ? "#166534" : "#7f1d1d"}`, borderRadius: 8, padding: "12px 14px", fontSize: 13, color: resetMsg.startsWith("✅") ? "#6ee7b7" : "#fca5a5", whiteSpace: "pre-line" }}>
+                {resetMsg}
+              </div>
+            )}
+            <button onClick={handleForgot} style={{ background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+              📧 Провери данните
+            </button>
+            <button onClick={() => { setMode("login"); setResetMsg(""); }} style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+              ← Обратно към вход
+            </button>
+          </div>
+        )}
+
+        <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
+          RepairPro BURGAS v2.0
+        </div>
+      </div>
     </div>
   );
+}
 
 // ═══════════════════════════════ USER MANAGEMENT ══════════════════════════════
-function UsersTab() {
+export function UsersTab() {
   const [users, setUsers] = useState(() => {
     try { return JSON.parse(localStorage.getItem("rp_users")) || DEFAULT_USERS; } catch { return DEFAULT_USERS; }
   });
