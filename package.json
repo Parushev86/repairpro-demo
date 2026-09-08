@@ -1,7 +1,7 @@
 {
-  "name": "repairpro",
+  "name": "SnRepairPro",
   "version": "1.0.0",
-  "description": "RepairPro - Сервизна CRM система",
+  "description": "SnRepairPro - Сервизна CRM система",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
@@ -29,8 +29,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "bg.repairpro.app",
-    "productName": "RepairPro",
+    "appId": "bg.SnRepairPro.app",
+    "productName": "SnRepairPro",
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
