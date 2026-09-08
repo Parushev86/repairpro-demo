@@ -461,7 +461,7 @@ export function printWarranty(order) {
   <div class="card">
     <div class="watermark">ГАРАНЦИЯ</div>
     <div class="header">
-      <div class="logo">🔧 RepairPro<span>Сервизна CRM система</span></div>
+      <div class="logo">🔧 SnRepairPro<span>Сервизна CRM система</span></div>
       <div class="warranty-badge">✅ ГАРАНЦИОННА КАРТА</div>
     </div>
     <div class="device">
