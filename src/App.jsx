@@ -519,7 +519,7 @@ export default function App() {
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", flexDirection: "column", gap: 16 }}>
       <div style={{ fontSize: 48 }}>🔧</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: "#38bdf8" }}>RepairPro</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: "#38bdf8" }}>SnRepairPro</div>
       <div style={{ color: "#64748b" }}>Зареждане...</div>
     </div>
   );
@@ -540,7 +540,7 @@ export default function App() {
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
         <div className="mobile-topbar" style={{ display: "none", background: "#0a1628", padding: "10px 16px", borderBottom: "1px solid #1e293b", alignItems: "center", gap: 12, flexShrink: 0 }}>
           <button onClick={() => setSidebarOpen(p => !p)} style={{ background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>☰</button>
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#38bdf8" }}>🔧 RepairPro</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: "#38bdf8" }}>🔧 SnRepairPro</span>
         </div>
         {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 98 }} />}
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
@@ -1010,7 +1010,7 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
         position: "sticky", top: 0,
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
-       <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 RepairPro</div>
+       <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 SnRepairPro</div>
           <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>DEMO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
@@ -3777,7 +3777,7 @@ function BackupButton() {
           if (all.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(all), name);
         } catch (e) { console.warn("Skip", table, e.message); }
       }
-      XLSX.writeFile(wb, `RepairPro_Backup_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      XLSX.writeFile(wb, `SnRepairPro_Backup_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (e) { alert("Грешка: " + e.message); }
     setLoading(false);
   };
@@ -4416,7 +4416,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
     <table><thead><tr><th>№</th><th>Клиент</th><th>Устройство</th><th>Проблем</th><th>Техник</th></tr></thead><tbody>
     ${receivedToday.map(o => `<tr><td style="font-family:monospace">${o.id}</td><td>${o.client_name}</td><td>${o.device_type || ""} ${o.brand || ""} ${o.model || ""}</td><td>${o.problem || ""}</td><td>${o.technician || "—"}</td></tr>`).join("")}
     </tbody></table>` : ""}
-    <p style="font-size:11px;color:#999;margin-top:20px;text-align:center">RepairPro — Дневен отчет генериран на ${new Date().toLocaleString("bg-BG")}</p>
+    <p style="font-size:11px;color:#999;margin-top:20px;text-align:center">SnRepairPro — Дневен отчет генериран на ${new Date().toLocaleString("bg-BG")}</p>
     <script>window.onload=()=>{window.print();}</script>
     </body></html>`);
     w.document.close();
@@ -4941,7 +4941,7 @@ function Calculator({ getSupabase }) {
                   <div class="row"><span>${T.repair}:</span><b>${accessoryLabels[lang][accessory] || accessoryLabels.bg[accessory]}</b></div>
                   <div class="total"><span>${T.total}:</span><span>€ ${result.eur}</span></div>
                   <div class="notice">${T.notice}</div>
-                  <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
+                  <p style="font-size:11px;color:#999;margin-top:24px;text-align:center">SnRepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
                   <div class="no-print" style="text-align:center;margin-top:16px">
                     <button onclick="window.print()" style="background:#1a56db;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">${T.print}</button>
                   </div>
@@ -5332,7 +5332,7 @@ function PricingTab() {
     <h1>💲 ${activeLabel}</h1>
         <table><thead><tr><th>Модел</th><th style="text-align:center;color:#065f46">Клиент (€)</th><th style="text-align:center;color:#1e40af">Колега (€)</th></tr></thead>
     <tbody>${rows}</tbody></table>
-    <p style="font-size:10px;color:#999;margin-top:16px;text-align:center">RepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
+    <p style="font-size:10px;color:#999;margin-top:16px;text-align:center">SnRepairPro — ${new Date().toLocaleDateString("bg-BG")}</p>
     <script>window.onload=()=>{window.print();}</script></body></html>`);
     w.document.close();
   };
@@ -5680,7 +5680,7 @@ function LoginScreen({ onLogin }) {
       }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
-          <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>RepairPro</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>SnRepairPro</div>
           <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>DEMO</div>
         </div>
 
@@ -5754,7 +5754,7 @@ function LoginScreen({ onLogin }) {
         )}
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
-          RepairPro DEMO v2.0
+          SnRepairPro DEMO v2.0
         </div>
       </div>
     </div>
