@@ -5635,6 +5635,19 @@ const DEFAULT_USERS = [
 ];
 
 function LoginScreen({ onLogin }) {
+  const DEMO_EXPIRES = "2026-09-15";
+  const isDemoExpired = new Date() > new Date(DEMO_EXPIRES);
+  const daysLeft = Math.ceil((new Date(DEMO_EXPIRES) - new Date()) / (1000*60*60*24));
+
+  if (isDemoExpired) return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#0a1628", flexDirection:"column", gap:16 }}>
+      <div style={{ fontSize:48 }}>⏰</div>
+      <div style={{ fontSize:24, fontWeight:800, color:"#ef4444" }}>Демо периодът е изтекъл</div>
+      <div style={{ color:"#64748b", fontSize:14 }}>Свържете се с нас за пълен достъп</div>
+      <div style={{ color:"#38bdf8", fontSize:16, fontWeight:700 }}>📞 +359(0)888 88 76 22</div>
+    </div>
+  );
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
