@@ -73,7 +73,7 @@ function printInvLabel(item) {
     .price-label { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
     .price-eur { font-size: 24px; font-weight: 900; color: #111; }
   </style></head><body>
-  <div class="company">Сънификс ЕООД</div>
+  <div class="company">ЕС ЕН МОБАЙЛ ЕООД</div>
   <div class="name">${item.name}</div>
   <div class="price-label">ЦЕНА:</div>
   <span class="price-eur">€ ${priceEur.toFixed(2)}</span>
@@ -519,7 +519,7 @@ export default function App() {
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", flexDirection: "column", gap: 16 }}>
       <div style={{ fontSize: 48 }}>🔧</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: "#38bdf8" }}>SnRepairPro</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: "#38bdf8" }}>SnRepairPro — Меден Рудник</div>
       <div style={{ color: "#64748b" }}>Зареждане...</div>
     </div>
   );
@@ -540,7 +540,7 @@ export default function App() {
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
         <div className="mobile-topbar" style={{ display: "none", background: "#0a1628", padding: "10px 16px", borderBottom: "1px solid #1e293b", alignItems: "center", gap: 12, flexShrink: 0 }}>
           <button onClick={() => setSidebarOpen(p => !p)} style={{ background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>☰</button>
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#38bdf8" }}>🔧 SnRepairPro</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: "#38bdf8" }}>🔧 SnRepairPro — Меден Рудник</span>
         </div>
         {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 98 }} />}
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
@@ -549,7 +549,11 @@ export default function App() {
           {tab === "inventory" && <InventoryTab inventory={inventory} lowStock={lowStock} onNew={() => setInvModal({})} onEdit={setInvModal} onDelete={handleDeleteInv} onExport={isAdmin ? () => exportInventory(inventory) : null} onImport={isAdmin ? () => setImportModal("inventory") : null} />}
           
           {tab === "technicians" && isAdmin && <TechniciansTab technicians={technicians} orders={orders} onSave={saveTech} onDelete={handleDeleteTech} onExport={() => exportTechReport(technicians, orders)} />}
-          {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} monthlyExpenses={monthlyExpenses} />}
+          {tab === "daily" && isAdmin && <DailyReport orders={orders} inventory={inventory} expenses={expenses} accSales={accSales} partsSales={partsSales} phoneSales={phoneSales} cashReg={cashReg} monthlyExpenses={monthlyExpenses} onSaveCash={async r => {
+    const s = await upsertCashRegister(r);
+    if (!r.id) setCashReg(p => [s, ...p]);
+    else setCashReg(p => p.map(c => c.date === s.date ? s : c));
+  }} />}
           {tab === "calculator" && <Calculator getSupabase={getSupabase} />}
           {tab === "pricing" && <PricingTab />}
           {tab === "expenses" && isAdmin && <ExpensesTab
@@ -909,8 +913,8 @@ export default function App() {
             onDelete={async id => { const r = supplierDebts.find(x => x.id === id); if (r) await moveToTrash("supplier_debts", r); await deleteSupplierDebt(id); setSupplierDebts(p => p.filter(x => x.id !== id)); setTrash(p => [{ table_name: "supplier_debts", record_id: id, record_data: r, id: crypto.randomUUID(), deleted_at: new Date().toISOString(), expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() }, ...p]); notify("🗑️ В кошчето", "warn"); }}
             notify={notify}
           />}
-          {tab === "phonesales" && <PhoneSalesTab
-  sales={phoneSales} inventory={inventory} isAdmin={isAdmin}
+                    {tab === "phonesales" && <PhoneSalesTab
+  sales={phoneSales} inventory={inventory} isAdmin={isAdmin} technicians={technicians}
             onSave={async r => {
               try {
                 const { _inv_id, ...rClean } = r;
@@ -1010,8 +1014,8 @@ function Sidebar({ tab, setTab, readyOrders, lowStock, activeOrders, orders, con
         position: "sticky", top: 0,
       }}>
         <div style={{ padding: "20px 18px 14px", borderBottom: "1px solid #1e293b" }}>
-       <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 SnRepairPro</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>DEMO</div>
+       <div style={{ fontSize: 22, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>🔧 МЕДЕН РУДНИК</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>МЕДЕН РУДНИК</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: connected ? (realtimeOn ? "#10b981" : "#f59e0b") : "#ef4444", boxShadow: connected && realtimeOn ? "0 0 6px #10b981" : "" }} />
             <span style={{ fontSize: 10, color: connected ? "#64748b" : "#ef4444" }}>
@@ -1121,9 +1125,9 @@ function AnalyticsPage({ orders, lowStock, activeOrders, readyOrders, technician
         />
       )}
       {activeTab === "reports" && (
-        <ReportsTab
+                <ReportsTab
           orders={orders} inventory={inventory} technicians={technicians}
-          accSales={accSales}
+          accSales={accSales} phoneSales={phoneSales}
           onExport={(t) => { if (t === "tech") exportTechReport(technicians, orders); else exportFullReport(orders, inventory, technicians); }}
         />
       )}
@@ -3024,6 +3028,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("Всички");
   const [dateFilter, setDateFilter] = useState("");
+  const [selectedItems, setSelectedItems] = useState(new Set());
 
   const filtered = inventory.filter(i => {
     const q = search.toLowerCase().trim();
@@ -3063,9 +3068,31 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
             {inventory.length} артикула
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn>
-          <Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {selectedItems.size > 0 && (
+            <Btn color="#38bdf8" bg="#0c4a6e" onClick={() => {
+              const items = inventory.filter(i => selectedItems.has(i.id));
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(items.map(i => ({
+                Наименование: i.name || "",
+                Категория: i.category || "",
+                "Наличност (бр)": Number(i.quantity || 0),
+                "Мин. наличност": Number(i.min_qty || 0),
+                "Продажна цена (€)": Number(i.price || 0),
+                "Себестойност (€)": Number(i.cost || 0),
+                Доставчик: i.supplier || "",
+                SKU: i.sku || "",
+                Локация: i.location || "",
+                Бележки: i.notes || "",
+                "Статус плащане": i.payment_status || "",
+                "Начин плащане": i.payment_method || "",
+              }))), "Склад");
+              XLSX.writeFile(wb, `Склад_избрани_${new Date().toISOString().slice(0,10)}.xlsx`);
+            }}>📦 Експорт избрани ({selectedItems.size})</Btn>
+          )}
+          {selectedItems.size === 0 && onImport && <Btn color="#f59e0b" bg="#451a03" onClick={onImport}>📥 Импорт Excel</Btn>}
+          {selectedItems.size === 0 && onExport && <Btn color="#10b981" bg="#064e3b" onClick={onExport}>📊 Експорт Excel</Btn>}
+          {selectedItems.size > 0 && <Btn color="#94a3b8" bg="#1e293b" onClick={() => setSelectedItems(new Set())}>✕ Откажи избора</Btn>}
           <PrimaryBtn onClick={onNew} color="linear-gradient(135deg,#10b981,#059669)">+ Нов артикул</PrimaryBtn>
         </div>
       </div>
@@ -3116,7 +3143,16 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
         <div className="table-wrap">
           <table>
             <thead style={{ background: "#0a1628" }}>
-              <tr>{["Наименование", "Категория", "Наличност", "Мин.", "Продажна цена", "Себестойност", "Стойност", "Доставчик", "Вписано на", ""].map(h => <th key={h} style={{ padding: "11px 13px", textAlign: "left", fontSize: 10, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>)}</tr>
+                            <tr>
+                <th style={{ padding: "11px 13px", width: 36 }}>
+                  <input type="checkbox"
+                    checked={selectedItems.size === filtered.length && filtered.length > 0}
+                    onChange={e => setSelectedItems(e.target.checked ? new Set(filtered.map(i => i.id)) : new Set())}
+                    title="Избери всички"
+                  />
+                </th>
+                {["Наименование", "Категория", "Наличност", "Мин.", "Продажна цена", "Себестойност", "Стойност", "Доставчик", ""].map(h => <th key={h} style={{ padding: "11px 13px", textAlign: "left", fontSize: 10, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>)}
+              </tr>
             </thead>
             <tbody>
               {filtered.map(i => {
@@ -3133,10 +3169,20 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
                     </>
                   );
                 };
-                return (
-                  <tr key={i.id} style={{ borderTop: "1px solid #0f172a", background: low ? "rgba(239,68,68,.05)" : "transparent", transition: "background .1s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = low ? "rgba(239,68,68,.1)" : "#243044"}
-                    onMouseLeave={e => e.currentTarget.style.background = low ? "rgba(239,68,68,.05)" : "transparent"}>
+                                return (
+                  <tr key={i.id} style={{ borderTop: "1px solid #0f172a", background: selectedItems.has(i.id) ? "rgba(56,189,248,.07)" : low ? "rgba(239,68,68,.05)" : "transparent", transition: "background .1s" }}
+                    onMouseEnter={e => { if (!selectedItems.has(i.id)) e.currentTarget.style.background = low ? "rgba(239,68,68,.1)" : "#243044"; }}
+                    onMouseLeave={e => { if (!selectedItems.has(i.id)) e.currentTarget.style.background = low ? "rgba(239,68,68,.05)" : "transparent"; }}>
+                    <td style={{ padding: "9px 13px", width: 36 }}>
+                      <input type="checkbox"
+                        checked={selectedItems.has(i.id)}
+                        onChange={e => {
+                          const s = new Set(selectedItems);
+                          e.target.checked ? s.add(i.id) : s.delete(i.id);
+                          setSelectedItems(s);
+                        }}
+                      />
+                    </td>
                     <td style={{ padding: "9px 13px", fontSize: 13, fontWeight: 600 }}>{highlight(i.name)}</td>
                     <td style={{ padding: "9px 13px", fontSize: 12, color: "var(--text2)" }}>{highlight(i.category)}</td>
                     <td style={{ padding: "9px 13px" }}>
@@ -3159,7 +3205,7 @@ function InventoryTab({ inventory, lowStock, onNew, onEdit, onDelete, onExport, 
                   </tr>
                 );
               })}
-              {filtered.length === 0 && <tr><td colSpan={9} style={{ textAlign: "center", padding: 30, color: "var(--text3)" }}>Няма намерени артикули</td></tr>}
+                            {filtered.length === 0 && <tr><td colSpan={10} style={{ textAlign: "center", padding: 30, color: "var(--text3)" }}>Няма намерени артикули</td></tr>}
             </tbody>
           </table>
         </div>
@@ -3328,7 +3374,7 @@ function InvModal({ item, onSave, onClose, syncing, allInventory = [] }) {
 // КРАЙ НА ЧАСТ 2
 // ЧАСТ 3
 // ═══════════════════════════════ REPORTS TAB ══════════════════════════════════
-function ReportsTab({ orders, inventory, technicians, accSales = [], onExport }) {
+function ReportsTab({ orders, inventory, technicians, accSales = [], phoneSales = [], onExport }) {
   const [from, setFrom] = useState(today().slice(0, 7) + "-01");
   const [to, setTo] = useState(today());
   const [viewMode, setViewMode] = useState("period");
@@ -3341,6 +3387,8 @@ function ReportsTab({ orders, inventory, technicians, accSales = [], onExport })
 
   const filteredAcc = accSales.filter(s => (s.date || "") >= from && (s.date || "") <= to);
 
+    const filteredPhone = phoneSales.filter(s => (s.date || "") >= from && (s.date || "") <= to);
+
   const techStatsPeriod = technicians.map(t => ({
     name: t.name, color: t.color || "#38bdf8",
     total: filtered.filter(o => o.technician === t.name).length,
@@ -3349,7 +3397,9 @@ function ReportsTab({ orders, inventory, technicians, accSales = [], onExport })
     revenue: filtered.filter(o => o.technician === t.name && o.status === "Издаден").reduce((s, o) => s + Number(o.price || 0), 0),
     accCount: filteredAcc.filter(s => s.technician === t.name).length,
     accRevenue: filteredAcc.filter(s => s.technician === t.name).reduce((s, r) => s + Number(r.sale_price || 0) * Number(r.quantity || 1), 0),
-  })).filter(t => t.total > 0 || t.accCount > 0).sort((a, b) => (b.revenue + b.accRevenue) - (a.revenue + a.accRevenue));
+    phoneCount: filteredPhone.filter(s => s.technician === t.name).length,
+    phoneRevenue: filteredPhone.filter(s => s.technician === t.name).reduce((s, r) => s + Number(r.sale_price || 0), 0),
+  })).filter(t => t.total > 0 || t.accCount > 0 || t.phoneCount > 0).sort((a, b) => (b.revenue + b.accRevenue + b.phoneRevenue) - (a.revenue + a.accRevenue + a.phoneRevenue));
 
   const allTechNames = [...new Set(orders.map(o => o.technician).filter(Boolean))];
 
@@ -3431,15 +3481,17 @@ function ReportsTab({ orders, inventory, technicians, accSales = [], onExport })
             <div style={{ fontSize:12, color:"var(--text3)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:14 }}>По техник (период)</div>
             <div className="table-wrap">
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
-                <thead><tr>{["Техник","Поръчки","Издадени","Оборот","Акс.","Акс. приход"].map(h=><th key={h} style={{ textAlign:"left", fontSize:10, color:"var(--text3)", padding:"6px 4px", borderBottom:"1px solid #334155" }}>{h}</th>)}</tr></thead>
-                <tbody>{techStatsPeriod.length > 0 ? techStatsPeriod.map(({ name, color, total, issued, revenue, accCount, accRevenue }, i) => (
-                  <tr key={name} style={{ borderBottom:"1px solid #1e293b" }}>
+                                <thead><tr>{["Техник","Поръчки","Издадени","Оборот","Акс.","Акс. приход","Тел.","Тел. приход"].map(h=><th key={h} style={{ textAlign:"left", fontSize:10, color:"var(--text3)", padding:"6px 4px", borderBottom:"1px solid #334155" }}>{h}</th>)}</tr></thead>
+                <tbody>{techStatsPeriod.length > 0 ? techStatsPeriod.map(({ name, color, total, issued, revenue, accCount, accRevenue, phoneCount, phoneRevenue }, i) => (
+                                    <tr key={name} style={{ borderBottom:"1px solid #1e293b" }}>
                     <td style={{ padding:"8px 4px", fontSize:13, fontWeight:600 }}><span style={{ color, marginRight:6 }}>●</span>{i===0?"🏆 ":""}{name}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, color:"var(--text2)" }}>{total}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, color:"#10b981" }}>{issued}</td>
                     <td style={{ padding:"8px 4px", fontSize:13, fontWeight:700, color:"#10b981" }}>{fmtMoney(revenue)}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, color:"#38bdf8" }}>{accCount}</td>
                     <td style={{ padding:"8px 4px", fontSize:12, fontWeight:700, color:"#38bdf8" }}>{fmtMoney(accRevenue)}</td>
+                    <td style={{ padding:"8px 4px", fontSize:12, color:"#f59e0b" }}>{phoneCount}</td>
+                    <td style={{ padding:"8px 4px", fontSize:12, fontWeight:700, color:"#f59e0b" }}>{fmtMoney(phoneRevenue)}</td>
                   </tr>
                 )) : <tr><td colSpan={4} style={{ padding:20, textAlign:"center", color:"var(--text3)", fontSize:12 }}>Няма данни</td></tr>}
                 </tbody>
@@ -4267,10 +4319,21 @@ function UnpaidTodayCard({ unpaidToday, unpaidAccToday, unpaidPartsToday, unpaid
     </Card>
   );
 }
-function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSales = [], phoneSales = [], cashReg = [], monthlyExpenses = [] }) {
+function DailyReport({ orders, inventory, expenses = [], accSales = [], partsSales = [], phoneSales = [], cashReg = [], monthlyExpenses = [], onSaveCash }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [bankAmount, setBankAmount] = useState(() => { try { return Number(localStorage.getItem("rp_bank_" + new Date().toISOString().split("T")[0]) || 0); } catch { return 0; } });
-  const [externalCash, setExternalCash] = useState(() => { try { return Number(localStorage.getItem("rp_ext_" + new Date().toISOString().split("T")[0]) || 0); } catch { return 0; } });
+   const [bankAmount, setBankAmount] = useState(0);
+  const [externalCash, setExternalCash] = useState(0);
+
+    useEffect(() => {
+    const entry = cashReg.find(c => c.date === date);
+    if (entry?.bank_account !== undefined && entry?.bank_account !== null) {
+      setBankAmount(entry.bank_account || 0);
+      setExternalCash(entry.external_cash || 0);
+    } else {
+      try { setBankAmount(Number(localStorage.getItem("rp_bank_" + date) || 0)); } catch { setBankAmount(0); }
+      try { setExternalCash(Number(localStorage.getItem("rp_ext_" + date) || 0)); } catch { setExternalCash(0); }
+    }
+  }, [date, cashReg]);
 
   const toDate = (val) => {
     if (!val) return "";
@@ -4563,7 +4626,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
               <span style={{ fontSize: 10, color: "#64748b", minWidth: 70 }}>🏛️ Банкова сметка:</span>
               <input type="number" min="0" step="0.01"
                 value={bankAmount || ""}
-                onChange={e => { setBankAmount(e.target.value); localStorage.setItem("rp_bank_" + date, e.target.value); }}
+                onChange={e => { setBankAmount(e.target.value); localStorage.setItem("rp_bank_" + date, e.target.value); onSaveCash && onSaveCash({ ...cashReg.find(c => c.date === date), date, bank_account: Number(e.target.value), external_cash: Number(externalCash || 0) }); }}
                 onClick={e => e.stopPropagation()}
                 style={{ width: 90, padding: "3px 6px", fontSize: 12, background: "#0f172a", border: "1px solid #334155", borderRadius: 5, color: "#e2e8f0" }}
                 placeholder="0.00" />
@@ -4572,7 +4635,7 @@ const paymentBreakdown = ["В брой", "С карта", "Банка", "Еко�
               <span style={{ fontSize: 10, color: "#64748b", minWidth: 70 }}>💼 Външна каса:</span>
               <input type="number" min="0" step="0.01"
                 value={externalCash || ""}
-                onChange={e => { setExternalCash(e.target.value); localStorage.setItem("rp_ext_" + date, e.target.value); }}
+                onChange={e => { setExternalCash(e.target.value); localStorage.setItem("rp_ext_" + date, e.target.value); onSaveCash && onSaveCash({ ...cashReg.find(c => c.date === date), date, bank_account: Number(bankAmount || 0), external_cash: Number(e.target.value) }); }}
                 onClick={e => e.stopPropagation()}
                 style={{ width: 90, padding: "3px 6px", fontSize: 12, background: "#0f172a", border: "1px solid #334155", borderRadius: 5, color: "#e2e8f0" }}
                 placeholder="0.00" />
@@ -4741,7 +4804,71 @@ function Calculator({ getSupabase }) {
     };
     load();
   }, []);
-  const [editRates, setEditRates] = useState(false);
+    const [editRates, setEditRates] = useState(false);
+
+  // ── Калкулатор за части ──
+    const DEFAULT_CATEGORIES = ["Дисплеи", "Батерии", "Стъкла", "Конектори", "Камери", "Аксесоари", "Друго"];
+  const [partsCategories, setPartsCategories] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("rp_parts_categories") || JSON.stringify(DEFAULT_CATEGORIES)); } catch { return DEFAULT_CATEGORIES; }
+  });
+    const [newCatName, setNewCatName] = useState("");
+  const [draggingCat, setDraggingCat] = useState(null);
+  const CATEGORIES = partsCategories;
+  const DEFAULT_MARKUPS = {
+    "Дисплеи": { type: "tiered", thresholds: [
+      { max: 26, markup: 10 },
+      { max: 51, markup: 15 },
+      { max: 77, markup: 20 },
+      { max: 102, markup: 25 },
+      { max: 128, markup: 30 },
+      { max: 999999, markup: 35 },
+    ]},
+    "Батерии": { type: "fixed", markup: 10 },
+    "Стъкла": { type: "fixed", markup: 8 },
+    "Конектори": { type: "fixed", markup: 8 },
+    "Камери": { type: "fixed", markup: 12 },
+    "Аксесоари": { type: "fixed", markup: 5 },
+    "Друго": { type: "fixed", markup: 10 },
+  };
+  const [partsCat, setPartsCat] = useState("Дисплеи");
+  const [partsCost, setPartsCost] = useState("");
+  const [markupSettings, setMarkupSettings] = useState(null);
+  const [editMarkups, setEditMarkups] = useState(false);
+  const [editMarkupData, setEditMarkupData] = useState(null);
+
+  useEffect(() => {
+    const loadMarkups = async () => {
+      try {
+        const sb = getSupabase();
+        if (!sb) return;
+        const { data } = await sb.from("markup_settings").select("*");
+        if (data && data.length > 0) {
+          const m = {};
+          data.forEach(d => { m[d.category] = { type: d.thresholds?.length > 0 ? "tiered" : "fixed", markup: d.markup, thresholds: d.thresholds }; });
+          setMarkupSettings(m);
+        } else {
+          setMarkupSettings(DEFAULT_MARKUPS);
+        }
+      } catch (e) { setMarkupSettings(DEFAULT_MARKUPS); }
+    };
+    loadMarkups();
+  }, []);
+
+  const getMarkup = (cat, cost) => {
+    const settings = markupSettings || DEFAULT_MARKUPS;
+    const s = settings[cat];
+    if (!s) return 0;
+    if (s.type === "tiered" && s.thresholds) {
+      const base = Number(cost) * 1.2;
+      const t = s.thresholds.find(t => base <= t.max);
+      return t ? t.markup : s.thresholds[s.thresholds.length - 1].markup;
+    }
+    return s.markup || 0;
+  };
+
+  const partsBase = partsCost ? Number(partsCost) * 1.2 : 0;
+  const partsMarkup = partsCost ? getMarkup(partsCat, partsCost) : 0;
+  const partsFinal = partsBase + partsMarkup;
 
   const DEFAULT_RATES = [
     { label: "Дисплей ≤26€", eur: 50 },
@@ -5115,7 +5242,209 @@ function Calculator({ getSupabase }) {
               </table>
             </div>
           </Card>
+                </div>
+
+        {/* ── КАЛКУЛАТОР ЗА ЧАСТИ ── */}
+        <div style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: "#f1f5f9", marginBottom: 16 }}>🔩 Калкулатор за части</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Card>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#38bdf8" }}>📦 Изчисли цена на част</div>
+                <button onClick={() => {
+  const base = markupSettings || DEFAULT_MARKUPS;
+  const merged = {};
+  CATEGORIES.forEach(cat => {
+    if (cat === "Дисплеи") {
+      merged[cat] = {
+        type: "tiered",
+        thresholds: base[cat]?.thresholds?.length > 0 
+          ? base[cat].thresholds 
+          : [
+              { max: 26, markup: 10 },
+              { max: 51, markup: 15 },
+              { max: 77, markup: 20 },
+              { max: 102, markup: 25 },
+              { max: 128, markup: 30 },
+              { max: 999999, markup: 35 },
+            ]
+      };
+    } else {
+      merged[cat] = base[cat] || { type: "fixed", markup: 0 };
+    }
+  });
+  setEditMarkupData(merged);
+  setEditMarkups(p => !p);
+}}
+                  style={{ background: editMarkups ? "#38bdf8" : "#1e293b", color: editMarkups ? "#0f172a" : "#64748b", border: "none", borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                  {editMarkups ? "✅ Готово" : "✏️ Надценки"}
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>Категория</label>
+                  <select value={partsCat} onChange={e => setPartsCat(e.target.value)} style={{ width: "100%", marginTop: 4 }}>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>Доставна цена (€)</label>
+                  <input type="number" min="0" step="0.01" value={partsCost} onChange={e => setPartsCost(e.target.value)} placeholder="0.00" style={{ width: "100%", marginTop: 4 }} />
+                </div>
+                {partsCost > 0 && (
+                  <div style={{ background: "#0f172a", borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                      <span style={{ color: "#64748b" }}>Доставна цена:</span>
+                      <span style={{ color: "#e2e8f0" }}>€ {Number(partsCost).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                      <span style={{ color: "#64748b" }}>+ 20% ДДС:</span>
+                      <span style={{ color: "#f59e0b" }}>€ {(Number(partsCost) * 0.2).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                      <span style={{ color: "#64748b" }}>База с ДДС:</span>
+                      <span style={{ color: "#e2e8f0" }}>€ {partsBase.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                      <span style={{ color: "#64748b" }}>+ Надценка ({partsCat}):</span>
+                      <span style={{ color: "#10b981" }}>€ {partsMarkup.toFixed(2)}</span>
+                    </div>
+                    <div style={{ borderTop: "1px solid #334155", paddingTop: 8, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: "#38bdf8" }}>Крайна цена:</span>
+                      <span style={{ fontSize: 20, fontWeight: 900, color: "#38bdf8" }}>€ {partsFinal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {editMarkups && editMarkupData && (
+              <Card>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "#f59e0b", marginBottom: 14 }}>✏️ Редактирай надценки</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                  <input value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                    placeholder="Нова категория..."
+                    style={{ flex: 1, padding: "5px 10px", fontSize: 12 }} />
+                  <button onClick={() => {
+                    const name = newCatName.trim();
+                    if (!name || partsCategories.includes(name)) return;
+                    const newCats = [...partsCategories, name];
+                    setPartsCategories(newCats);
+                    localStorage.setItem("rp_parts_categories", JSON.stringify(newCats));
+                    setNewCatName("");
+                  }} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>+ Добави</button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 400, overflow: "auto" }}>
+                  {CATEGORIES.map(cat => {
+                    const s = editMarkupData[cat] || { type: "fixed", markup: 0 };
+                    return (
+                      <div key={cat} style={{ background: "#0f172a", borderRadius: 8, padding: 10 }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ color: "#475569", cursor: "grab", fontSize: 14 }}>⠿</span>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>{cat}</div>
+                          </div>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button onClick={() => {
+                              const idx = partsCategories.indexOf(cat);
+                              if (idx === 0) return;
+                              const newCats = [...partsCategories];
+                              [newCats[idx - 1], newCats[idx]] = [newCats[idx], newCats[idx - 1]];
+                              setPartsCategories(newCats);
+                              localStorage.setItem("rp_parts_categories", JSON.stringify(newCats));
+                            }} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: 13 }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#38bdf8"}
+                              onMouseLeave={e => e.currentTarget.style.color = "#475569"}>▲</button>
+                            <button onClick={() => {
+                              const idx = partsCategories.indexOf(cat);
+                              if (idx === partsCategories.length - 1) return;
+                              const newCats = [...partsCategories];
+                              [newCats[idx], newCats[idx + 1]] = [newCats[idx + 1], newCats[idx]];
+                              setPartsCategories(newCats);
+                              localStorage.setItem("rp_parts_categories", JSON.stringify(newCats));
+                            }} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: 13 }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#38bdf8"}
+                              onMouseLeave={e => e.currentTarget.style.color = "#475569"}>▼</button>
+                                                        <button onClick={() => {
+                              if (!confirm(`Изтрий категория "${cat}"?`)) return;
+                              const newCats = partsCategories.filter(c => c !== cat);
+                              setPartsCategories(newCats);
+                              localStorage.setItem("rp_parts_categories", JSON.stringify(newCats));
+                              if (partsCat === cat) setPartsCat(newCats[0] || "");
+                            }} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: 13 }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                              onMouseLeave={e => e.currentTarget.style.color = "#475569"}>✕</button>
+                          </div>
+                        </div>
+                                                 {cat === "Дисплеи" ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            {(s.thresholds?.length > 0 ? s.thresholds : DEFAULT_MARKUPS["Дисплеи"].thresholds).map((t, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                                <span style={{ color: "#64748b", width: 20 }}>{i + 1}.</span>
+                                {i < s.thresholds.length - 1 ? (
+                                  <>
+                                    <span style={{ color: "#64748b" }}>≤</span>
+                                    <input type="number" min="0" step="1" value={t.max}
+                                      onChange={e => {
+                                        const newT = [...s.thresholds];
+                                        newT[i] = { ...newT[i], max: Number(e.target.value) };
+                                        setEditMarkupData({ ...editMarkupData, [cat]: { ...s, thresholds: newT } });
+                                      }}
+                                      onBlur={async () => {
+                                        setMarkupSettings({ ...editMarkupData });
+                                        try { const sb = getSupabase(); if (sb) await sb.from("markup_settings").upsert({ category: cat, markup: 0, thresholds: s.thresholds }, { onConflict: "category" }); } catch(e) {}
+                                      }}
+                                      style={{ width: 55, padding: "2px 6px", fontSize: 11, color: "#f59e0b", fontWeight: 600 }} />
+                                    <span style={{ color: "#64748b" }}>€</span>
+                                  </>
+                                ) : (
+                                  <span style={{ color: "#64748b", minWidth: 80 }}>{`> ${s.thresholds[i-1]?.max || 128}€`}</span>
+                                )}
+                                <span style={{ color: "#64748b" }}>надценка:</span>
+                                <input type="number" min="0" step="1" value={t.markup}
+                                  onChange={e => {
+                                    const newT = [...s.thresholds];
+                                    newT[i] = { ...newT[i], markup: Number(e.target.value) };
+                                    setEditMarkupData({ ...editMarkupData, [cat]: { ...s, thresholds: newT } });
+                                  }}
+                                  onBlur={async () => {
+                                    setMarkupSettings({ ...editMarkupData });
+                                    try { const sb = getSupabase(); if (sb) await sb.from("markup_settings").upsert({ category: cat, markup: 0, thresholds: s.thresholds }, { onConflict: "category" }); } catch(e) {}
+                                  }}
+                                  style={{ width: 55, padding: "2px 6px", fontSize: 11, color: "#10b981", fontWeight: 600 }} />
+                                <span style={{ color: "#64748b" }}>€</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                            <span style={{ color: "#64748b" }}>Надценка:</span>
+                            <input type="number" min="0" step="1" value={s.markup || 0}
+                              onChange={e => {
+                                const newData = { ...editMarkupData, [cat]: { ...s, markup: Number(e.target.value) } };
+                                setEditMarkupData(newData);
+                              }}
+                              onBlur={async () => {
+                                const newSettings = { ...editMarkupData };
+                                setMarkupSettings(newSettings);
+                                try {
+                                  const sb = getSupabase();
+                                  if (sb) await sb.from("markup_settings").upsert({ category: cat, markup: s.markup || 0, thresholds: [] }, { onConflict: "category" });
+                                } catch(e) {}
+                              }}
+                              style={{ width: 60, padding: "2px 6px", fontSize: 11, color: "#10b981", fontWeight: 600 }} />
+                            <span style={{ color: "#64748b" }}>€</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );
@@ -5630,24 +5959,11 @@ function TrashTab({ trash, onRestore, onDelete }) {
 
 // ═══════════════════════════════ LOGIN SCREEN ═════════════════════════════════
 const DEFAULT_USERS = [
-  { username: "admin", password: "demo123", role: "Администратор", color: "#38bdf8", email: "" },
-  { username: "technik", password: "demo123", role: "Техник", color: "#10b981", email: "" },
+  { username: "admin", password: "admin123", role: "Администратор", color: "#38bdf8", email: "" },
+  { username: "technik", password: "technik123", role: "Техник", color: "#10b981", email: "" },
 ];
 
 function LoginScreen({ onLogin }) {
-  const DEMO_EXPIRES = "2026-09-15";
-  const isDemoExpired = new Date() > new Date(DEMO_EXPIRES);
-  const daysLeft = Math.ceil((new Date(DEMO_EXPIRES) - new Date()) / (1000*60*60*24));
-
-  if (isDemoExpired) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#0a1628", flexDirection:"column", gap:16 }}>
-      <div style={{ fontSize:48 }}>⏰</div>
-      <div style={{ fontSize:24, fontWeight:800, color:"#ef4444" }}>Демо периодът е изтекъл</div>
-      <div style={{ color:"#64748b", fontSize:14 }}>Свържете се с нас за пълен достъп</div>
-      <div style={{ color:"#38bdf8", fontSize:16, fontWeight:700 }}>📞 +359(0)888 88 76 22</div>
-    </div>
-  );
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -5694,7 +6010,7 @@ function LoginScreen({ onLogin }) {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔧</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", letterSpacing: -0.5 }}>SnRepairPro</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>DEMO</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", marginTop: 4, letterSpacing: 3, textTransform: "uppercase" }}>МЕДЕН РУДНИК</div>
         </div>
 
         {mode === "login" ? (
@@ -5767,7 +6083,7 @@ function LoginScreen({ onLogin }) {
         )}
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 12, color: "#475569" }}>
-          SnRepairPro DEMO v2.0
+          SnRepairPro МЕДЕН РУДНИК v2.0
         </div>
       </div>
     </div>
@@ -5775,7 +6091,7 @@ function LoginScreen({ onLogin }) {
 }
 
 // ═══════════════════════════════ USER MANAGEMENT ══════════════════════════════
-function UsersTab() {
+export function UsersTab() {
   const [users, setUsers] = useState(() => {
     try { return JSON.parse(localStorage.getItem("rp_users")) || DEFAULT_USERS; } catch { return DEFAULT_USERS; }
   });
